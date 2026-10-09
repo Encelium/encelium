@@ -16,6 +16,7 @@
   display: flex;
   align-items: center;
   padding-inline: var(--space-4);
+  direction: ltr; /* brand stays top-left in every language, like the Windows buttons stay top-right */
 }
 
 .brand {
