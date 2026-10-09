@@ -9,7 +9,7 @@ const csp: Plugin = {
   apply: "build",
   transformIndexHtml: () => [{
     tag: "meta",
-    attrs: { "http-equiv": "Content-Security-Policy", content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'" },
+    attrs: { "http-equiv": "Content-Security-Policy", content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-src enceladus-preview:" },
     injectTo: "head-prepend",
   }],
 };

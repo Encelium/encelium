@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Composer, Icon, type IconName } from "@enceladus/ui";
 import type { Strings } from "./i18n";
+import { bridge } from "./bridge";
 import s from "./Home.module.css";
 
 const starterIcons: Record<keyof Strings["starters"], IconName> = {
@@ -15,9 +16,24 @@ function greeting(t: Strings) {
   return h < 12 ? t.greeting.morning : h < 18 ? t.greeting.afternoon : t.greeting.evening;
 }
 
-export function Home({ t, onSubmit }: { t: Strings; onSubmit: (text: string) => void }) {
+interface HomeProps {
+  t: Strings;
+  /** `folder` is set when the person chose one; otherwise a new folder is made. */
+  onSubmit: (text: string, folder?: string) => void;
+  onNotice: (message: string) => void;
+}
+
+export function Home({ t, onSubmit, onNotice }: HomeProps) {
   const [draft, setDraft] = useState("");
   const [focusRequest, setFocusRequest] = useState(0);
+  const [folder, setFolder] = useState<{ path: string; name: string } | null>(null);
+
+  const chooseFolder = async () => {
+    if (!bridge.tasks) return;
+    const result = await bridge.tasks.chooseFolder();
+    if (result.ok) setFolder({ path: result.path, name: result.name });
+    else if (result.reason === "too-broad") onNotice(t.folderTooBroad);
+  };
 
   return (
     <main className={s.main}>
@@ -35,7 +51,14 @@ export function Home({ t, onSubmit }: { t: Strings; onSubmit: (text: string) => 
           value={draft}
           onValueChange={setDraft}
           focusRequest={focusRequest}
-          onSubmit={onSubmit}
+          onSubmit={(text) => onSubmit(text, folder?.path)}
+          folder={bridge.tasks ? {
+            label: t.workingIn,
+            name: folder?.name ?? t.newFolder,
+            path: folder?.path ?? t.newFolderPath,
+            onClick: chooseFolder,
+            actionLabel: t.chooseFolder,
+          } : undefined}
         />
 
         <div className={s.starters}>

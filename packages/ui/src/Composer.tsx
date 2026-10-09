@@ -10,6 +10,10 @@ export interface ComposerFolder {
   name: string;
   /** Full path. Always shown left-to-right. */
   path: string;
+  /** Makes the chip a button (e.g. "choose another folder"). */
+  onClick?: () => void;
+  /** Screen-reader name for the button, e.g. "Choose a folder". */
+  actionLabel?: string;
 }
 
 export interface ComposerProps {
@@ -91,14 +95,22 @@ export function Composer({
       />
       <div className={s.bar}>
         <IconButton icon="paperclip" label={attachLabel} onClick={onAttach} disabled={disabled} />
-        {folder && (
-          <span className={s.folder}>
-            <Icon name="folder" size={14} />
-            <span className={s.folderLabel}>{folder.label}</span>
-            <span className={s.folderName}>{folder.name}</span>
-            <span className={s.folderPath} dir="ltr" title={folder.path}>{folder.path}</span>
-          </span>
-        )}
+        {folder && (() => {
+          const content = (
+            <>
+              <Icon name="folder" size={14} />
+              <span className={s.folderLabel}>{folder.label}</span>
+              <span className={s.folderName} dir="auto">{folder.name}</span>
+              <span className={s.folderPath} dir="ltr" title={folder.path}>{folder.path}</span>
+            </>
+          );
+          return folder.onClick ? (
+            <button type="button" className={[s.folder, s.folderButton].join(" ")} onClick={folder.onClick} disabled={disabled}
+              aria-label={folder.actionLabel ? `${folder.actionLabel}: ${folder.name}` : undefined} title={folder.actionLabel}>
+              {content}
+            </button>
+          ) : <span className={s.folder}>{content}</span>;
+        })()}
         <IconButton
           icon="arrowUp"
           label={sendLabel}

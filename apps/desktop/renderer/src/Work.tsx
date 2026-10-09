@@ -3,7 +3,7 @@ import {
   Button, Composer, Icon, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
   type RewindItem,
 } from "@enceladus/ui";
-import type { Language } from "./bridge";
+import { bridge, type Language, type StoredEvent } from "./bridge";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import s from "./Work.module.css";
@@ -24,10 +24,13 @@ interface Status { phase: "thinking" | "working"; text: string }
 
 export interface WorkProps {
   t: Strings;
-  prompt: string;
+  taskId: string;
+  /** A new task: start with this request. Leave out to re-open a saved task. */
+  prompt?: string;
+  /** New task only: work in this folder instead of a new one. */
+  folder?: string;
   language: Language;
   engine: AgentEngine;
-  onNewTask?: () => void;
 }
 
 function ActivityLine({ t, text, details }: { t: Strings; text: string; details?: string }) {
@@ -48,93 +51,144 @@ function ActivityLine({ t, text, details }: { t: Strings; text: string; details?
   );
 }
 
-export function Work({ t, prompt, language, engine }: WorkProps) {
+export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [status, setStatus] = useState<Status | null>(null);
   const [running, setRunning] = useState(false);
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
   const [tab, setTab] = useState<"preview" | "rewind">("preview");
   const [notice, setNotice] = useState<string | null>(null);
+  const [page, setPage] = useState<string | null>(null);
+  const [pageVersion, setPageVersion] = useState(0);
 
   const runRef = useRef<AgentRun | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
   const counter = useRef(0);
   const listRef = useRef<HTMLDivElement>(null);
   const stuck = useRef(true);
+  const firstRun = useRef(true);
+
+  /** Apply one event (live or replayed) for run number `n`. */
+  const apply = useCallback((e: AgentEvent | StoredEvent, n: number) => {
+    const planId = `plan-${n}`;
+    switch (e.type) {
+      case "user":
+        setItems((prev) => [...prev, { kind: "user", id: `user-${n}`, text: e.text }]);
+        break;
+      case "status":
+        setStatus({ phase: e.phase, text: e.text });
+        break;
+      case "plan":
+        setItems((prev) =>
+          prev.some((i) => i.id === planId)
+            ? prev.map((i) => (i.id === planId ? { kind: "plan", id: planId, plan: e } : i))
+            : [...prev, { kind: "plan", id: planId, plan: e }],
+        );
+        break;
+      case "message-delta":
+        setItems((prev) => {
+          const id = `msg-${n}-${e.id}`;
+          return prev.some((i) => i.id === id)
+            ? prev.map((i) => (i.id === id && i.kind === "assistant" ? { ...i, text: i.text + e.text } : i))
+            : [...prev, { kind: "assistant", id, text: e.text }];
+        });
+        break;
+      case "message":
+        setItems((prev) => [...prev, { kind: "assistant", id: `msg-${n}-${prev.length}`, text: e.text }]);
+        break;
+      case "message-done":
+        break;
+      case "permission":
+        setStatus(null);
+        setItems((prev) => [...prev, { kind: "permission", id: `perm-${n}-${e.requestId}`, event: e }]);
+        break;
+      case "permission-answer":
+        setItems((prev) => prev.map((i) => (i.kind === "permission" && i.event.requestId === e.requestId ? { ...i, answer: e.allowed } : i)));
+        break;
+      case "checkpoint":
+        setCheckpoints((prev) => [...prev, { id: e.id, label: e.label, at: e.at }]);
+        break;
+      case "restored":
+        setCheckpoints((prev) => { const i = prev.findIndex((c) => c.id === e.checkpointId); return i === -1 ? prev : prev.slice(0, i); });
+        break;
+      case "activity":
+        setItems((prev) => [...prev, { kind: "activity", id: `act-${n}-${prev.length}`, text: e.text, details: e.details }]);
+        break;
+      case "done":
+        setStatus(null);
+        setRunning(false);
+        // A quiet check-mark line, not a second message (the final message already says it in full).
+        setItems((prev) => [...prev, { kind: "activity", id: `done-${n}`, text: e.summary }]);
+        break;
+      case "error":
+        setStatus(null);
+        setRunning(false);
+        setItems((prev) => [...prev, { kind: "error", id: `err-${n}`, message: e.message, suggestion: e.suggestion }]);
+        break;
+    }
+  }, []);
 
   const startRun = useCallback((text: string) => {
     const n = ++counter.current;
-    const planId = `plan-${n}`;
     unsubRef.current?.();
-    setItems((prev) => [...prev, { kind: "user", id: `user-${n}`, text }]);
+    apply({ type: "user", text }, n);
     setRunning(true);
     setStatus(null);
     stuck.current = true;
-
-    const run = engine.start(text, { language });
+    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined });
+    firstRun.current = false;
     runRef.current = run;
-    unsubRef.current = run.onEvent((e) => {
-      switch (e.type) {
-        case "status":
-          setStatus({ phase: e.phase, text: e.text });
-          break;
-        case "plan":
-          setItems((prev) =>
-            prev.some((i) => i.id === planId)
-              ? prev.map((i) => (i.id === planId ? { kind: "plan", id: planId, plan: e } : i))
-              : [...prev, { kind: "plan", id: planId, plan: e }],
-          );
-          break;
-        case "message-delta":
-          setItems((prev) => {
-            const id = `msg-${n}-${e.id}`;
-            return prev.some((i) => i.id === id)
-              ? prev.map((i) => (i.id === id && i.kind === "assistant" ? { ...i, text: i.text + e.text } : i))
-              : [...prev, { kind: "assistant", id, text: e.text }];
-          });
-          break;
-        case "message-done":
-          break;
-        case "permission":
-          setStatus(null);
-          setItems((prev) => [...prev, { kind: "permission", id: `perm-${n}-${e.requestId}`, event: e }]);
-          break;
-        case "checkpoint":
-          setCheckpoints((prev) => [...prev, { id: e.id, label: e.label, at: e.at }]);
-          break;
-        case "activity":
-          setItems((prev) => [...prev, { kind: "activity", id: `act-${n}-${prev.length}`, text: e.text, details: e.details }]);
-          break;
-        case "done":
-          setStatus(null);
-          setRunning(false);
-          // A quiet check-mark line, not a second message (the final message already says it in full).
-          setItems((prev) => [...prev, { kind: "activity", id: `done-${n}`, text: e.summary }]);
-          break;
-        case "error":
-          setStatus(null);
-          setRunning(false);
-          setItems((prev) => [...prev, { kind: "error", id: `err-${n}`, message: e.message, suggestion: e.suggestion }]);
-          break;
-      }
-    });
-  }, [engine, language]);
+    unsubRef.current = run.onEvent((e) => apply(e, n));
+  }, [engine, language, folder, apply]);
 
-  // Start the first run. Quiet cleanup (no "stopped" message) if the screen goes away.
+  // New task: start it. Saved task: show what happened, then wait for a follow-up.
   useEffect(() => {
+    let cancelled = false;
     counter.current = 0;
     setItems([]);
     setCheckpoints([]);
-    startRun(prompt);
+    if (prompt !== undefined) {
+      startRun(prompt);
+    } else if (bridge.tasks) {
+      firstRun.current = false;
+      bridge.tasks.events({ taskId }).then((events) => {
+        if (cancelled) return;
+        for (const e of events) {
+          if (e.type === "user") counter.current++;
+          apply(e, Math.max(counter.current, 1));
+        }
+        // A question left unanswered when the app closed can't be answered any more.
+        setItems((prev) => prev.map((i) => (i.kind === "permission" && i.answer === undefined ? { ...i, answer: false } : i)));
+        setStatus(null);
+        setRunning(false);
+      });
+    }
     return () => {
+      cancelled = true;
       unsubRef.current?.();
       unsubRef.current = null;
-      runRef.current?.stop();
+      runRef.current?.stop(); // quiet: no "stopped" message if the screen goes away
       runRef.current = null;
     };
-    // The prompt is fixed for this screen; App re-mounts it for a different task.
+    // The task is fixed for this screen; App re-mounts it for another task.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Live preview: find the page, and reload it whenever the task's files change.
+  const hadPage = useRef(false);
+  useEffect(() => {
+    if (!bridge.tasks) return;
+    const tasks = bridge.tasks;
+    const refresh = async () => {
+      const found = await tasks.findPreview({ taskId });
+      setPage(found);
+      setPageVersion((v) => v + 1);
+      if (found && !hadPage.current) setTab("preview"); // first time there's something to see
+      hadPage.current = !!found;
+    };
+    refresh();
+    return tasks.onFilesChanged((id) => { if (id === taskId) refresh(); });
+  }, [taskId]);
 
   const answer = (item: Extract<Item, { kind: "permission" }>, allowed: boolean) => {
     setItems((prev) => prev.map((i) => (i.id === item.id && i.kind === "permission" ? { ...i, answer: allowed } : i)));
@@ -248,10 +302,27 @@ export function Work({ t, prompt, language, engine }: WorkProps) {
         </div>
         <div className={s.panelBody}>
           {tab === "preview" ? (
-            <div className={s.empty}>
-              <span className={s.emptyIcon}><Icon name="browser" size={24} /></span>
-              <p>{t.work.previewEmpty}</p>
-            </div>
+            page && bridge.tasks ? (
+              <div className={s.preview}>
+                <div className={s.previewBar}>
+                  <span className={s.previewPage} dir="ltr">{page}</span>
+                  <Button variant="ghost" size="sm" iconEnd="arrowRight" onClick={() => bridge.tasks?.openPreview({ taskId, page })}>{t.work.openInBrowser}</Button>
+                </div>
+                {/* Sandboxed: the page can run its own scripts but can't reach the app. */}
+                <iframe
+                  key={pageVersion}
+                  className={s.frame}
+                  title={t.work.previewTitle}
+                  src={`enceladus-preview://${taskId}/${page}`}
+                  sandbox="allow-scripts allow-forms allow-modals"
+                />
+              </div>
+            ) : (
+              <div className={s.empty}>
+                <span className={s.emptyIcon}><Icon name="browser" size={24} /></span>
+                <p>{t.work.previewEmpty}</p>
+              </div>
+            )
           ) : rewindItems.length === 0 ? (
             <div className={s.empty}>
               <span className={s.emptyIcon}><Icon name="rewind" size={24} /></span>

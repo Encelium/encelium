@@ -1,14 +1,10 @@
-// Runs agent tasks for the window. Each task gets its own folder (Documents\Enceladus\...)
-// and its own Rewind history (in app data, out of the agent's reach).
-import { app, ipcMain, shell } from "electron";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-import { AgentSession, Checkpoints, ENCELADUS_PRESET, Workspace } from "@enceladus/agent-core";
+// Runs agent tasks for the window. Tasks, folders and history live in tasks.js.
+import { ipcMain } from "electron";
+import { AgentSession, ENCELADUS_PRESET } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
+import { getTask, recorder, saveMessages } from "./tasks.js";
 
-/** taskId → { workspace, checkpoints, messages } (follow-ups continue the conversation) */
-const tasks = new Map();
-/** runId → AgentSession */
+/** runId → { session, record } */
 const runs = new Map();
 
 const notConnected = {
@@ -24,66 +20,52 @@ function connection() {
   return { protocol: ENCELADUS_PRESET.protocol, baseUrl: ENCELADUS_PRESET.baseUrl, model: "enceladus", usageInStream: true };
 }
 
-/** A readable folder name from the request: "Make a website for my bakery" → "make-a-website-for-my-bakery". */
-function folderName(prompt) {
-  const words = prompt.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 6);
-  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
-  return `${words.length ? words.join("-") : "task"}-${stamp}`;
-}
-
-async function taskFor(taskId, prompt) {
-  if (tasks.has(taskId)) return tasks.get(taskId);
-  const safeId = String(taskId).replace(/[^\w-]/g, "");
-  const root = path.join(app.getPath("documents"), "Enceladus", folderName(prompt));
-  await mkdir(root, { recursive: true });
-  const task = {
-    workspace: new Workspace(root),
-    checkpoints: new Checkpoints(path.join(app.getPath("userData"), "tasks", safeId)),
-    messages: [],
-  };
-  tasks.set(taskId, task);
-  return task;
-}
-
 export function initAgent() {
-  ipcMain.handle("agent:start", async (event, { taskId, prompt, language }) => {
+  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder }) => {
     const lang = language === "ar" ? "ar" : "en";
+    const text = String(prompt);
     const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    const send = (e) => { if (!event.sender.isDestroyed()) event.sender.send("agent:event", runId, e); };
+    const task = await getTask(taskId, { prompt: text, folder: typeof folder === "string" ? folder : undefined });
+    const record = recorder(task);
+    const send = (e) => {
+      record(e);
+      if (!event.sender.isDestroyed()) event.sender.send("agent:event", runId, e);
+    };
+    record({ type: "user", text });
 
     const conn = connection();
     if (!conn) {
       setTimeout(() => send({ type: "error", ...notConnected[lang] }), 0);
-      return { runId };
+      return { runId, folder: task.meta.folder };
     }
 
-    const task = await taskFor(taskId, String(prompt));
-    const session = new AgentSession(String(prompt), { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages });
-    runs.set(runId, session);
+    const session = new AgentSession(text, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages });
+    runs.set(runId, { session, record });
     session.onEvent(send);
-    session.finished.then(() => {
-      task.messages = session.messages; // keep the conversation for follow-ups
+    session.finished.then(async () => {
       runs.delete(runId);
+      await saveMessages(task, session.messages); // follow-ups (even after a restart) continue the conversation
     });
-    return { runId, folder: task.workspace.root };
+    return { runId, folder: task.meta.folder };
   });
 
-  ipcMain.handle("agent:respond", (_e, { runId, requestId, allowed }) => runs.get(runId)?.respond(String(requestId), !!allowed));
-  ipcMain.handle("agent:stop", (_e, { runId }) => runs.get(runId)?.stop());
+  ipcMain.handle("agent:respond", (_e, { runId, requestId, allowed }) => {
+    const run = runs.get(runId);
+    if (!run) return;
+    run.record({ type: "permission-answer", requestId: String(requestId), allowed: !!allowed });
+    run.session.respond(String(requestId), !!allowed);
+  });
+  ipcMain.handle("agent:stop", (_e, { runId }) => runs.get(runId)?.session.stop());
 
   ipcMain.handle("agent:restore", async (_e, { taskId, checkpointId, language }) => {
-    const task = tasks.get(taskId);
+    const task = await getTask(taskId);
     if (!task) return { ok: false, message: language === "ar" ? "لم يعد هذا التراجع متاحًا." : "This Rewind point isn’t available any more." };
     try {
       await task.checkpoints.restore(String(checkpointId));
+      recorder(task)({ type: "restored", checkpointId: String(checkpointId) });
       return { ok: true };
     } catch (e) {
       return { ok: false, message: e.message };
     }
-  });
-
-  ipcMain.handle("agent:open-folder", async (_e, { taskId }) => {
-    const task = tasks.get(taskId);
-    if (task) await shell.openPath(task.workspace.root);
   });
 }

@@ -15,17 +15,35 @@ export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limite
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
 export interface AgentBridge {
-  start(input: { taskId: string; prompt: string; language: Language }): Promise<{ runId: string; folder?: string }>;
+  start(input: { taskId: string; prompt: string; language: Language; folder?: string }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
   restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true } | { ok: false; message: string }>;
-  openFolder(input: { taskId: string }): Promise<void>;
   onEvent(callback: (runId: string, event: import("./agent/types").AgentEvent) => void): () => void;
+}
+
+export interface TaskSummary { id: string; title: string; folder: string; updatedAt: number }
+/** What was shown on screen, saved per task: agent events plus a few bookkeeping entries. */
+export type StoredEvent =
+  | import("./agent/types").AgentEvent
+  | { type: "user"; text: string }
+  | { type: "message"; text: string }
+  | { type: "permission-answer"; requestId: string; allowed: boolean }
+  | { type: "restored"; checkpointId: string };
+
+export interface TasksBridge {
+  list(): Promise<TaskSummary[]>;
+  events(input: { taskId: string }): Promise<StoredEvent[]>;
+  chooseFolder(): Promise<{ ok: true; path: string; name: string } | { ok: false; reason: "canceled" | "too-broad" }>;
+  findPreview(input: { taskId: string }): Promise<string | null>;
+  openPreview(input: { taskId: string; page: string }): Promise<void>;
+  onFilesChanged(callback: (taskId: string) => void): () => void;
 }
 
 export interface Bridge {
   /** Only inside the desktop app; in a plain browser the demo agent is used instead. */
   agent?: AgentBridge;
+  tasks?: TasksBridge;
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Pick<Settings, "theme" | "language">>): Promise<Settings>;
   onEffectiveTheme(callback: (theme: EffectiveTheme) => void): () => void;
