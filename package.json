@@ -1,0 +1,17 @@
+{
+  "name": "enceladus",
+  "private": true,
+  "description": "Enceladus — a free, no-jargon AI agent for chat and coding.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "gallery": "npm run dev -w @enceladus/ui",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
