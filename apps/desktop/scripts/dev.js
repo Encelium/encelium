@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const server = await createServer({ configFile: path.join(root, "vite.config.ts") });
+// strictPort off: if 5174 is busy (another copy, another program), use the next free port.
+const server = await createServer({ configFile: path.join(root, "vite.config.ts"), server: { strictPort: false } });
 await server.listen();
 const url = server.resolvedUrls?.local[0];
 console.log(`Renderer: ${url}`);
