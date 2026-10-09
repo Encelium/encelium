@@ -1,0 +1,40 @@
+﻿.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 460px;
+  padding-block: var(--space-3);
+  padding-inline: var(--space-4) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  animation: slide var(--duration-base) var(--ease-out);
+}
+
+.icon { display: inline-flex; flex: none; color: var(--color-text-muted); }
+.safe .icon { color: var(--color-safe); }
+.careful .icon { color: var(--color-careful); }
+.risky .icon { color: var(--color-risky); }
+.safe { border-color: var(--color-safe); }
+.careful { border-color: var(--color-careful); }
+.risky { border-color: var(--color-risky); }
+
+.message { flex: 1; min-width: 0; text-align: start; }
+
+.action {
+  flex: none; padding: var(--space-1) var(--space-2);
+  border: 0; border-radius: var(--radius-sm); background: transparent;
+  font-family: var(--font-sans); font-size: var(--text-sm); font-weight: var(--weight-semibold);
+  color: var(--color-accent); cursor: pointer;
+}
+.action:hover { background: var(--color-accent-soft); }
+
+@keyframes slide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}

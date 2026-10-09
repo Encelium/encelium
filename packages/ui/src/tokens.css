@@ -35,6 +35,7 @@
   --color-code-bg: #161B21;
   --color-code-text: #D3D9DE;
   --color-focus-ring: rgba(15, 110, 140, .45);
+  --color-scrim: rgba(11, 22, 32, .45);   /* behind dialogs */
 
   /* ── Type ─────────────────────────────────────────────────────── */
   --font-latin: "Geist Variable", "Geist", system-ui, sans-serif;
@@ -117,6 +118,7 @@
   --color-code-bg: #0B0F13;
   --color-code-text: #D3D9DE;
   --color-focus-ring: rgba(156, 203, 218, .5);
+  --color-scrim: rgba(0, 0, 0, .6);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
   --shadow-md: 0 16px 40px -20px rgba(0, 0, 0, .55);

@@ -1,0 +1,28 @@
+.message { display: flex; width: 100%; }
+
+.content {
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--color-text);
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+.content > :first-child { margin-block-start: 0; }
+.content > :last-child { margin-block-end: 0; }
+.content p, .content ul, .content ol { margin-block: 0 var(--space-3); }
+.content :is(p, li, h1, h2, h3, h4) { unicode-bidi: plaintext; text-align: start; }
+.content :is(ul, ol) { padding-inline-start: var(--space-6); }
+.content code { font-size: .92em; unicode-bidi: isolate; direction: ltr; }
+
+/* Assistant: no bubble, plain text, full width. */
+.assistant .content { width: 100%; }
+
+/* User: bubble on the end side, one smaller corner. */
+.user { justify-content: flex-end; }
+.user .content {
+  max-width: 80%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-lg);
+  border-end-end-radius: var(--radius-sm);
+}

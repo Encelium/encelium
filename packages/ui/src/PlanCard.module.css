@@ -1,0 +1,26 @@
+.card {
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.title { margin: 0 0 var(--space-3); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--color-text); }
+
+.list { display: flex; flex-direction: column; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+
+.step { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-md); line-height: var(--leading-md); }
+.text { flex: 1; text-align: start; }
+
+.marker { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; }
+
+.doneCircle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-accent-soft); color: var(--color-accent);
+}
+.ring { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-text-subtle); }
+
+.done .text { color: var(--color-text-muted); }
+.active .text { color: var(--color-text); font-weight: var(--weight-medium); }
+.pending .text { color: var(--color-text-subtle); }

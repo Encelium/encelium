@@ -1,0 +1,52 @@
+.timeline { margin: 0; padding: 0; list-style: none; }
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--space-12);
+  padding-block: var(--space-2);
+  padding-inline-start: var(--space-8);
+  border-radius: var(--radius-md);
+}
+.item:hover, .item:focus-within { background: var(--color-surface-muted); }
+
+/* The vertical line, joined from dot to dot. */
+.item::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 9px;
+  inset-block: 0;
+  width: 2px;
+  background: var(--color-border-strong);
+}
+.item:first-child::before { inset-block-start: 50%; }
+.item:last-child::before { inset-block-end: 50%; }
+.item:only-child::before { display: none; }
+
+.dot {
+  position: absolute;
+  inset-inline-start: 4px;
+  inset-block-start: 50%;
+  width: 12px;
+  height: 12px;
+  margin-block-start: -6px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-text-subtle);
+}
+.current .dot { background: var(--color-accent); border-color: var(--color-accent); box-shadow: 0 0 0 4px var(--color-accent-soft); }
+
+.text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.label { font-size: var(--text-md); line-height: var(--leading-md); color: var(--color-text); text-align: start; }
+.current .label { font-weight: var(--weight-semibold); }
+.time { font-size: var(--text-xs); line-height: var(--leading-xs); color: var(--color-text-subtle); }
+
+.restore { flex: none; margin-inline-end: var(--space-2); opacity: 0; }
+.item:hover .restore, .item:focus-within .restore, .restore:focus-visible { opacity: 1; }
+
+/* Touch screens can't hover: always show the button. */
+@media (hover: none) {
+  .restore { opacity: 1; }
+}
