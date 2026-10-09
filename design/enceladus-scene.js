@@ -8,7 +8,7 @@
 // const s = new EnceladusScene(canvas, {
 //   w, h, theme: 'dark' | 'light',
 //   cx, cy, R,            // sphere center and radius in CSS px
-//   cells: 3,             // size of the plates (higher = more, smaller plates)
+//   plates: 110,          // number of plates over the whole moon (more = smaller plates)
 //   tilt: 40,             // degrees the vent region is tipped toward the viewer
 //   jets: 11,             // vents = jets × 3
 //   speed: 95, rate: 3,   // vapor speed (px/s, scale with R) and emission per vent (/s)
@@ -19,7 +19,7 @@
 class EnceladusScene {
   constructor(cv, o) {
     this.cv = cv;
-    this.o = o = Object.assign({ cells: 3, tilt: 40, jets: 11, speed: 95, rate: 3, active: true, seed: 7 }, o);
+    this.o = o = Object.assign({ plates: 110, tilt: 40, jets: 11, speed: 95, rate: 3, active: true, seed: 7 }, o);
     const dpr = this.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     cv.width = Math.round(o.w * dpr); cv.height = Math.round(o.h * dpr);
     cv.style.width = o.w + 'px'; cv.style.height = o.h + 'px';
@@ -31,12 +31,12 @@ class EnceladusScene {
     this.render();
     // vapor vents: points that sit exactly on a crack, gathered around the pole
     this.sources = [];
-    const e = [0, 0], rnd = mulberry32(o.seed + 5), P = this.P, s1 = o.cells;
+    const e = [0, 0], rnd = mulberry32(o.seed + 5), P = this.P;
     for (let tries = 0; tries < 20000 && this.sources.length < o.jets * 3; tries++) {
       const q = norm([P[0] + (rnd() - .5) * .9, P[1] + (rnd() - .5) * .9, P[2] + (rnd() - .5) * .9]);
-      const [wx, wy, wz] = this.warp(q[0], q[1], q[2]);
-      this.edge(this.g1, wx * s1, wy * s1, wz * s1, e, q[0], q[1], q[2]);
-      if (e[0] < .008) this.sources.push({ q, acc: Math.random(), ph: Math.random() * 6.28, w: .35 + Math.random() * .6 });
+      const w = norm(this.warp(q[0], q[1], q[2]));
+      this.edge(this.g1, w[0], w[1], w[2], e);
+      if (e[0] < .002) this.sources.push({ q, acc: Math.random(), ph: Math.random() * 6.28, w: .35 + Math.random() * .6 });
     }
     this.target = this.k = o.active ? 1 : 0;
     this.ps = []; this.t = 0; this.last = 0; this.running = false;
@@ -56,41 +56,28 @@ class EnceladusScene {
   destroy() { this.pause(); if (this.io) this.io.disconnect(); }
 
   proj(q, r) { const o = this.o; r = r || o.R; return [o.cx + r * q[0], o.cy - r * q[1]]; }
-  // jittered 3D grid of feature points for cellular (Worley) cracks
-  grid(scale, seed) {
-    const m = Math.ceil(scale) + 2, N = 2 * m + 1, n = N * N * N, rnd = mulberry32(seed);
-    const fx = new Float32Array(n), fy = new Float32Array(n), fz = new Float32Array(n), id = new Float32Array(n);
+  // Plate centres placed ON the sphere (evenly spread, then jittered). Their Voronoi walls are
+  // planes through the moon's centre, so every crack meets the surface straight on: always
+  // continuous, never smeared, never a stray loop.
+  sites(n, seed) {
+    const rnd = mulberry32(seed), pts = [], golden = Math.PI * (3 - Math.sqrt(5)), jit = Math.sqrt(4 * Math.PI / n) * .3;
     for (let i = 0; i < n; i++) {
-      const x = i % N, y = Math.floor(i / N) % N, z = Math.floor(i / (N * N));
-      fx[i] = x - m + .12 + .76 * rnd(); fy[i] = y - m + .12 + .76 * rnd(); fz[i] = z - m + .12 + .76 * rnd(); id[i] = rnd();
+      const y = 1 - 2 * (i + .5) / n, r = Math.sqrt(1 - y * y), ph = i * golden;
+      const p = [Math.cos(ph) * r, y, Math.sin(ph) * r], [u, v] = perp(p), a = rnd() * 6.283, d = jit * Math.sqrt(rnd());
+      pts.push(norm([p[0] + d * (Math.cos(a) * u[0] + Math.sin(a) * v[0]), p[1] + d * (Math.cos(a) * u[1] + Math.sin(a) * v[1]), p[2] + d * (Math.cos(a) * u[2] + Math.sin(a) * v[2])]));
     }
-    return { m, N, fx, fy, fz, id };
+    // each plate's 10 nearest neighbours: the only walls that can bound it
+    const nbr = pts.map((a, i) => pts.map((b, j) => [j, dot(a, b)]).filter(x => x[0] !== i).sort((x, y) => y[1] - x[1]).slice(0, 10)
+      .map(([j]) => { const b = pts[j], w = [a[0] - b[0], a[1] - b[1], a[2] - b[2]], l = Math.hypot(w[0], w[1], w[2]); return [w[0] / l, w[1] / l, w[2] / l]; }));
+    return { pts, nbr, id: pts.map(() => rnd()) };
   }
-  // distance from p to the nearest cell wall (exact bisector distance), and the cell's id
-  // (nx, ny, nz) is the surface normal: wall distance is measured along the surface,
-  // so walls that meet the sphere at a grazing angle don't smear into wide bands
-  edge(g, px, py, pz, out, nx, ny, nz) {
-    const m = g.m, N = g.N, xi = Math.floor(px) + m, yi = Math.floor(py) + m, zi = Math.floor(pz) + m;
-    let d1 = 1e9, i1 = 0;
-    for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const i = (xi + dx) + (yi + dy) * N + (zi + dz) * N * N;
-      const ex = g.fx[i] - px, ey = g.fy[i] - py, ez = g.fz[i] - pz, d = ex * ex + ey * ey + ez * ez;
-      if (d < d1) { d1 = d; i1 = i; }
-    }
-    // exact distance to the nearest wall = min over neighbours of the distance to each bisector plane
-    const ax = g.fx[i1], ay = g.fy[i1], az = g.fz[i1];
-    const cx = Math.floor(ax) + m, cy = Math.floor(ay) + m, cz = Math.floor(az) + m;
-    let best = 1e9;
-    for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const i = (cx + dx) + (cy + dy) * N + (cz + dz) * N * N;
-      if (i === i1) continue;
-      const bx = g.fx[i] - ax, by = g.fy[i] - ay, bz = g.fz[i] - az, bl = Math.sqrt(bx * bx + by * by + bz * bz);
-      let dd = ((g.fx[i] + ax) * .5 - px) * bx / bl + ((g.fy[i] + ay) * .5 - py) * by / bl + ((g.fz[i] + az) * .5 - pz) * bz / bl;
-      const bn = (bx * nx + by * ny + bz * nz) / bl;
-      dd /= Math.sqrt(Math.max(1e-4, 1 - bn * bn));
-      if (dd < best) best = dd;
-    }
-    out[0] = best; out[1] = g.id[i1];
+  // distance from p (on the unit sphere) to the nearest crack, and the plate's id
+  edge(g, px, py, pz, out) {
+    let best = -2, i1 = 0;
+    for (let i = 0; i < g.pts.length; i++) { const a = g.pts[i], d = a[0] * px + a[1] * py + a[2] * pz; if (d > best) { best = d; i1 = i; } }
+    let e = 9;
+    for (const w of g.nbr[i1]) { const d = w[0] * px + w[1] * py + w[2] * pz; if (d < e) e = d; }
+    out[0] = e; out[1] = g.id[i1];
   }
   noise(x, y) {
     const h = (i, j) => { const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return s - Math.floor(s); };
@@ -119,9 +106,8 @@ class EnceladusScene {
       const RW = x1 - x0, RH = y1 - y0;
       const img = x.getImageData(x0, y0, RW, RH), px = img.data;
       const ga = new ImageData(RW, RH), gb = new ImageData(RW, RH), pa = ga.data, pb = gb.data;
-      const s1 = o.cells;
-      const g1 = this.g1 = this.grid(s1 + .3, o.seed);
-      const w1 = .03, e = [0, 0];
+      const g1 = this.g1 = this.sites(o.plates, o.seed);
+      const w1 = .009, e = [0, 0];
       const amb = dark ? [15, 19, 24] : [200, 211, 220];
       const lt = dark ? [214, 225, 233] : [252, 253, 254];
       const rimC = dark ? [110, 160, 188] : [150, 190, 210];
@@ -131,7 +117,8 @@ class EnceladusScene {
         if (r2 > 1) continue;
         const nz = Math.sqrt(1 - r2), i = ((Y - y0) * RW + (X - x0)) * 4;
         const [wx, wy, wz] = this.warp(nx, ny, nz);
-        this.edge(g1, wx * s1, wy * s1, wz * s1, e, nx, ny, nz);
+        const wl = Math.hypot(wx, wy, wz);
+        this.edge(g1, wx / wl, wy / wl, wz / wl, e);
         const main = 1 - smooth(0, w1, e[0]);
         const df = smooth(-.08, .75, nx * L[0] + ny * L[1] + nz * L[2]);
         const tex = dark ? .9 + .12 * this.fbm(nx * 4 + 7, ny * 4 + 3) : .975 + .03 * this.fbm(nx * 4 + 7, ny * 4 + 3);
@@ -198,8 +185,8 @@ class EnceladusScene {
     // ocean light through the crack network, in two slow out-of-phase waves; brighter while working
     x.globalCompositeOperation = this.dark ? 'lighter' : 'source-over';
     const base = .5 + .5 * k;
-    x.globalAlpha = (.45 + .55 * (.5 + .5 * Math.sin(t * .55))) * base; x.drawImage(this.glowA, 0, 0);
-    x.globalAlpha = (.45 + .55 * (.5 + .5 * Math.sin(t * .55 + 3.1))) * base; x.drawImage(this.glowB, 0, 0);
+    x.globalAlpha = (.72 + .28 * (.5 + .5 * Math.sin(t * .55))) * base; x.drawImage(this.glowA, 0, 0);
+    x.globalAlpha = (.72 + .28 * (.5 + .5 * Math.sin(t * .55 + 3.1))) * base; x.drawImage(this.glowB, 0, 0);
     x.globalAlpha = 1; x.setTransform(d, 0, 0, d, 0, 0); x.lineCap = 'round';
     if (k > .01) {
       // vapor curtains rising from the vents
@@ -234,6 +221,9 @@ class EnceladusScene {
   }
 }
 function norm(v) { const m = Math.hypot(v[0], v[1], v[2]); return [v[0] / m, v[1] / m, v[2] / m]; }
+function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function perp(A) { const a = Math.abs(A[1]) < .9 ? [0, 1, 0] : [1, 0, 0], u = norm(cross(a, A)); return [u, cross(A, u)]; }
 function smooth(a, b, v) { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); }
 function mulberry32(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 if (typeof window !== 'undefined') window.EnceladusScene = EnceladusScene;
