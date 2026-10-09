@@ -8,6 +8,7 @@
     "apps/*"
   ],
   "scripts": {
+    "app": "npm run dev -w @enceladus/desktop",
     "gallery": "npm run dev -w @enceladus/ui",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

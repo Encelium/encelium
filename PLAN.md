@@ -277,7 +277,7 @@ Also LTR + RTL, light + dark.
 | Phase | Goal | Done when |
 |---|---|---|
 | 0 — Foundations | Design board, repo, SignPath application | User approves design direction |
-| 1 — Design system + app shell | Tokens, components, window, themes, RTL | Empty app looks premium in all 4 modes — **in progress**: npm-workspaces monorepo, `packages/ui` (tokens, base, Button, IconButton, Tag, StatusIcon, icons) + gallery (`npm run gallery`) |
+| 1 — Design system + app shell | Tokens, components, window, themes, RTL | Empty app looks premium in all 4 modes — **in progress**: npm-workspaces monorepo, `packages/ui` (tokens, base, 15 components: Button, IconButton, Tag, StatusIcon, TextField, Switch, Segmented, Composer, Message, PlanCard, PermissionPrompt, RewindTimeline, EnergyBar, Dialog, Toast) + gallery (`npm run gallery`). **Done:** Electron 44 shell (`apps/desktop`, `npm run app`): native Windows title bar buttons, secure window (sandbox, context isolation, CSP in builds), settings saved to %APPDATA%\Enceladus (theme light/dark/system, language en/ar), real Home screen, settings dialog. |
 | 2 — Agent core | Model calls, files, terminal, Connections | Agent completes basic coding tasks |
 | 3 — Safety net | Plan, self-check, permissions, Rewind | Beginner can't lose work |
 | 4 — Beginner features | Home, onboarding, set-it-up, preview, Fix it, project note | First task < 2 min |
@@ -306,4 +306,6 @@ Also LTR + RTL, light + dark.
 | SignPath rejects or delays | Apply in phase 0; backup: Azure Trusted Signing (~$10/month) |
 | RTL promised but weak | 50-task test before promoting it |
 | "Enceladus" name/trademark conflict | Check before the website launch |
+| User PCs missing the Microsoft Visual C++ runtime (seen on our own dev PC) | Installer must bundle or check for the VC++ Redistributable before launch |
+| Some networks can't reach Microsoft download servers (seen on our dev PC) | Never depend on Microsoft-hosted downloads at install time; ship what we need inside the installer |
 | Server team not ready | Build against a fake/BYOK model first; switch later |

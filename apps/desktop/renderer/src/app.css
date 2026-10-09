@@ -1,0 +1,25 @@
+html, body, #root { height: 100%; }
+body { overflow: hidden; }
+
+/* The app frame: title bar on top, sidebar + main below. */
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 40px minmax(0, 1fr);
+  background: var(--color-bg);
+}
+.app-toast {
+  position: fixed;
+  inset-block-end: var(--space-6);
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  width: min(480px, calc(100% - var(--space-12)));
+  z-index: 10;
+}
+.app-toast:dir(rtl) { translate: 50% 0; }
+
+.app-body {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+  min-height: 0;
+}

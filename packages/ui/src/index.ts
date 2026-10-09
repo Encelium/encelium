@@ -1,6 +1,7 @@
 export { Button, IconButton } from "./Button";
 export type { ButtonProps, IconButtonProps, ButtonVariant, ButtonSize } from "./Button";
 export { Icon } from "./icons";
+export { Logo } from "./Logo";
 export type { IconName, IconProps } from "./icons";
 export { Tag } from "./Tag";
 export type { TagTone } from "./Tag";

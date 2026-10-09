@@ -68,7 +68,9 @@ export function Composer({
       <textarea
         ref={ref}
         rows={1}
-        dir="auto"
+        // Empty: follow the app's direction so the placeholder reads correctly.
+        // Typed text: detect it, so Arabic flows right-to-left even in the English UI.
+        dir={text ? "auto" : undefined}
         className={s.input}
         value={text}
         placeholder={placeholder}
