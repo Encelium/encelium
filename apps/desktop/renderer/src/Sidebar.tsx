@@ -10,10 +10,12 @@ interface SidebarProps {
   currentTaskId: string | null;
   onNewTask: () => void;
   onOpenTask: (id: string) => void;
+  /** Leave out to hide the delete button (e.g. nothing is saved in the browser demo). */
+  onDeleteTask?: (id: string) => void;
   onOpenSettings: () => void;
 }
 
-export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onOpenSettings }: SidebarProps) {
+export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDeleteTask, onOpenSettings }: SidebarProps) {
   return (
     <aside className={s.sidebar}>
       <Button variant="primary" size="lg" icon="plus" className={s.newTask} onClick={onNewTask}>{t.newTask}</Button>
@@ -25,15 +27,18 @@ export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onOpen
         ) : (
           <ul className={s.tasks}>
             {tasks.map((task) => (
-              <li key={task.id}>
+              <li key={task.id} className={[s.taskRow, task.id === currentTaskId ? s.current : ""].filter(Boolean).join(" ")}>
                 <button
                   type="button"
-                  className={[s.task, task.id === currentTaskId ? s.current : ""].filter(Boolean).join(" ")}
+                  className={s.task}
                   aria-current={task.id === currentTaskId ? "page" : undefined}
                   onClick={() => onOpenTask(task.id)}
                 >
                   <span className={s.taskTitle} dir="auto">{task.title}</span>
                 </button>
+                {onDeleteTask && (
+                  <IconButton icon="trash" size="sm" label={`${t.deleteChat}: ${task.title}`} className={s.deleteTask} onClick={() => onDeleteTask(task.id)} />
+                )}
               </li>
             ))}
           </ul>

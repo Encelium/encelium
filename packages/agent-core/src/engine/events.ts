@@ -36,7 +36,13 @@ export interface AgentRun {
 
 export interface AgentEngine {
   /** Start a task from the user's words. `language` is the UI language, so the agent replies in it. */
-  start(prompt: string, options: { language: Language; /** First run only: work in this folder instead of a new one. */ folder?: string }): AgentRun;
+  start(prompt: string, options: {
+    language: Language;
+    /** First run only: work in this folder instead of a new one. */
+    folder?: string;
+    /** Files the person attached; copied into the task folder, pictures shown to the model. */
+    attachments?: { path: string; name: string; size: number; kind: "image" | "file" }[];
+  }): AgentRun;
   /** Put the task's files back the way they were at a Rewind point. Absent in the demo. */
   restore?(checkpointId: string): Promise<{ ok: true } | { ok: false; message: string }>;
 }

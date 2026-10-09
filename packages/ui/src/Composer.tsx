@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import { Icon } from "./icons";
 import { IconButton } from "./Button";
 import s from "./Composer.module.css";
@@ -33,16 +33,28 @@ export interface ComposerProps {
   /** Change this number to move the cursor into the box, at the end of the text
    *  (e.g. after a starter card fills it in). */
   focusRequest?: number;
+  /** Files waiting to be sent with the next message. */
+  attachments?: ComposerAttachment[];
+  onRemoveAttachment?: (id: string) => void;
+  /** e.g. "Remove" — combined with the file name for screen readers. */
+  removeLabel?: string;
+  /** Files dropped onto the composer. Leave out to disable dropping. */
+  onDropFiles?: (files: FileList) => void;
   className?: string;
 }
 
+export interface ComposerAttachment { id: string; name: string; kind: "image" | "file" }
+
 export function Composer({
-  placeholder, sendLabel, attachLabel, inputLabel, folder, value, onValueChange, onSubmit, onAttach, disabled, focusRequest, className,
+  placeholder, sendLabel, attachLabel, inputLabel, folder, value, onValueChange, onSubmit, onAttach, disabled, focusRequest,
+  attachments = [], onRemoveAttachment, removeLabel = "Remove", onDropFiles, className,
 }: ComposerProps) {
   const [inner, setInner] = useState("");
+  const [dragging, setDragging] = useState(false);
   const text = value ?? inner;
   const ref = useRef<HTMLTextAreaElement>(null);
-  const empty = text.trim().length === 0;
+  // Attachments alone are enough to send (e.g. "here's a screenshot").
+  const empty = text.trim().length === 0 && attachments.length === 0;
 
   // Grow with the text. The CSS max-height caps it at 8 rows, then it scrolls.
   useLayoutEffect(() => {
@@ -77,8 +89,29 @@ export function Composer({
     }
   };
 
+  const dropProps = onDropFiles && !disabled ? {
+    onDragOver: (e: DragEvent<HTMLDivElement>) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setDragging(true); } },
+    onDragLeave: (e: DragEvent<HTMLDivElement>) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false); },
+    onDrop: (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); setDragging(false); if (e.dataTransfer.files.length) onDropFiles(e.dataTransfer.files); },
+  } : {};
+
   return (
-    <div className={[s.composer, disabled ? s.disabled : "", className].filter(Boolean).join(" ")}>
+    <div className={[s.composer, disabled ? s.disabled : "", dragging ? s.dragging : "", className].filter(Boolean).join(" ")} {...dropProps}>
+      {attachments.length > 0 && (
+        <ul className={s.attachments}>
+          {attachments.map((a) => (
+            <li key={a.id} className={s.attachment}>
+              <Icon name={a.kind === "image" ? "image" : "file"} size={14} />
+              <span className={s.attachmentName} dir="auto" title={a.name}>{a.name}</span>
+              {onRemoveAttachment && (
+                <button type="button" className={s.removeAttachment} aria-label={`${removeLabel}: ${a.name}`} onClick={() => onRemoveAttachment(a.id)} disabled={disabled}>
+                  <Icon name="close" size={12} />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
       <textarea
         ref={ref}
         rows={1}

@@ -19,10 +19,11 @@ import { Home } from "./Home";
 import { Work } from "./Work";
 import { SettingsDialog } from "./SettingsDialog";
 import { ModelDialog } from "./ModelDialog";
-import { Toast } from "@enceladus/ui";
+import { Button, Dialog, Toast } from "@enceladus/ui";
+import type { Attachment } from "./bridge";
 
 /** prompt/folder are set for a brand-new task; a saved task re-opens without them. */
-type View = { kind: "home" } | { kind: "task"; id: string; prompt?: string; folder?: string };
+type View = { kind: "home" } | { kind: "task"; id: string; prompt?: string; folder?: string; attachments?: Attachment[] };
 type Notice = { message: string; tone: "safe" | "neutral" };
 
 function taskTitle(prompt: string) {
@@ -37,13 +38,14 @@ export function App() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [view, setView] = useState<View>({ kind: "home" });
   // Saved tasks (desktop app) or this session's tasks (browser preview, demo agent).
-  const [tasks, setTasks] = useState<{ id: string; title: string; prompt?: string }[]>([]);
+  const [tasks, setTasks] = useState<{ id: string; title: string; prompt?: string; folder?: string }[]>([]);
+  const [deleting, setDeleting] = useState<{ id: string; title: string; folder?: string } | null>(null);
   // Bumped when a task is re-opened, so the screen starts fresh.
   const [openCount, setOpenCount] = useState(0);
 
   useEffect(() => {
     bridge.getSettings().then(setSettings);
-    bridge.tasks?.list().then((saved) => setTasks(saved.map((x) => ({ id: x.id, title: taskTitle(x.title) }))));
+    bridge.tasks?.list().then((saved) => setTasks(saved.map((x) => ({ id: x.id, title: taskTitle(x.title), folder: x.folder }))));
     return bridge.onEffectiveTheme((effectiveTheme) => setSettings((s) => (s ? { ...s, effectiveTheme } : s)));
   }, []);
 
@@ -62,10 +64,21 @@ export function App() {
   const t = strings[settings.language];
   const update = (patch: Partial<Pick<Settings, "theme" | "language">>) => bridge.setSettings(patch).then(setSettings);
 
-  const startTask = (prompt: string, folder?: string) => {
+  const startTask = (prompt: string, folder?: string, attachments?: Attachment[]) => {
     const id = `task-${Date.now()}`;
-    setTasks((prev) => [{ id, title: taskTitle(prompt), prompt }, ...prev]);
-    setView({ kind: "task", id, prompt, folder });
+    setTasks((prev) => [{ id, title: taskTitle(prompt || attachments?.[0]?.name || ""), prompt }, ...prev]);
+    setView({ kind: "task", id, prompt, folder, attachments });
+    // The folder is only known once the task starts; refresh the list to get it.
+    setTimeout(() => bridge.tasks?.list().then((saved) => setTasks((prev) => prev.map((x) => ({ ...x, folder: saved.find((s) => s.id === x.id)?.folder ?? x.folder })))), 1500);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting || !bridge.tasks) return;
+    await bridge.tasks.delete({ taskId: deleting.id });
+    setTasks((prev) => prev.filter((x) => x.id !== deleting.id));
+    if (view.kind === "task" && view.id === deleting.id) setView({ kind: "home" });
+    setDeleting(null);
+    setNotice({ message: t.deleted, tone: "safe" });
   };
   const openTask = (id: string) => {
     const task = tasks.find((x) => x.id === id);
@@ -86,6 +99,7 @@ export function App() {
           currentTaskId={view.kind === "task" ? view.id : null}
           onNewTask={() => setView({ kind: "home" })}
           onOpenTask={openTask}
+          onDeleteTask={bridge.tasks ? (id) => { const task = tasks.find((x) => x.id === id); if (task) setDeleting(task); } : undefined}
           onOpenSettings={() => setSettingsOpen(true)}
         />
         {view.kind === "home" ? (
@@ -97,6 +111,7 @@ export function App() {
             taskId={view.id}
             prompt={view.prompt}
             folder={view.folder}
+            attachments={view.attachments}
             language={settings.language}
             engine={engineFor(view.id)}
           />
@@ -110,6 +125,25 @@ export function App() {
         onOpenModel={() => { setSettingsOpen(false); setModelOpen(true); }}
         onClose={() => setSettingsOpen(false)}
       />
+      <Dialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title={t.deleteTitle}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setDeleting(null)}>{t.deleteCancel}</Button>
+            <Button variant="danger" icon="trash" onClick={confirmDelete}>{t.deleteConfirm}</Button>
+          </>
+        }
+      >
+        <p className="app-dialog-text">{t.deleteBody}</p>
+        {deleting?.folder && (
+          <p className="app-dialog-path">
+            <code dir="ltr">{deleting.folder}</code>
+            <Button variant="ghost" size="sm" icon="folder" onClick={() => bridge.tasks?.openFolder({ taskId: deleting.id })}>{t.openFolder}</Button>
+          </p>
+        )}
+      </Dialog>
       <ModelDialog t={t} open={modelOpen} onClose={() => setModelOpen(false)} onSaved={(message) => setNotice({ message, tone: "safe" })} />
       {notice && (
         <div className="app-toast">

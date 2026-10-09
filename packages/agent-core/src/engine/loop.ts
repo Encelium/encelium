@@ -2,7 +2,7 @@
 // feed the results back, repeat until it answers without tools.
 import { streamChat } from "../providers/index.ts";
 import { ProviderError } from "../providers/types.ts";
-import type { ChatMessage, ModelConnection, ToolCall } from "../providers/types.ts";
+import type { ChatMessage, ContentPart, ModelConnection, ToolCall } from "../providers/types.ts";
 import type { AgentEvent, AgentRun, Language } from "./events.ts";
 import type { Checkpoints } from "./checkpoints.ts";
 import type { Workspace } from "./workspace.ts";
@@ -81,7 +81,8 @@ export class AgentSession implements AgentRun {
   /** Resolves when the run ends, for any reason. */
   readonly finished: Promise<void>;
 
-  constructor(prompt: string, opts: SessionOptions) {
+  /** `prompt` is text, or text plus images (attachments the model can look at). */
+  constructor(prompt: string | ContentPart[], opts: SessionOptions) {
     this.opts = opts;
     this.messages = [...(opts.history ?? []), { role: "user", content: prompt }];
     // Start on the next tick so callers can subscribe first.

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { initModels } from "./models.js";
 import { initAgent } from "./agent.js";
 import { initTasks } from "./tasks.js";
+import { initAttachments } from "./attachments.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 app.setName("Enceladus"); // user data lives in %APPDATA%\Enceladus, not under the package name
@@ -124,6 +125,7 @@ if (!app.requestSingleInstanceLock()) {
     await initModels();
     await initTasks();
     initAgent();
+    initAttachments();
     nativeTheme.themeSource = settings.theme;
     nativeTheme.on("updated", applyChrome);
     createWindow();

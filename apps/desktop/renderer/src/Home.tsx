@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Composer, Icon, type IconName } from "@enceladus/ui";
 import type { Strings } from "./i18n";
-import { bridge } from "./bridge";
+import { bridge, type Attachment } from "./bridge";
+import { useAttachments } from "./useAttachments";
 import s from "./Home.module.css";
 
 const starterIcons: Record<keyof Strings["starters"], IconName> = {
@@ -19,12 +20,13 @@ function greeting(t: Strings) {
 interface HomeProps {
   t: Strings;
   /** `folder` is set when the person chose one; otherwise a new folder is made. */
-  onSubmit: (text: string, folder?: string) => void;
+  onSubmit: (text: string, folder?: string, attachments?: Attachment[]) => void;
   onNotice: (message: string) => void;
 }
 
 export function Home({ t, onSubmit, onNotice }: HomeProps) {
   const [draft, setDraft] = useState("");
+  const files = useAttachments(t, onNotice);
   const [focusRequest, setFocusRequest] = useState(0);
   const [folder, setFolder] = useState<{ path: string; name: string } | null>(null);
 
@@ -51,7 +53,12 @@ export function Home({ t, onSubmit, onNotice }: HomeProps) {
           value={draft}
           onValueChange={setDraft}
           focusRequest={focusRequest}
-          onSubmit={(text) => onSubmit(text, folder?.path)}
+          onSubmit={(text) => { onSubmit(text, folder?.path, files.files); files.clear(); }}
+          onAttach={files.available ? files.choose : undefined}
+          onDropFiles={files.available ? files.drop : undefined}
+          attachments={files.chips}
+          onRemoveAttachment={files.remove}
+          removeLabel={t.removeAttachment}
           folder={bridge.tasks ? {
             label: t.workingIn,
             name: folder?.name ?? t.newFolder,

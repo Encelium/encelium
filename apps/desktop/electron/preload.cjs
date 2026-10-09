@@ -1,5 +1,5 @@
 // The only bridge between the window and the main process. Keep it small.
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 contextBridge.exposeInMainWorld("enceladus", {
   getSettings: () => ipcRenderer.invoke("settings:get"),
@@ -22,9 +22,16 @@ contextBridge.exposeInMainWorld("enceladus", {
       return () => ipcRenderer.removeListener("agent:event", handler);
     },
   },
+  attachments: {
+    choose: () => ipcRenderer.invoke("attachments:choose"),
+    /** Files dropped on the window: resolve their paths here (the page can't see paths). */
+    describeDropped: (files) => ipcRenderer.invoke("attachments:describe", { paths: Array.from(files, (f) => webUtils.getPathForFile(f)).filter(Boolean) }),
+  },
   tasks: {
     list: () => ipcRenderer.invoke("tasks:list"),
     events: (input) => ipcRenderer.invoke("tasks:events", input),
+    delete: (input) => ipcRenderer.invoke("tasks:delete", input),
+    openFolder: (input) => ipcRenderer.invoke("tasks:open-folder", input),
     chooseFolder: () => ipcRenderer.invoke("folder:choose"),
     findPreview: (input) => ipcRenderer.invoke("preview:find", input),
     openPreview: (input) => ipcRenderer.invoke("preview:open", input),

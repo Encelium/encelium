@@ -23,8 +23,15 @@
 .empty { margin: 0; padding-inline: var(--space-3); font-size: var(--text-sm); color: var(--color-text-subtle); }
 
 .tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.taskRow { position: relative; display: flex; align-items: center; border-radius: var(--radius-md); }
+.taskRow:hover { background: var(--color-surface-muted); }
+/* Shown on hover or keyboard focus; always reachable with Tab. */
+.deleteTask { position: absolute; inset-inline-end: 2px; opacity: 0; }
+.taskRow:hover .deleteTask, .deleteTask:focus-visible { opacity: 1; }
+.taskRow:hover .task, .taskRow:focus-within .task { padding-inline-end: calc(var(--control-sm) + var(--space-1)); }
 .task {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   display: block;
   padding: var(--space-2) var(--space-3);
   border: 0;
@@ -35,8 +42,9 @@
   text-align: start;
   cursor: pointer;
 }
-.task:hover { background: var(--color-surface-muted); color: var(--color-text); }
-.current, .current:hover { background: var(--color-accent-soft); color: var(--color-text); font-weight: var(--weight-semibold); }
+.taskRow:hover .task { color: var(--color-text); }
+.current, .current:hover { background: var(--color-accent-soft); }
+.current .task { color: var(--color-text); font-weight: var(--weight-semibold); }
 .taskTitle { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .footer { display: flex; flex-direction: column; gap: var(--space-3); }

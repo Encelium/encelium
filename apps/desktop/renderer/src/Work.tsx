@@ -3,7 +3,8 @@ import {
   Button, Composer, Icon, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
   type RewindItem,
 } from "@enceladus/ui";
-import { bridge, type Language, type StoredEvent } from "./bridge";
+import { bridge, type Attachment, type Language, type StoredEvent } from "./bridge";
+import { useAttachments } from "./useAttachments";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import s from "./Work.module.css";
@@ -12,7 +13,7 @@ type PermissionEvent = Extract<AgentEvent, { type: "permission" }>;
 type PlanEvent = Extract<AgentEvent, { type: "plan" }>;
 
 type Item =
-  | { kind: "user"; id: string; text: string }
+  | { kind: "user"; id: string; text: string; attachments?: string[] }
   | { kind: "assistant"; id: string; text: string }
   | { kind: "plan"; id: string; plan: PlanEvent }
   | { kind: "activity"; id: string; text: string; details?: string }
@@ -29,6 +30,8 @@ export interface WorkProps {
   prompt?: string;
   /** New task only: work in this folder instead of a new one. */
   folder?: string;
+  /** New task only: files attached to the first request. */
+  attachments?: Attachment[];
   language: Language;
   engine: AgentEngine;
 }
@@ -51,7 +54,7 @@ function ActivityLine({ t, text, details }: { t: Strings; text: string; details?
   );
 }
 
-export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps) {
+export function Work({ t, taskId, prompt, folder, attachments, language, engine }: WorkProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [status, setStatus] = useState<Status | null>(null);
   const [running, setRunning] = useState(false);
@@ -60,6 +63,7 @@ export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps)
   const [notice, setNotice] = useState<string | null>(null);
   const [page, setPage] = useState<string | null>(null);
   const [pageVersion, setPageVersion] = useState(0);
+  const files = useAttachments(t, setNotice);
 
   const runRef = useRef<AgentRun | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
@@ -73,7 +77,7 @@ export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps)
     const planId = `plan-${n}`;
     switch (e.type) {
       case "user":
-        setItems((prev) => [...prev, { kind: "user", id: `user-${n}`, text: e.text }]);
+        setItems((prev) => [...prev, { kind: "user", id: `user-${n}`, text: e.text, attachments: e.attachments }]);
         break;
       case "status":
         setStatus({ phase: e.phase, text: e.text });
@@ -128,14 +132,14 @@ export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps)
     }
   }, []);
 
-  const startRun = useCallback((text: string) => {
+  const startRun = useCallback((text: string, files?: Attachment[]) => {
     const n = ++counter.current;
     unsubRef.current?.();
-    apply({ type: "user", text }, n);
+    apply({ type: "user", text, attachments: files?.length ? files.map((f) => f.name) : undefined }, n);
     setRunning(true);
     setStatus(null);
     stuck.current = true;
-    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined });
+    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files });
     firstRun.current = false;
     runRef.current = run;
     unsubRef.current = run.onEvent((e) => apply(e, n));
@@ -148,7 +152,7 @@ export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps)
     setItems([]);
     setCheckpoints([]);
     if (prompt !== undefined) {
-      startRun(prompt);
+      startRun(prompt, attachments);
     } else if (bridge.tasks) {
       firstRun.current = false;
       bridge.tasks.events({ taskId }).then((events) => {
@@ -222,7 +226,18 @@ export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps)
           {items.map((item) => {
             switch (item.kind) {
               case "user":
-                return <Message key={item.id} role="user">{item.text}</Message>;
+                return (
+                  <div key={item.id} className={s.userTurn}>
+                    {item.text && <Message role="user">{item.text}</Message>}
+                    {item.attachments?.length ? (
+                      <ul className={s.sentFiles} aria-label={t.attachedFiles}>
+                        {item.attachments.map((name) => (
+                          <li key={name}><Icon name={/\.(png|jpe?g|gif|webp)$/i.test(name) ? "image" : "file"} size={14} /><span dir="auto">{name}</span></li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                );
               case "assistant":
                 return <Message key={item.id} role="assistant">{item.text}</Message>;
               case "plan":
@@ -283,7 +298,12 @@ export function Work({ t, taskId, prompt, folder, language, engine }: WorkProps)
             sendLabel={t.send}
             attachLabel={t.attach}
             disabled={running}
-            onSubmit={startRun}
+            onSubmit={(text) => { startRun(text, files.files); files.clear(); }}
+            onAttach={files.available ? files.choose : undefined}
+            onDropFiles={files.available ? files.drop : undefined}
+            attachments={files.chips}
+            onRemoveAttachment={files.remove}
+            removeLabel={t.removeAttachment}
           />
         </div>
       </section>

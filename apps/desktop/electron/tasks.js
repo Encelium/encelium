@@ -2,7 +2,7 @@
 // was shown on screen (to re-open them). Also: choosing a folder, and the live preview.
 import { app, dialog, ipcMain, net, protocol, shell, BrowserWindow } from "electron";
 import { watch } from "node:fs";
-import { appendFile, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Checkpoints, Workspace } from "@enceladus/agent-core";
@@ -145,6 +145,22 @@ function registerPreview() {
   });
 }
 
+// ── Deleting a task ─────────────────────────────────────────────────
+let stopRuns = () => {};
+export function setTaskStopper(fn) { stopRuns = fn; }
+
+/** Forget a task: its history and Rewind copies. The person's files in its folder are NOT touched. */
+async function deleteTask(id) {
+  id = safeId(id);
+  stopRuns(id);
+  const task = open.get(id);
+  task?.watcher?.close();
+  open.delete(id);
+  index = index.filter((t) => t.id !== id);
+  await saveIndex();
+  await rm(path.join(base(), id), { recursive: true, force: true });
+}
+
 // ── IPC ─────────────────────────────────────────────────────────────
 export async function initTasks() {
   try { index = JSON.parse(await readFile(indexFile(), "utf8")); } catch { index = []; }
@@ -152,6 +168,11 @@ export async function initTasks() {
 
   ipcMain.handle("tasks:list", () => index.map(({ id, title, folder, updatedAt }) => ({ id, title, folder, updatedAt })));
   ipcMain.handle("tasks:events", (_e, { taskId }) => readEvents(taskId));
+  ipcMain.handle("tasks:delete", (_e, { taskId }) => deleteTask(taskId));
+  ipcMain.handle("tasks:open-folder", async (_e, { taskId }) => {
+    const meta = index.find((t) => t.id === safeId(taskId));
+    if (meta) await shell.openPath(meta.folder);
+  });
 
   ipcMain.handle("folder:choose", async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);

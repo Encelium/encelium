@@ -2,7 +2,8 @@
 import { ipcMain } from "electron";
 import { AgentSession, ENCELADUS_PRESET } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
-import { getTask, recorder, saveMessages } from "./tasks.js";
+import { getTask, recorder, saveMessages, setTaskStopper } from "./tasks.js";
+import { prepareAttachments } from "./attachments.js";
 
 /** runId → { session, record } */
 const runs = new Map();
@@ -21,7 +22,10 @@ function connection() {
 }
 
 export function initAgent() {
-  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder }) => {
+  // Deleting a task stops its run first.
+  setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
+
+  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments }) => {
     const lang = language === "ar" ? "ar" : "en";
     const text = String(prompt);
     const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -31,7 +35,8 @@ export function initAgent() {
       record(e);
       if (!event.sender.isDestroyed()) event.sender.send("agent:event", runId, e);
     };
-    record({ type: "user", text });
+    const { prompt: request, names } = await prepareAttachments(task.meta.folder, text, Array.isArray(attachments) ? attachments : []);
+    record({ type: "user", text, ...(names.length ? { attachments: names } : {}) });
 
     const conn = connection();
     if (!conn) {
@@ -39,8 +44,8 @@ export function initAgent() {
       return { runId, folder: task.meta.folder };
     }
 
-    const session = new AgentSession(text, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages });
-    runs.set(runId, { session, record });
+    const session = new AgentSession(request, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages });
+    runs.set(runId, { session, record, taskId: task.meta.id });
     session.onEvent(send);
     session.finished.then(async () => {
       runs.delete(runId);

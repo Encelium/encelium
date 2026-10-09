@@ -82,6 +82,24 @@
 | F14 | **Learn mode (switch)** | Agent explains each step in simple words. |
 | F15 | **Bring your own key** | Advanced setting. Any OpenAI-compatible or Anthropic API key. |
 
+### Everyday features (added as we go)
+
+| Feature | Status |
+|---|---|
+| Delete a chat (keeps the person's files) | ✅ Done |
+| Attach files and pictures (paperclip + drag & drop; copied into the task folder, pictures shown to the model) | ✅ Done |
+| Rename a chat | Planned |
+| Search chats | Planned |
+| Paste a screenshot from the clipboard (Ctrl+V) | Planned |
+| Copy a message; retry the last answer | Planned |
+| Edit and resend the last request | Planned |
+| Notification when a long task finishes (window in background) | Planned |
+| Keyboard shortcuts (new task, settings, stop) | Planned |
+| Show attached pictures as thumbnails in the chat | Planned |
+| Fallback when a model can't read pictures (send the file path only) | Planned |
+| Onboarding / first task (F7) | Planned |
+| Installer, auto-update, crash reports | Phase 5 |
+
 ### Later (not v1)
 
 - Repeat tasks ("organize Downloads every Monday")
