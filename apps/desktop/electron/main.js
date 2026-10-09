@@ -4,6 +4,7 @@ import { app, BrowserWindow, ipcMain, nativeTheme, shell } from "electron";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { initModels } from "./models.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 app.setName("Enceladus"); // user data lives in %APPDATA%\Enceladus, not under the package name
@@ -118,6 +119,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     await loadSettings();
+    await initModels();
     nativeTheme.themeSource = settings.theme;
     nativeTheme.on("updated", applyChrome);
     createWindow();

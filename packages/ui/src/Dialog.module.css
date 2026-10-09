@@ -24,6 +24,7 @@
   animation: rise var(--duration-base) var(--ease-out);
 }
 .panel:focus { outline: none; }
+.lg { max-width: 600px; }
 
 .title { margin: 0; font-size: var(--text-xl); line-height: var(--leading-xl); font-weight: var(--weight-semibold); text-align: start; }
 .body { margin-block-start: var(--space-3); font-size: var(--text-base); line-height: var(--leading-base); color: var(--color-text-muted); text-align: start; }

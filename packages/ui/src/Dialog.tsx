@@ -9,11 +9,13 @@ export interface DialogProps {
   children: ReactNode;
   /** Buttons for the footer. */
   actions?: ReactNode;
+  /** "md" (default, 440px) for short questions; "lg" (600px) for forms. */
+  size?: "md" | "lg";
 }
 
 const focusable = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function Dialog({ open, onClose, title, children, actions }: DialogProps) {
+export function Dialog({ open, onClose, title, children, actions, size = "md" }: DialogProps) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
 
@@ -44,7 +46,7 @@ export function Dialog({ open, onClose, title, children, actions }: DialogProps)
 
   return createPortal(
     <div className={s.overlay} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} onKeyDown={onKeyDown}>
-      <div ref={panel} className={s.panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
+      <div ref={panel} className={[s.panel, size === "lg" ? s.lg : ""].filter(Boolean).join(" ")} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <h2 id={titleId} className={s.title} dir="auto">{title}</h2>
         <div className={s.body} dir="auto">{children}</div>
         {actions && <div className={s.actions}>{actions}</div>}

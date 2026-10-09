@@ -7,6 +7,8 @@ import { Sidebar } from "./Sidebar";
 import { Home } from "./Home";
 import { Work } from "./Work";
 import { SettingsDialog } from "./SettingsDialog";
+import { ModelDialog } from "./ModelDialog";
+import { Toast } from "@enceladus/ui";
 
 type View = { kind: "home" } | { kind: "task"; prompt: string; id: string };
 
@@ -18,6 +20,8 @@ function taskTitle(prompt: string) {
 export function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [modelOpen, setModelOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [view, setView] = useState<View>({ kind: "home" });
   // Tasks started this session. Kept in memory only for now.
   const [tasks, setTasks] = useState<{ id: string; prompt: string }[]>([]);
@@ -82,7 +86,20 @@ export function App() {
           />
         )}
       </div>
-      <SettingsDialog t={t} open={settingsOpen} settings={settings} onChange={update} onClose={() => setSettingsOpen(false)} />
+      <SettingsDialog
+        t={t}
+        open={settingsOpen}
+        settings={settings}
+        onChange={update}
+        onOpenModel={() => { setSettingsOpen(false); setModelOpen(true); }}
+        onClose={() => setSettingsOpen(false)}
+      />
+      <ModelDialog t={t} open={modelOpen} onClose={() => setModelOpen(false)} onSaved={setNotice} />
+      {notice && (
+        <div className="app-toast">
+          <Toast tone="safe" message={notice} onDismiss={() => setNotice(null)} dismissLabel={t.dismiss} />
+        </div>
+      )}
     </div>
   );
 }
