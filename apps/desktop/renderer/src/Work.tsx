@@ -152,12 +152,14 @@ export function Work({ t, prompt, language, engine }: WorkProps) {
   }, [items, status]);
 
   const timeFormat = new Intl.DateTimeFormat(language, { hour: "numeric", minute: "2-digit" });
-  const rewindItems: RewindItem[] = [...checkpoints].reverse().map((c, i) => ({
-    id: c.id,
-    label: c.label,
-    time: timeFormat.format(c.at),
-    current: i === 0,
-  }));
+  // Rewind points are "how things were before a change", so none of them is "now":
+  // a "Now" entry sits on top, and every point below it can be restored.
+  const rewindItems: RewindItem[] = checkpoints.length
+    ? [
+        { id: "__now", label: t.work.rewindNow, time: "", current: true },
+        ...[...checkpoints].reverse().map((c) => ({ id: c.id, label: c.label, time: timeFormat.format(c.at) })),
+      ]
+    : [];
 
   return (
     <main className={s.work}>
@@ -256,7 +258,19 @@ export function Work({ t, prompt, language, engine }: WorkProps) {
               <p>{t.work.rewindEmpty}</p>
             </div>
           ) : (
-            <RewindTimeline items={rewindItems} restoreLabel={t.work.restoreHere} onRestore={() => setNotice(t.work.rewindSoon)} />
+            <RewindTimeline
+              items={rewindItems}
+              restoreLabel={t.work.restoreHere}
+              onRestore={async (id) => {
+                if (!engine.restore) { setNotice(t.work.rewindSoon); return; }
+                if (running) { setNotice(t.work.rewindWhileWorking); return; }
+                const result = await engine.restore(id);
+                if (!result.ok) { setNotice(result.message); return; }
+                // We're back before that point: it and everything after it no longer exist.
+                setCheckpoints((prev) => prev.slice(0, prev.findIndex((c) => c.id === id)));
+                setNotice(t.work.rewindDone);
+              }}
+            />
           )}
         </div>
       </aside>

@@ -11,6 +11,18 @@ contextBridge.exposeInMainWorld("enceladus", {
     save: (input) => ipcRenderer.invoke("model:save", input),
     reset: () => ipcRenderer.invoke("model:reset"),
   },
+  agent: {
+    start: (input) => ipcRenderer.invoke("agent:start", input),
+    respond: (input) => ipcRenderer.invoke("agent:respond", input),
+    stop: (input) => ipcRenderer.invoke("agent:stop", input),
+    restore: (input) => ipcRenderer.invoke("agent:restore", input),
+    openFolder: (input) => ipcRenderer.invoke("agent:open-folder", input),
+    onEvent: (callback) => {
+      const handler = (_event, runId, agentEvent) => callback(runId, agentEvent);
+      ipcRenderer.on("agent:event", handler);
+      return () => ipcRenderer.removeListener("agent:event", handler);
+    },
+  },
   onEffectiveTheme: (callback) => {
     const handler = (_event, theme) => callback(theme);
     ipcRenderer.on("theme:effective", handler);

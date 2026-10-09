@@ -43,6 +43,9 @@ const en = {
     rewindEmpty: "Rewind points will appear here before I change anything.",
     restoreHere: "Restore here",
     rewindSoon: "Rewind will be available when the agent engine is connected.",
+    rewindDone: "Done. Your files are back the way they were at that point.",
+    rewindNow: "Now",
+    rewindWhileWorking: "Stop me first, then you can rewind.",
     recentUntitled: "New task",
   },
   settingsDialog: {
@@ -139,6 +142,9 @@ const ar: Strings = {
     rewindEmpty: "ستظهر نقاط التراجع هنا قبل أن أغيّر أي شيء.",
     restoreHere: "استعد من هنا",
     rewindSoon: "سيتوفر التراجع عند ربط الوكيل.",
+    rewindDone: "تم. عادت ملفاتك كما كانت عند تلك النقطة.",
+    rewindNow: "الآن",
+    rewindWhileWorking: "أوقفني أولًا، ثم يمكنك التراجع.",
     recentUntitled: "مهمة جديدة",
   },
   settingsDialog: {

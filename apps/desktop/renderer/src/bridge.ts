@@ -14,7 +14,18 @@ export interface ModelInput { presetId: string; baseUrl?: string; apiKey?: strin
 export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limited" | "server" | "bad-response" | "bad-address" | "no-key" | "no-model" | "no-encryption" | "unknown-provider";
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
+export interface AgentBridge {
+  start(input: { taskId: string; prompt: string; language: Language }): Promise<{ runId: string; folder?: string }>;
+  respond(input: { runId: string; requestId: string; allowed: boolean }): Promise<void>;
+  stop(input: { runId: string }): Promise<void>;
+  restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true } | { ok: false; message: string }>;
+  openFolder(input: { taskId: string }): Promise<void>;
+  onEvent(callback: (runId: string, event: import("./agent/types").AgentEvent) => void): () => void;
+}
+
 export interface Bridge {
+  /** Only inside the desktop app; in a plain browser the demo agent is used instead. */
+  agent?: AgentBridge;
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Pick<Settings, "theme" | "language">>): Promise<Settings>;
   onEffectiveTheme(callback: (theme: EffectiveTheme) => void): () => void;

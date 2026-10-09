@@ -2,6 +2,17 @@ import { useEffect, useState } from "react";
 import { bridge, type Settings } from "./bridge";
 import { strings } from "./i18n";
 import { demoEngine } from "./agent/demo";
+import { electronEngine } from "./agent/electron";
+import type { AgentEngine } from "./agent/types";
+
+// The real engine inside the desktop app; the scripted demo in a plain browser (design work).
+const engineCache = new Map<string, AgentEngine>();
+function engineFor(taskId: string): AgentEngine {
+  if (!bridge.agent) return demoEngine;
+  let engine = engineCache.get(taskId);
+  if (!engine) { engine = electronEngine(bridge.agent, taskId); engineCache.set(taskId, engine); }
+  return engine;
+}
 import { TitleBar } from "./TitleBar";
 import { Sidebar } from "./Sidebar";
 import { Home } from "./Home";
@@ -81,7 +92,7 @@ export function App() {
             t={t}
             prompt={view.prompt}
             language={settings.language}
-            engine={demoEngine}
+            engine={engineFor(view.id)}
             onNewTask={() => setView({ kind: "home" })}
           />
         )}

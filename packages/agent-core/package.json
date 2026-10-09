@@ -6,7 +6,8 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./events": "./src/engine/events.ts"
   },
   "scripts": {
     "test": "node --test \"test/**/*.test.ts\"",
