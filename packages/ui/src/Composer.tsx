@@ -26,11 +26,14 @@ export interface ComposerProps {
   onSubmit: (text: string) => void;
   onAttach?: () => void;
   disabled?: boolean;
+  /** Change this number to move the cursor into the box, at the end of the text
+   *  (e.g. after a starter card fills it in). */
+  focusRequest?: number;
   className?: string;
 }
 
 export function Composer({
-  placeholder, sendLabel, attachLabel, inputLabel, folder, value, onValueChange, onSubmit, onAttach, disabled, className,
+  placeholder, sendLabel, attachLabel, inputLabel, folder, value, onValueChange, onSubmit, onAttach, disabled, focusRequest, className,
 }: ComposerProps) {
   const [inner, setInner] = useState("");
   const text = value ?? inner;
@@ -44,6 +47,13 @@ export function Composer({
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
   }, [text]);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!focusRequest || !el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [focusRequest]);
 
   const setText = (next: string) => {
     if (value === undefined) setInner(next);

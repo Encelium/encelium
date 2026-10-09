@@ -22,6 +22,23 @@
 .heading:lang(ar) { letter-spacing: 0; }
 .empty { margin: 0; padding-inline: var(--space-3); font-size: var(--text-sm); color: var(--color-text-subtle); }
 
+.tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.task {
+  width: 100%;
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  text-align: start;
+  cursor: pointer;
+}
+.task:hover { background: var(--color-surface-muted); color: var(--color-text); }
+.current, .current:hover { background: var(--color-accent-soft); color: var(--color-text); font-weight: var(--weight-semibold); }
+.taskTitle { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .footer { display: flex; flex-direction: column; gap: var(--space-3); }
 .footer > :first-child {
   padding: var(--space-3);

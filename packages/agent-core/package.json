@@ -1,0 +1,19 @@
+{
+  "name": "@enceladus/agent-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enceladus agent engine: model connections, tools, safety net. Runs in the Electron main process (and later the CLI).",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/node": "24.19.1",
+    "typescript": "5.9.3"
+  }
+}

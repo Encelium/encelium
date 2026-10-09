@@ -17,6 +17,7 @@ function greeting(t: Strings) {
 
 export function Home({ t, onSubmit }: { t: Strings; onSubmit: (text: string) => void }) {
   const [draft, setDraft] = useState("");
+  const [focusRequest, setFocusRequest] = useState(0);
 
   return (
     <main className={s.main}>
@@ -33,6 +34,7 @@ export function Home({ t, onSubmit }: { t: Strings; onSubmit: (text: string) => 
           attachLabel={t.attach}
           value={draft}
           onValueChange={setDraft}
+          focusRequest={focusRequest}
           onSubmit={onSubmit}
         />
 
@@ -40,7 +42,7 @@ export function Home({ t, onSubmit }: { t: Strings; onSubmit: (text: string) => 
           {(Object.keys(starterIcons) as (keyof Strings["starters"])[]).map((key) => {
             const card = t.starters[key];
             return (
-              <button key={key} type="button" className={s.card} onClick={() => setDraft(card.prompt)}>
+              <button key={key} type="button" className={s.card} onClick={() => { setDraft(card.prompt); setFocusRequest((n) => n + 1); }}>
                 <span className={s.cardIcon}><Icon name={starterIcons[key]} size={20} /></span>
                 <span className={s.cardTitle}>{card.title}</span>
                 <span className={s.cardBody}>{card.body}</span>
