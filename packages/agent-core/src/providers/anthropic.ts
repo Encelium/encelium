@@ -74,7 +74,7 @@ export async function* streamChat(conn: ModelConnection, req: ChatRequest, signa
         if (ev.delta?.type === "text_delta" && ev.delta.text) yield { type: "text", text: ev.delta.text };
         else if (ev.delta?.type === "input_json_delta") {
           const b = blocks.get(ev.index);
-          if (b) b.arguments += ev.delta.partial_json ?? "";
+          if (b) { b.arguments += ev.delta.partial_json ?? ""; yield { type: "tool-progress", name: b.name, partial: b.arguments }; }
         }
         break;
       case "content_block_stop": {

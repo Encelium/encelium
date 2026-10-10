@@ -28,7 +28,7 @@ function sse(res: ServerResponse, events: (string | object)[]) {
 
 async function collect(gen: AsyncGenerator<StreamEvent>) {
   const out: StreamEvent[] = [];
-  for await (const e of gen) out.push(e);
+  for await (const e of gen) if (e.type !== "tool-progress") out.push(e); // live progress only feeds the status line
   return out;
 }
 

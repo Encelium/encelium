@@ -17,14 +17,15 @@
 /* Assistant: no bubble, plain text, full width. */
 .assistant .content { width: 100%; }
 
-/* User: bubble on the end side, one smaller corner. */
+/* User: bubble on the right in every language (like any chat app), one smaller corner. */
 .user { justify-content: flex-end; }
+.user:dir(rtl) { justify-content: flex-start; }
 .user .content {
   max-width: 80%;
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface-muted);
   border-radius: var(--radius-lg);
-  border-end-end-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
 }
 
 /* Code in replies */

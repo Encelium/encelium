@@ -15,7 +15,7 @@ export type AgentEvent =
   /** The assistant message is complete. */
   | { type: "message-done"; id: string }
   /** The agent needs a yes/no before continuing. Answer with respond(requestId, allowed). */
-  | { type: "permission"; requestId: string; level: RiskLevel; title: string; description: string; allowLabel: string; denyLabel: string }
+  | { type: "permission"; requestId: string; level: RiskLevel; title: string; description: string; /** The exact command, shown only if the person asks. */ details?: string; allowLabel: string; denyLabel: string }
   /** A Rewind point was saved (before a change). */
   | { type: "checkpoint"; id: string; label: string; at: number }
   /** One line summary of a finished step, with optional technical details for "Show details". */
@@ -44,5 +44,5 @@ export interface AgentEngine {
     attachments?: { path: string; name: string; size: number; kind: "image" | "file" }[];
   }): AgentRun;
   /** Put the task's files back the way they were at a Rewind point. Absent in the demo. */
-  restore?(checkpointId: string): Promise<{ ok: true } | { ok: false; message: string }>;
+  restore?(checkpointId: string): Promise<{ ok: true; /** The new "before going back" point, so going back can be undone. */ checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;
 }

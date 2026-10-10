@@ -5,6 +5,7 @@ import {
 } from "@enceladus/ui";
 import { bridge, type Attachment, type Language, type StoredEvent } from "./bridge";
 import { useAttachments } from "./useAttachments";
+import { FilesPanel } from "./FilesPanel";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import s from "./Work.module.css";
@@ -59,7 +60,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
   const [status, setStatus] = useState<Status | null>(null);
   const [running, setRunning] = useState(false);
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
-  const [tab, setTab] = useState<"preview" | "rewind">("preview");
+  const [tab, setTab] = useState<"preview" | "files" | "rewind">("files");
   const [notice, setNotice] = useState<string | null>(null);
   const [page, setPage] = useState<string | null>(null);
   const [pageVersion, setPageVersion] = useState(0);
@@ -73,9 +74,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
   const firstRun = useRef(true);
   const alive = useRef(true);
   const pendingLeave = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const plans = useRef(new Map<string, PlanEvent>());
+  const planTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   /** Apply one event (live or replayed) for run number `n`. */
-  const apply = useCallback((e: AgentEvent | StoredEvent, n: number) => {
+  const apply = useCallback((e: AgentEvent | StoredEvent, n: number, live = false) => {
     const planId = `plan-${n}`;
     switch (e.type) {
       case "user":
@@ -84,13 +87,32 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
       case "status":
         setStatus({ phase: e.phase, text: e.text });
         break;
-      case "plan":
-        setItems((prev) =>
+      case "plan": {
+        const show = (plan: PlanEvent) => setItems((prev) =>
           prev.some((i) => i.id === planId)
-            ? prev.map((i) => (i.id === planId ? { kind: "plan", id: planId, plan: e } : i))
-            : [...prev, { kind: "plan", id: planId, plan: e }],
+            ? prev.map((i) => (i.id === planId ? { kind: "plan", id: planId, plan } : i))
+            : [...prev, { kind: "plan", id: planId, plan }],
         );
+        const before = plans.current.get(planId);
+        plans.current.set(planId, e);
+        planTimers.current.forEach(clearTimeout);
+        planTimers.current = [];
+        // Several steps finished at once: tick them off one by one, so progress reads as progress.
+        const ticked = live && before ? e.steps.flatMap((st, i) => (st.status === "done" && before.steps[i]?.label === st.label && before.steps[i]?.status !== "done" ? [i] : [])) : [];
+        if (ticked.length < 2) { show(e); break; }
+        ticked.forEach((_, k) => {
+          const last = k === ticked.length - 1;
+          const step: PlanEvent = last ? e : {
+            ...e,
+            steps: e.steps.map((st, i) => {
+              const at = ticked.indexOf(i);
+              return at > k ? { ...st, status: at === k + 1 ? "active" : before!.steps[i]!.status } : st;
+            }),
+          };
+          planTimers.current.push(setTimeout(() => show(step), k * 450));
+        });
         break;
+      }
       case "message-delta":
         setItems((prev) => {
           const id = `msg-${n}-${e.id}`;
@@ -144,7 +166,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
     const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files });
     firstRun.current = false;
     runRef.current = run;
-    unsubRef.current = run.onEvent((e) => apply(e, n));
+    unsubRef.current = run.onEvent((e) => apply(e, n, true));
   }, [engine, language, folder, apply]);
 
   // New task: start it. Saved task: show what happened, then wait for a follow-up.
@@ -201,6 +223,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
       setPage(found);
       setPageVersion((v) => v + 1);
       if (found && !hadPage.current) setTab("preview"); // first time there's something to see
+      if (!found) setTab((current) => (current === "preview" ? "files" : current)); // the page went away
       hadPage.current = !!found;
     };
     refresh();
@@ -236,7 +259,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
     <main className={s.work}>
       <section className={s.chat}>
         <div ref={listRef} className={s.list} role="log" aria-live="polite" aria-label={t.work.messages} onScroll={onScroll}>
-          {items.map((item) => {
+          {items.map((item, index) => {
             switch (item.kind) {
               case "user":
                 return (
@@ -251,8 +274,12 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
                     ) : null}
                   </div>
                 );
-              case "assistant":
-                return <Message key={item.id} role="assistant"><Markdown text={item.text} /></Message>;
+              case "assistant": {
+                // A note made while working (more work follows) is quiet; the final answer is full size.
+                const next = items[index + 1];
+                const note = !!next && (next.kind === "plan" || next.kind === "permission" || (next.kind === "activity" && !next.id.startsWith("done-")));
+                return <Message key={item.id} role="assistant" className={note ? s.note : undefined}><Markdown text={item.text} /></Message>;
+              }
               case "plan":
                 return <PlanCard key={item.id} title={item.plan.title} steps={item.plan.steps} statusLabels={t.work.planStatus} />;
               case "activity":
@@ -266,6 +293,9 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
                     levelLabel={t.work.levels[ev.level]}
                     title={ev.title}
                     description={ev.description}
+                    details={ev.details}
+                    detailsLabels={{ show: t.work.showCommand, hide: t.work.hideCommand }}
+                    icon={ev.details ? "terminal" : undefined}
                     actions={
                       item.answer === undefined ? (
                         <>
@@ -328,13 +358,17 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
             value={tab}
             onChange={setTab}
             options={[
-              { value: "preview", label: t.work.tabPreview },
+              // No page to preview: no Preview tab, rather than an empty panel.
+              ...(page && bridge.tasks ? [{ value: "preview" as const, label: t.work.tabPreview }] : []),
+              { value: "files", label: t.work.tabFiles },
               { value: "rewind", label: t.work.tabRewind },
             ]}
           />
         </div>
         <div className={s.panelBody}>
-          {tab === "preview" ? (
+          {tab === "files" && bridge.tasks ? (
+            <FilesPanel t={t} taskId={taskId} version={pageVersion} />
+          ) : tab === "preview" || tab === "files" ? (
             page && bridge.tasks ? (
               <div className={s.preview}>
                 <div className={s.previewBar}>
@@ -370,8 +404,10 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
                 if (running) { setNotice(t.work.rewindWhileWorking); return; }
                 const result = await engine.restore(id);
                 if (!result.ok) { setNotice(result.message); return; }
-                // We're back before that point: it and everything after it no longer exist.
-                setCheckpoints((prev) => prev.slice(0, prev.findIndex((c) => c.id === id)));
+                // We're back before that point: it and everything after it are replaced by one
+                // "before going back" point, which brings the newer work back if needed.
+                const undo = result.checkpoint;
+                setCheckpoints((prev) => [...prev.slice(0, prev.findIndex((c) => c.id === id)), ...(undo ? [undo] : [])]);
                 setNotice(t.work.rewindDone);
               }}
             />

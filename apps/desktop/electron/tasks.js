@@ -202,4 +202,59 @@ export async function initTasks() {
     const file = await task.workspace.resolve(String(page ?? "")).catch(() => null);
     await shell.openPath(file ?? task.meta.folder);
   });
+
+  // ── Files tab: what's in the task folder, and a read-only look inside ──
+  ipcMain.handle("files:list", async (_e, { taskId }) => {
+    const task = await getTask(taskId);
+    return task ? listFiles(task.meta.folder) : [];
+  });
+  ipcMain.handle("files:read", async (_e, { taskId, path: rel }) => {
+    const task = await getTask(taskId);
+    if (!task) return { kind: "missing" };
+    try {
+      const file = await task.workspace.resolve(String(rel ?? "")); // never outside the task folder
+      const info = await stat(file);
+      if (IMAGE.test(file)) return { kind: "image", size: info.size };
+      if (info.size > MAX_VIEW_BYTES) return { kind: "large", size: info.size };
+      const buf = await readFile(file);
+      if (buf.subarray(0, 8000).includes(0)) return { kind: "binary", size: info.size };
+      return { kind: "text", size: info.size, text: buf.toString("utf8") };
+    } catch {
+      return { kind: "missing" };
+    }
+  });
+  // Shows the file in Explorer (never runs it: opening a .js or .bat directly would execute it).
+  ipcMain.handle("files:show", async (_e, { taskId, path: rel }) => {
+    const task = await getTask(taskId);
+    if (!task) return;
+    const file = await task.workspace.resolve(String(rel ?? "")).catch(() => null);
+    if (file) shell.showItemInFolder(file);
+  });
+}
+
+const IMAGE = /\.(png|jpe?g|gif|webp|svg|ico)$/i;
+const MAX_VIEW_BYTES = 512 * 1024;
+const SKIP_DIRS = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", ".next", "dist", "build", ".cache"]);
+
+/** Files in the folder (relative paths, folders first), skipping bulky tool folders. At most 500. */
+async function listFiles(root) {
+  const out = [];
+  async function walk(dir, depth) {
+    if (depth > 6 || out.length >= 500) return;
+    const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+    entries.sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      if (out.length >= 500) return;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (SKIP_DIRS.has(entry.name)) continue;
+        await walk(full, depth + 1);
+      } else if (entry.isFile()) {
+        const size = await stat(full).then((s) => s.size, () => 0);
+        out.push({ path: path.relative(root, full).replaceAll("\\", "/"), size });
+      }
+    }
+  }
+  await walk(root, 0);
+  return out;
 }

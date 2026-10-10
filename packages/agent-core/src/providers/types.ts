@@ -51,6 +51,8 @@ export interface Usage {
 export type StreamEvent =
   | { type: "text"; text: string }
   | { type: "tool-call"; call: ToolCall }
+  /** A tool call still streaming in: its name and the arguments so far (partial JSON). */
+  | { type: "tool-progress"; name: string; partial: string }
   | { type: "done"; stopReason: "end" | "tool-calls" | "max-tokens" | "other"; usage?: Usage };
 
 /** Why a connection failed, in categories the UI can explain in plain words. */

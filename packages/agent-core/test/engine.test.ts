@@ -145,3 +145,21 @@ test("a tool call missing a required field gets a clear retry hint, not a crash"
   assert.deepEqual(missingFields("run_command", { command: "dir" }), []); // "reason" is optional in practice
   assert.equal(failureActivity("en", "edit_file", {}).text, "Couldn’t change a file");
 });
+
+test("going back can be undone", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "enc-undo-"));
+  const file = path.join(dir, "a.txt");
+  const { Checkpoints } = await import("../src/engine/checkpoints.ts");
+  const cps = new Checkpoints(path.join(dir, ".history"));
+  await writeFile(file, "one");
+  const first = await cps.create("Before changing a.txt");
+  await cps.remember(file);
+  await writeFile(file, "two");
+  await cps.restore(first.id, "Before going back");
+  assert.equal(await readFile(file, "utf8"), "one");
+  const undo = await cps.latest();
+  assert.equal(undo?.label, "Before going back");
+  await cps.restore(undo!.id, "Before going back");
+  assert.equal(await readFile(file, "utf8"), "two", "the newer work comes back");
+  await rm(dir, { recursive: true, force: true });
+});

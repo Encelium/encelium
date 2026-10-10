@@ -78,7 +78,7 @@ const L = {
     before: { write_file: "Before writing {path}", edit_file: "Before changing {path}", delete_file: "Before deleting {path}", other: "Before changing files" },
     failed: { list_files: "Couldn’t look at your files", read_file: "Couldn’t read {path}", write_file: "Couldn’t write {path}", edit_file: "Couldn’t change {path}", delete_file: "Couldn’t delete {path}", run_command: "Couldn’t run the command", update_plan: "Couldn’t update the plan" },
     askDeleteTitle: "Delete {path}?", askDeleteBody: "You can bring it back with Rewind.",
-    askRunTitle: "Run a command?", allow: "Allow", deny: "Not now",
+    askRunTitle: "Run a command?", askRunBody: "I need to run a command to continue.", allow: "Allow", deny: "Not now",
     working: { list_files: "Looking at your files", read_file: "Reading {path}", write_file: "Writing {path}", edit_file: "Changing {path}", delete_file: "Deleting {path}", run_command: "Running a command", update_plan: "Planning" },
   },
   ar: {
@@ -87,7 +87,7 @@ const L = {
     before: { write_file: "قبل كتابة {path}", edit_file: "قبل تعديل {path}", delete_file: "قبل حذف {path}", other: "قبل تغيير الملفات" },
     failed: { list_files: "تعذّر الاطلاع على ملفاتك", read_file: "تعذّرت قراءة {path}", write_file: "تعذّرت كتابة {path}", edit_file: "تعذّر تعديل {path}", delete_file: "تعذّر حذف {path}", run_command: "تعذّر تشغيل الأمر", update_plan: "تعذّر تحديث الخطة" },
     askDeleteTitle: "حذف {path}؟", askDeleteBody: "يمكنك استعادته بالتراجع.",
-    askRunTitle: "تشغيل أمر؟", allow: "اسمح", deny: "ليس الآن",
+    askRunTitle: "تشغيل أمر؟", askRunBody: "أحتاج إلى تشغيل أمر للمتابعة.", allow: "اسمح", deny: "ليس الآن",
     working: { list_files: "أطّلع على ملفاتك", read_file: "أقرأ {path}", write_file: "أكتب {path}", edit_file: "أعدّل {path}", delete_file: "أحذف {path}", run_command: "أشغّل أمرًا", update_plan: "أخطّط" },
   },
 };
@@ -136,7 +136,9 @@ export function riskOf(tool: string, args: Record<string, unknown>): RiskLevel {
 export function permissionText(lang: Language, tool: string, args: Record<string, unknown>) {
   const t = L[lang];
   if (tool === "delete_file") return { title: fill(t.askDeleteTitle, { path: String(args.path) }), description: t.askDeleteBody, allowLabel: t.allow, denyLabel: t.deny };
-  return { title: t.askRunTitle, description: `${String(args.reason ?? "")}\n\n${String(args.command ?? "")}`.trim(), allowLabel: t.allow, denyLabel: t.deny };
+  // A short plain reason up front; the exact command only if the person wants to see it.
+  const reason = String(args.reason ?? "").trim();
+  return { title: t.askRunTitle, description: reason || t.askRunBody, details: String(args.command ?? ""), allowLabel: t.allow, denyLabel: t.deny };
 }
 
 // ── Running tools ───────────────────────────────────────────────────

@@ -18,7 +18,7 @@ export interface AgentBridge {
   start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[] }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
-  restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true } | { ok: false; message: string }>;
+  restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true; checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;
   onEvent(callback: (runId: string, event: import("./agent/types").AgentEvent) => void): () => void;
 }
 
@@ -37,6 +37,12 @@ export type StoredEvent =
   | { type: "permission-answer"; requestId: string; allowed: boolean }
   | { type: "restored"; checkpointId: string };
 
+export interface TaskFile { path: string; size: number }
+export type FileView =
+  | { kind: "text"; size: number; text: string }
+  | { kind: "image" | "large" | "binary"; size: number }
+  | { kind: "missing" };
+
 export interface TasksBridge {
   list(): Promise<TaskSummary[]>;
   events(input: { taskId: string }): Promise<StoredEvent[]>;
@@ -45,6 +51,9 @@ export interface TasksBridge {
   chooseFolder(): Promise<{ ok: true; path: string; name: string } | { ok: false; reason: "canceled" | "too-broad" }>;
   findPreview(input: { taskId: string }): Promise<string | null>;
   openPreview(input: { taskId: string; page: string }): Promise<void>;
+  listFiles(input: { taskId: string }): Promise<TaskFile[]>;
+  readFile(input: { taskId: string; path: string }): Promise<FileView>;
+  showFile(input: { taskId: string; path: string }): Promise<void>;
   onFilesChanged(callback: (taskId: string) => void): () => void;
 }
 

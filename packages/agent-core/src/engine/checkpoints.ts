@@ -58,11 +58,32 @@ export class Checkpoints {
     await this.persist();
   }
 
-  /** Put every file back the way it was when checkpoint `id` was made. Returns the files restored. */
-  async restore(id: string): Promise<string[]> {
+  /**
+   * Put every file back the way it was when checkpoint `id` was made. Returns the files restored.
+   * With `undoLabel`, the files as they are now are kept first, in a new point with that name,
+   * so going back can itself be undone.
+   */
+  async restore(id: string, undoLabel?: string): Promise<string[]> {
     await this.load();
     const index = this.list.findIndex((c) => c.id === id);
     if (index === -1) throw new Error("That Rewind point no longer exists.");
+    let undo: Checkpoint | null = null;
+    if (undoLabel) {
+      undo = { id: `cp-${Date.now().toString(36)}-u${this.list.length}`, label: undoLabel, at: Date.now(), files: {} };
+      for (let i = index; i < this.list.length; i++) {
+        for (const file of Object.keys(this.list[i]!.files)) {
+          if (file in undo.files) continue;
+          try {
+            const buf = await readFile(file);
+            if (buf.length > MAX_REWIND_BYTES) continue;
+            undo.files[file] = { existed: true, content: buf.toString("base64") };
+          } catch (e) {
+            if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+            undo.files[file] = { existed: false };
+          }
+        }
+      }
+    }
     const restored = new Set<string>();
     for (let i = this.list.length - 1; i >= index; i--) {
       for (const [file, saved] of Object.entries(this.list[i]!.files)) {
@@ -76,10 +97,21 @@ export class Checkpoints {
       }
     }
     // Later checkpoints describe a future that no longer exists.
-    this.list = this.list.slice(0, index + 1);
-    this.list[index]!.files = {};
+    if (undo) {
+      this.list = [...this.list.slice(0, index), undo];
+    } else {
+      this.list = this.list.slice(0, index + 1);
+      this.list[index]!.files = {};
+    }
     await this.persist();
     return [...restored];
+  }
+
+  /** The newest point (after a restore with undo, that's the "before going back" point). */
+  async latest() {
+    await this.load();
+    const cp = this.list[this.list.length - 1];
+    return cp ? { id: cp.id, label: cp.label, at: cp.at } : null;
   }
 
   async all() {

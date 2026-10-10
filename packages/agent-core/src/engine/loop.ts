@@ -59,7 +59,8 @@ function systemPrompt(lang: Language, root: string) {
     "",
     "The person is usually not a programmer. Rules:",
     `- Write to the person in ${lang === "ar" ? "Arabic (Modern Standard Arabic)" : "English"}. Use plain words and short sentences. No jargon; if a technical word is unavoidable, explain it in a few words.`,
-    "- For anything with more than one step, first call update_plan with a short checklist in plain words, then keep it updated (mark the current step active, finished steps done).",
+    "- For anything with more than one step, first call update_plan with a short checklist in plain words. Keep it updated as you go: mark a step done as soon as it's finished and the next one active, in the same reply as your next action. Don't save all the ticks for the end.",
+    "- While working, say little: at most one short sentence before a group of actions, or nothing. Save explanations for the final summary, and don't repeat there what you already said.",
     "- Work only inside the task folder, using relative paths. Don't try to reach other folders.",
     "- Check your own work before saying it's done: read files back, run the program or its tests when you can, and fix problems you find.",
     "- Be honest. If something failed or you couldn't do it, say so plainly and say what the person can try.",
@@ -121,10 +122,17 @@ export class AgentSession implements AgentRun {
 
         const id = `msg-${Date.now().toString(36)}-${turn}`;
         let text = "";
+        let lastStatus = "";
         const calls: ToolCall[] = [];
         for await (const ev of streamChat(connection, { system, messages: this.messages, tools: TOOLS, maxTokens: 8192 }, signal)) {
           if (ev.type === "text") { text += ev.text; this.emit({ type: "message-delta", id, text: ev.text }); }
           else if (ev.type === "tool-call") calls.push(ev.call);
+          else if (ev.type === "tool-progress" && ev.name !== "update_plan") {
+            // Long file writes stream for a while: say what's happening instead of "Thinking".
+            const path = ev.partial.match(/"path"\s*:\s*"((?:[^"\\]|\\.)*)"/)?.[1];
+            const working = workingText(language, ev.name, path ? { path: path.replace(/\\\\/g, "\\") } : {});
+            if (working !== lastStatus) { lastStatus = working; this.emit({ type: "status", phase: "working", text: working }); }
+          }
         }
         if (text) this.emit({ type: "message-done", id });
         this.messages.push({ role: "assistant", content: text, ...(calls.length ? { toolCalls: calls } : {}) });

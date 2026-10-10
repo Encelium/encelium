@@ -154,3 +154,11 @@
 @media (max-width: 1080px) {
   .work { grid-template-columns: minmax(340px, 420px) minmax(0, 1fr); }
 }
+
+/* A note made while working: quieter than the final answer. */
+.note > div { font-size: var(--text-md); line-height: var(--leading-md); color: var(--color-text-muted); }
+
+/* Your messages sit on the right in every language, like any chat app. */
+.userTurn { align-items: flex-end; }
+.userTurn:dir(rtl) { align-items: flex-start; }
+.userTurn:dir(rtl) .sentFiles { justify-content: flex-start; }

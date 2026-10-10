@@ -83,11 +83,15 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     if (!task) return { ok: false, message: language === "ar" ? "لم يعد هذا التراجع متاحًا." : "This Rewind point isn’t available any more." };
     try {
       const cp = (await task.checkpoints.all()).find((c) => c.id === String(checkpointId));
-      const files = await task.checkpoints.restore(String(checkpointId));
-      recorder(task)({ type: "restored", checkpointId: String(checkpointId) });
+      // Going back can be undone: the files as they are now are kept in a new point first.
+      const files = await task.checkpoints.restore(String(checkpointId), language === "ar" ? "قبل التراجع" : "Before going back");
+      const undo = await task.checkpoints.latest();
+      const record = recorder(task);
+      record({ type: "restored", checkpointId: String(checkpointId) });
+      if (undo) record({ type: "checkpoint", ...undo });
       const names = files.map((f) => path.relative(task.meta.folder, f) || f).join(", ");
       await writeFile(rewindNoteFile(task), `[The person used Rewind: the task folder is back to how it was ${cp ? `at "${cp.label}"` : "at an earlier point"}. Everything you changed after that point is undone${names ? ` (files put back: ${names})` : ""}. Read files again before relying on what you remember of them.]`);
-      return { ok: true };
+      return { ok: true, checkpoint: undo };
     } catch (e) {
       return { ok: false, message: e.message };
     }

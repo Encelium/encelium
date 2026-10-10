@@ -77,6 +77,7 @@ export async function* streamChat(conn: ModelConnection, req: ChatRequest, signa
       if (tc.function?.name) cur.name += tc.function.name;
       if (tc.function?.arguments) cur.arguments += tc.function.arguments;
       calls.set(index, cur);
+      if (cur.name) yield { type: "tool-progress", name: cur.name, partial: cur.arguments };
     }
     if (choice.finish_reason) finish = choice.finish_reason;
   }
