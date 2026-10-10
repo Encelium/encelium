@@ -47,6 +47,8 @@ export interface AgentEngine {
     attachments?: { path: string; name: string; size: number; kind: "image" | "file" }[];
     /** "Check the result": the agent tests its own work (default). Off: faster, fewer requests. */
     check?: boolean;
+    /** "Try again" after an error: the same request again, not a new message. */
+    retry?: boolean;
   }): AgentRun;
   /** Put the task's files back the way they were at a Rewind point. Absent in the demo. */
   restore?(checkpointId: string): Promise<{ ok: true; /** The new "before going back" point, so going back can be undone. */ checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;

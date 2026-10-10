@@ -200,7 +200,12 @@ export function App() {
             attachments={view.attachments}
             language={settings.language}
             engine={engineFor(view.id)}
-            panel={{ open: panelOpen, mode: panelMode, onClose: () => (panelMode === "docked" ? setPanelDocked(false) : setPanelOver(false)) }}
+            panel={{
+              open: panelOpen,
+              mode: panelMode,
+              onClose: () => (panelMode === "docked" ? setPanelDocked(false) : setPanelOver(false)),
+              onOpen: () => (panelMode === "docked" ? setPanelDocked(true) : setPanelOver(true)),
+            }}
           />
         )}
       </div>

@@ -17,7 +17,7 @@ export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limite
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
 export interface AgentBridge {
-  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean }): Promise<{ runId: string; folder?: string }>;
+  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean; remember?: boolean }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
   restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true; checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;
@@ -42,7 +42,8 @@ export type StoredEvent =
   | { type: "user"; text: string; attachments?: string[] }
   | { type: "message"; text: string }
   | { type: "permission-answer"; requestId: string; allowed: boolean; remember?: boolean }
-  | { type: "restored"; checkpointId: string };
+  | { type: "restored"; checkpointId: string }
+  | { type: "retried" };
 
 export interface TaskFile { path: string; size: number }
 export type FileView =

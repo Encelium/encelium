@@ -41,7 +41,7 @@ export interface WorkProps {
   language: Language;
   engine: AgentEngine;
   /** The right panel: docked beside the chat, or slid over it in small windows. */
-  panel?: { open: boolean; mode: "docked" | "overlay"; onClose: () => void };
+  panel?: { open: boolean; mode: "docked" | "overlay"; onClose: () => void; onOpen: () => void };
 }
 
 function ActivityLine({ t, text, details }: { t: Strings; text: string; details?: string }) {
@@ -110,7 +110,7 @@ function CopyButton({ t, text }: { t: Strings; text: string }) {
   );
 }
 
-export function Work({ t, taskId, prompt, folder, attachments, language, engine, panel = { open: true, mode: "docked", onClose: () => {} } }: WorkProps) {
+export function Work({ t, taskId, prompt, folder, attachments, language, engine, panel = { open: true, mode: "docked", onClose: () => {}, onOpen: () => {} } }: WorkProps) {
   const [chatWidth, setChatWidth] = useRememberedNumber("enceladus.chatWidth", 480);
   const workRef = useRef<HTMLElement>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -203,6 +203,10 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
       case "activity":
         setItems((prev) => [...prev, { kind: "activity", id: `act-${n}-${prev.length}`, text: e.text, details: e.details }]);
         break;
+      case "retried":
+        // "Try again": the error it answers disappears; the same request carries on below.
+        setItems((prev) => { const at = prev.map((i) => i.kind).lastIndexOf("error"); return at === -1 ? prev : [...prev.slice(0, at), ...prev.slice(at + 1)]; });
+        break;
       case "suggestions":
         // Only the newest set is useful; older ones were answered already.
         setItems((prev) => [...prev.filter((i) => i.kind !== "suggestions"), { kind: "suggestions", id: `next-${n}`, items: e.items }]);
@@ -221,15 +225,17 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     }
   }, []);
 
-  const startRun = useCallback((text: string, files?: Attachment[]) => {
-    const n = ++counter.current;
+  const startRun = useCallback((text: string, files?: Attachment[], retry = false) => {
+    // A retry belongs to the same request: same number, no new message, the error goes away.
+    const n = retry ? Math.max(counter.current, 1) : ++counter.current;
     unsubRef.current?.();
     setItems((prev) => prev.filter((i) => i.kind !== "suggestions"));
-    apply({ type: "user", text, attachments: files?.length ? files.map((f) => f.name) : undefined }, n);
+    if (retry) apply({ type: "retried" }, n);
+    else apply({ type: "user", text, attachments: files?.length ? files.map((f) => f.name) : undefined }, n);
     setRunning(true);
     setStatus(null);
     stuck.current = true;
-    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check });
+    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check, retry });
     firstRun.current = false;
     runRef.current = run;
     unsubRef.current = run.onEvent((e) => apply(e, n, true));
@@ -347,6 +353,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
       style={{ "--chat-width": `${chatWidth}px` } as React.CSSProperties}
     >
       <section className={s.chat}>
+        {!panel.open && (
+          <Button variant="secondary" size="sm" icon="sidebarRight" className={s.showPanel} onClick={panel.onOpen}>
+            {page ? t.work.tabPreview : t.work.tabFiles}
+          </Button>
+        )}
         <div ref={listRef} className={s.list} role="log" aria-live="polite" aria-label={t.work.messages} onScroll={onScroll}>
           {items.map((item, index) => {
             switch (item.kind) {
@@ -433,7 +444,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                     {/* The last request failed (no connection, a limit…): one click sends it again. */}
                     {index === items.length - 1 && !running && lastRequest && (
                       <div className={s.answerActions}>
-                        <Button variant="secondary" size="sm" icon="repeat" onClick={() => startRun(lastRequest)}>{t.work.tryAgain}</Button>
+                        <Button variant="secondary" size="sm" icon="repeat" onClick={() => startRun(lastRequest, undefined, true)}>{t.work.tryAgain}</Button>
                       </div>
                     )}
                   </div>

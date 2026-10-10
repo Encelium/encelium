@@ -8,3 +8,6 @@ out/
 .claude/
 .DS_Store
 Thumbs.db
+
+# Local shortcuts with the app icon (they contain this PC's paths)
+*.lnk

@@ -65,7 +65,7 @@ export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
 
-  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments, check }) => {
+  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments, check, retry }) => {
     const lang = language === "ar" ? "ar" : "en";
     const text = String(prompt);
     const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -85,7 +85,18 @@ export function initAgent() {
     const request = !note ? prepared : typeof prepared === "string" ? `${note}
 
 ${prepared}` : [{ type: "text", text: note }, ...prepared];
-    record({ type: "user", text, ...(names.length ? { attachments: names } : {}) });
+    // "Try again": no second copy of the message. The model gets the request once, or, if the
+    // error came halfway through, a note to carry on from where it stopped.
+    let history = task.messages;
+    let ask = request;
+    if (retry) {
+      record({ type: "retried" });
+      const last = history[history.length - 1];
+      if (last?.role === "user") { ask = last.content; history = history.slice(0, -1); }
+      else ask = lang === "ar" ? "توقّف الطلب السابق بسبب خطأ. تابع من حيث توقفت." : "The last request was cut off by an error. Carry on from where you stopped.";
+    } else {
+      record({ type: "user", text, ...(names.length ? { attachments: names } : {}) });
+    }
 
     if (!conn) {
       setTimeout(() => send({ type: "error", ...notConnected[lang] }), 0);
@@ -93,7 +104,7 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     }
 
     const allowed = await allowedFor(task);
-    const session = new AgentSession(request, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages, preApproved: (tool) => allowed.has(tool), check: check !== false });
+    const session = new AgentSession(ask, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history, preApproved: (tool) => allowed.has(tool), check: check !== false });
     /** requestId → tool, so "Allow for this task" knows what to remember. */
     const asked = new Map();
     session.onEvent((e) => { if (e.type === "permission" && e.tool) asked.set(e.requestId, e.tool); });

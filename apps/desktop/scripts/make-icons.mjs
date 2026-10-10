@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { crc32, deflateSync } from "node:zlib";
 
 const out = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "build");
-const COLOR = [0x12, 0x7a, 0x9a]; // the accent teal: readable on light and dark taskbars
+const COLOR = [0x0b, 0x16, 0x20]; // the app's near-black text color, like the logo in the title bar
 
 // The mark in its 48×48 design grid (same numbers as Logo.tsx).
 const CUTS = [
@@ -53,7 +53,22 @@ function png(size, rgba) {
   return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(rows, { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
 }
 
-// An .ico holding PNG images (supported since Windows Vista).
+// The classic bitmap form of an icon image (what every Windows tool reads): a 32-bit
+// bottom-up BGRA bitmap, plus the old 1-bit "AND" mask (all zero: alpha does the work).
+function dib(size, rgba) {
+  const header = Buffer.alloc(40);
+  header.writeUInt32LE(40, 0); header.writeInt32LE(size, 4); header.writeInt32LE(size * 2, 8);
+  header.writeUInt16LE(1, 12); header.writeUInt16LE(32, 14);
+  const pixels = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const from = ((size - 1 - y) * size + x) * 4, to = (y * size + x) * 4;
+    pixels[to] = rgba[from + 2]; pixels[to + 1] = rgba[from + 1]; pixels[to + 2] = rgba[from]; pixels[to + 3] = rgba[from + 3];
+  }
+  const mask = Buffer.alloc(Math.ceil(size / 32) * 4 * size);
+  return Buffer.concat([header, pixels, mask]);
+}
+
+// An .ico: bitmaps for the small sizes, PNG for 256 (the usual, most compatible mix).
 function ico(images) {
   const head = Buffer.alloc(6); head.writeUInt16LE(1, 2); head.writeUInt16LE(images.length, 4);
   let offset = 6 + images.length * 16;
@@ -70,7 +85,7 @@ function ico(images) {
 
 mkdirSync(out, { recursive: true });
 const sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256];
-const images = sizes.map((size) => ({ size, data: png(size, render(size)) }));
+const images = sizes.map((size) => ({ size, data: size >= 256 ? png(size, render(size)) : dib(size, render(size)) }));
 writeFileSync(path.join(out, "icon.ico"), ico(images));
 writeFileSync(path.join(out, "icon.png"), png(512, render(512)));
 console.log(`build/icon.ico (${sizes.join(", ")}) and build/icon.png written`);
