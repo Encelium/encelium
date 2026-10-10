@@ -13,9 +13,16 @@ let state = { mode: "enceladus" };
 async function load() {
   try { state = JSON.parse(await readFile(file(), "utf8")); } catch { state = { mode: "enceladus" }; }
 }
-async function save() {
-  await mkdir(path.dirname(file()), { recursive: true });
-  await writeFile(file(), JSON.stringify(state, null, 2));
+/** Write to disk first; only then make it the live setting, so the two never disagree. */
+async function save(next) {
+  try {
+    await mkdir(path.dirname(file()), { recursive: true });
+    await writeFile(file(), JSON.stringify(next, null, 2));
+  } catch {
+    return false;
+  }
+  state = next;
+  return true;
 }
 
 const encrypt = (key) => (safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(key).toString("base64") : null);
@@ -70,14 +77,11 @@ export async function initModels() {
       key = encrypt(input.apiKey);
       if (!key) return { ok: false, reason: "no-encryption" }; // never store a key in plain text
     }
-    state = { mode: "own", presetId: input.presetId, protocol: conn.protocol, baseUrl: conn.baseUrl, usageInStream: !!conn.usageInStream, model, ...(key ? { key } : {}) };
-    await save();
-    return { ok: true };
+    const next = { mode: "own", presetId: input.presetId, protocol: conn.protocol, baseUrl: conn.baseUrl, usageInStream: !!conn.usageInStream, model, ...(key ? { key } : {}) };
+    return (await save(next)) ? { ok: true } : { ok: false, reason: "not-saved" };
   });
 
   ipcMain.handle("model:reset", async () => {
-    state = { mode: "enceladus" }; // forgets the key too
-    await save();
-    return { ok: true };
+    return (await save({ mode: "enceladus" })) ? { ok: true } : { ok: false, reason: "not-saved" }; // forgets the key too
   });
 }

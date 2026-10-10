@@ -11,7 +11,7 @@ export interface Settings {
 export interface ProviderOption { id: string; name: string; needsKey: boolean; keyUrl: string | null; local: boolean }
 export type ModelState = { mode: "enceladus" } | { mode: "own"; presetId: string; baseUrl: string | null; model: string; hasKey: boolean };
 export interface ModelInput { presetId: string; baseUrl?: string; apiKey?: string; model?: string }
-export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limited" | "server" | "bad-response" | "bad-address" | "no-key" | "no-model" | "no-encryption" | "unknown-provider";
+export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limited" | "server" | "bad-response" | "bad-address" | "no-key" | "no-model" | "no-encryption" | "not-saved" | "unknown-provider";
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
 export interface AgentBridge {
@@ -61,7 +61,7 @@ export interface Bridge {
     get(): Promise<ModelState>;
     test(input: ModelInput): Promise<TestResult>;
     save(input: ModelInput): Promise<{ ok: true } | { ok: false; reason: ModelFailure }>;
-    reset(): Promise<{ ok: true }>;
+    reset(): Promise<{ ok: true } | { ok: false; reason: ModelFailure }>;
   };
 }
 

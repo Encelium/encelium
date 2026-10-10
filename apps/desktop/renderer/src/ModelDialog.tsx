@@ -41,6 +41,16 @@ export function ModelDialog({ t, open, onClose, onSaved }: Props) {
       setModel(state.mode === "own" ? state.model : "");
       setKey("");
       setTest({ state: "idle" });
+      // Already set up: load the model list with the saved key, so switching
+      // models doesn't mean pasting the key again.
+      if (state.mode === "own") {
+        setTest({ state: "testing" });
+        bridge.models.test({ presetId: state.presetId, baseUrl: state.baseUrl ?? undefined }).then((result) => {
+          setTest(result.ok
+            ? { state: "ok", models: result.models.includes(state.model) ? result.models : [state.model, ...result.models] }
+            : { state: "failed", reason: result.reason });
+        });
+      }
     });
   }, [open]);
 
@@ -80,7 +90,8 @@ export function ModelDialog({ t, open, onClose, onSaved }: Props) {
   };
 
   const backToEnceladus = async () => {
-    await bridge.models.reset();
+    const result = await bridge.models.reset();
+    if (!result.ok) { setTest({ state: "failed", reason: result.reason }); return; }
     onSaved(fmt(m.saved, { model: t.appName }));
     onClose();
   };
