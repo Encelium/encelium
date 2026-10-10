@@ -19,6 +19,7 @@ export type TestResult = { ok: true; models: string[] } | { ok: false; reason: M
 export interface AgentBridge {
   start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean; remember?: boolean }): Promise<void>;
+  answer(input: { runId: string; requestId: string; text: string }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
   restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true; checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;
   onEvent(callback: (runId: string, event: import("./agent/types").AgentEvent) => void): () => void;
@@ -43,7 +44,8 @@ export type StoredEvent =
   | { type: "message"; text: string }
   | { type: "permission-answer"; requestId: string; allowed: boolean; remember?: boolean }
   | { type: "restored"; checkpointId: string }
-  | { type: "retried" };
+  | { type: "retried" }
+  | { type: "answer"; requestId: string; text: string };
 
 export interface TaskFile { path: string; size: number }
 export type FileView =

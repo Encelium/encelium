@@ -1,0 +1,26 @@
+.card { padding: var(--space-4) var(--space-5); border: 1px solid var(--color-accent); border-radius: var(--radius-lg); background: var(--color-accent-soft); }
+.head { display: flex; align-items: flex-start; gap: var(--space-3); }
+.icon { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--color-surface); color: var(--color-accent); }
+.question { margin: 3px 0 0; font-size: var(--text-md); line-height: var(--leading-md); font-weight: var(--weight-semibold); color: var(--color-text); text-align: start; }
+.options { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block-start: var(--space-3); padding-inline-start: calc(28px + var(--space-3)); }
+.option {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border-strong); border-radius: var(--radius-full);
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-sm); cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+.option:hover:not(:disabled) { border-color: var(--color-accent); }
+.option:active:not(:disabled) { transform: scale(.98); }
+.option:disabled { opacity: .5; cursor: default; }
+.recommended { border-color: var(--color-accent); font-weight: var(--weight-medium); }
+.tag { font-size: var(--text-xs); color: var(--color-accent); font-weight: var(--weight-semibold); }
+.otherRow { display: flex; gap: var(--space-2); margin-block-start: var(--space-2); padding-inline-start: calc(28px + var(--space-3)); }
+.input {
+  flex: 1; min-width: 0; height: var(--control-md); padding-inline: var(--space-3);
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface);
+  color: var(--color-text); font: inherit; font-size: var(--text-md);
+}
+.input:focus-visible { outline: 0; border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+.send { height: var(--control-md); padding-inline: var(--space-4); border: 0; border-radius: var(--radius-md); background: var(--color-text); color: var(--color-bg); font: inherit; font-weight: var(--weight-semibold); cursor: pointer; }
+.send:disabled { opacity: .4; cursor: default; }
+.answered { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-2) 0 0; padding-inline-start: calc(28px + var(--space-3)); color: var(--color-text-muted); font-size: var(--text-sm); }

@@ -13,7 +13,7 @@ function sizeText(bytes: number, t: Strings) {
 }
 
 /** The task folder's files, and a read-only look inside one. Never runs anything. */
-export function FilesPanel({ t, taskId, version, onNotice }: { t: Strings; taskId: string; version: number; onNotice: (message: string) => void }) {
+export function FilesPanel({ t, taskId, version, onNotice, openRequest }: { t: Strings; taskId: string; version: number; onNotice: (message: string) => void; /** Open this file (bump `n` to ask again). */ openRequest?: { path: string; n: number } | null }) {
   const tasks = bridge.tasks;
   const [zipping, setZipping] = useState(false);
   const saveZip = async () => {
@@ -25,8 +25,9 @@ export function FilesPanel({ t, taskId, version, onNotice }: { t: Strings; taskI
     else if (result.reason !== "canceled") onNotice(t.files.zipErrors[result.reason]);
   };
   const [files, setFiles] = useState<TaskFile[] | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(openRequest?.path ?? null);
   const [view, setView] = useState<FileView | null>(null);
+  useEffect(() => { if (openRequest) setOpen(openRequest.path); }, [openRequest]);
 
   useEffect(() => {
     if (!tasks) return;

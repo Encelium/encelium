@@ -69,6 +69,7 @@ function systemPrompt(lang: Language, root: string, check: boolean) {
     "",
     "The person is usually not a programmer. Rules:",
     `- Write to the person in ${lang === "ar" ? "Arabic (Modern Standard Arabic)" : "English"}. Use plain words and short sentences. No jargon; if a technical word is unavoidable, explain it in a few words.`,
+    "- If the request is vague or a key detail is missing (what it's for, who it's for, the style, the content), first ask one short question with ask_user, giving 2 to 4 clickable answers with your recommendation first. Ask at most 2 questions per request, one at a time. If the request is already clear, don't ask: just start.",
     "- For anything with more than one step, first call update_plan with a short checklist in plain words. Keep it updated as you go: mark a step done as soon as it's finished and the next one active, in the same reply as your next action. Don't save all the ticks for the end.",
     "- While working, say little: at most one short sentence before a group of actions, or nothing. Save explanations for the final summary, and don't repeat there what you already said.",
     "- Work only inside the task folder, using relative paths. Don't try to reach other folders, not even with commands. If the person asks for a file somewhere else (like the Desktop), make it in the task folder, tell them where it is, and explain that they can pick another folder for a task on the home screen. Only Rewind protects the task folder.",
@@ -90,6 +91,7 @@ function systemPrompt(lang: Language, root: string, check: boolean) {
 export class AgentSession implements AgentRun {
   private listeners = new Set<(e: AgentEvent) => void>();
   private pending = new Map<string, (allowed: boolean) => void>();
+  private questions = new Map<string, (text: string | null) => void>();
   private controller = new AbortController();
   private readonly opts: SessionOptions;
   /** The full conversation, including this run (pass it as `history` for a follow-up). */
@@ -107,7 +109,14 @@ export class AgentSession implements AgentRun {
 
   onEvent(listener: (e: AgentEvent) => void) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
   respond(requestId: string, allowed: boolean) { this.pending.get(requestId)?.(allowed); this.pending.delete(requestId); }
-  stop() { this.controller.abort(); for (const answer of this.pending.values()) answer(false); this.pending.clear(); }
+  answer(requestId: string, text: string) { this.questions.get(requestId)?.(text); this.questions.delete(requestId); }
+  stop() {
+    this.controller.abort();
+    for (const answer of this.pending.values()) answer(false);
+    this.pending.clear();
+    for (const answer of this.questions.values()) answer(null);
+    this.questions.clear();
+  }
 
   private emit(e: AgentEvent) { for (const l of this.listeners) l(e); }
 
@@ -116,6 +125,14 @@ export class AgentSession implements AgentRun {
     return new Promise((resolve) => {
       this.pending.set(requestId, resolve);
       this.emit({ type: "permission", requestId, ...e });
+    });
+  }
+
+  private question(question: string, options: string[]): Promise<string | null> {
+    const requestId = `q-${Date.now().toString(36)}-${this.questions.size}`;
+    return new Promise((resolve) => {
+      this.questions.set(requestId, resolve);
+      this.emit({ type: "question", requestId, question, options });
     });
   }
 
@@ -171,6 +188,17 @@ export class AgentSession implements AgentRun {
               this.messages.push({ role: "tool", toolCallId: call.id, content: DENIED, isError: true });
               continue;
             }
+          }
+
+          // A question for the person: wait for their answer, which becomes the tool's result.
+          if (call.name === "ask_user") {
+            const q = String(args.question ?? "").trim();
+            const options = (Array.isArray(args.options) ? args.options : []).map((o) => String(o).trim()).filter(Boolean).slice(0, 4);
+            if (!q) { this.messages.push({ role: "tool", toolCallId: call.id, content: "Ask a question (the question field was empty).", isError: true }); continue; }
+            const answer = await this.question(q, options);
+            if (answer === null || signal.aborted) throw new DOMException("stopped", "AbortError");
+            this.messages.push({ role: "tool", toolCallId: call.id, content: `The person answered: ${answer}` });
+            continue;
           }
 
           const what = workingText(language, call.name, args);

@@ -32,6 +32,7 @@ export function electronEngine(agent: AgentBridge, taskId: string): AgentEngine 
       const run: AgentRun = {
         onEvent(listener) { listeners.add(listener); return () => { listeners.delete(listener); if (!listeners.size) unsubscribe(); }; },
         respond(requestId, allowed, remember) { whenStarted(() => void agent.respond({ runId: runId!, requestId, allowed, remember })); },
+        answer(requestId, text) { whenStarted(() => void agent.answer({ runId: runId!, requestId, text })); },
         stop() { whenStarted(() => void agent.stop({ runId: runId! })); },
       };
       return run;

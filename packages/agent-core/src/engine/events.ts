@@ -14,12 +14,14 @@ export type AgentEvent =
   | { type: "message-delta"; id: string; text: string }
   /** The assistant message is complete. */
   | { type: "message-done"; id: string }
+  /** The agent asks the person a short question, with clickable answers. Answer with answer(requestId, text). */
+  | { type: "question"; requestId: string; question: string; options: string[] }
   /** The agent needs a yes/no before continuing. Answer with respond(requestId, allowed). */
   | { type: "permission"; requestId: string; level: RiskLevel; title: string; description: string; /** The exact command, shown only if the person asks. */ details?: string; allowLabel: string; denyLabel: string; /** The tool asking, so "Allow for this task" can remember it. Only for "careful" requests. */ tool?: string }
   /** A Rewind point was saved (before a change). */
   | { type: "checkpoint"; id: string; label: string; at: number }
   /** One line summary of a finished step, with optional technical details for "Show details". */
-  | { type: "activity"; text: string; details?: string }
+  | { type: "activity"; text: string; details?: string; /** A file this step created, changed, deleted or moved (for "What changed"). */ file?: FileChange }
   /** The task finished. */
   | { type: "done"; summary: string }
   /** After a finished task: short follow-ups the person might ask next (sent by the app, not the engine). */
@@ -27,12 +29,16 @@ export type AgentEvent =
   /** Something failed. Always honest and in plain words, with what the user can try. */
   | { type: "error"; message: string; suggestion?: string; /** What the server actually said, for "Show details". */ details?: string };
 
+export interface FileChange { path: string; change: "created" | "changed" | "deleted" | "moved"; to?: string }
+
 export interface AgentRun {
   /** Subscribe to events. Returns an unsubscribe function. */
   onEvent(listener: (event: AgentEvent) => void): () => void;
   /** Answer a permission request. */
   /** `remember`: also allow this kind of request for the rest of the task ("careful" requests only). */
   respond(requestId: string, allowed: boolean, remember?: boolean): void;
+  /** Answer a question (one of its options, or the person's own words). */
+  answer?(requestId: string, text: string): void;
   /** Ask the agent to stop as soon as it safely can. */
   stop(): void;
 }

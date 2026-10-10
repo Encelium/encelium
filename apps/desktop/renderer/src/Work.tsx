@@ -10,8 +10,10 @@ import { useRememberedNumber } from "./useLayout";
 import { Splitter } from "./Splitter";
 import { Compare } from "./Compare";
 import { CheckToggle, useCheckResult } from "./CheckToggle";
+import { QuestionCard } from "./QuestionCard";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
+import type { FileChange } from "@enceladus/agent-core/events";
 import s from "./Work.module.css";
 
 type PermissionEvent = Extract<AgentEvent, { type: "permission" }>;
@@ -21,10 +23,11 @@ type Item =
   | { kind: "user"; id: string; text: string; attachments?: string[] }
   | { kind: "assistant"; id: string; text: string }
   | { kind: "plan"; id: string; plan: PlanEvent }
-  | { kind: "activity"; id: string; text: string; details?: string }
+  | { kind: "activity"; id: string; text: string; details?: string; file?: FileChange }
   | { kind: "permission"; id: string; event: PermissionEvent; answer?: boolean; remember?: boolean }
   | { kind: "error"; id: string; message: string; suggestion?: string; details?: string }
-  | { kind: "suggestions"; id: string; items: string[] };
+  | { kind: "suggestions"; id: string; items: string[] }
+  | { kind: "question"; id: string; requestId: string; question: string; options: string[]; answer?: string };
 
 interface Checkpoint { id: string; label: string; at: number }
 interface Status { phase: "thinking" | "working"; text: string }
@@ -94,6 +97,37 @@ function ErrorDetails({ t, details }: { t: Strings; details: string }) {
   );
 }
 
+const CHANGE_ICON: Record<FileChange["change"], "plus" | "pencil" | "trash" | "arrowRight"> = { created: "plus", changed: "pencil", deleted: "trash", moved: "arrowRight" };
+
+/** "What changed": the files one request created, changed, moved or deleted. */
+function ChangesCard({ t, changes, onOpen, onUndo }: { t: Strings; changes: FileChange[]; onOpen: (path: string) => void; onUndo?: () => void }) {
+  // One line per file (its last change wins), in the order they first changed.
+  const byPath = new Map<string, FileChange>();
+  for (const c of changes) byPath.set(c.change === "moved" && c.to ? c.to : c.path, c);
+  const list = [...byPath.entries()];
+  const counts = (["created", "changed", "moved", "deleted"] as const).map((k) => [k, list.filter(([, c]) => c.change === k).length] as const).filter(([, n]) => n > 0);
+  return (
+    <div className={s.changes}>
+      <div className={s.changesHead}>
+        <span className={s.changesTitle}>{t.work.whatChanged}</span>
+        <span className={s.changesCounts}>{counts.map(([k, n]) => `${n} ${t.work.changeWords[k]}`).join(" · ")}</span>
+        {onUndo && <Button variant="ghost" size="sm" icon="rewind" className={s.undo} onClick={onUndo}>{t.work.undo}</Button>}
+      </div>
+      <ul className={s.changesList}>
+        {list.slice(0, 8).map(([path, c]) => (
+          <li key={path}>
+            <button type="button" className={s.changeRow} disabled={c.change === "deleted"} onClick={() => onOpen(path)}>
+              <Icon name={CHANGE_ICON[c.change]} size={14} />
+              <span className={s.changePath} dir="ltr">{c.change === "moved" ? `${c.path} → ${c.to}` : path}</span>
+            </button>
+          </li>
+        ))}
+        {list.length > 8 && <li className={s.changeMore}>+{list.length - 8}</li>}
+      </ul>
+    </div>
+  );
+}
+
 function CopyButton({ t, text }: { t: Strings; text: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -125,6 +159,9 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   const [draft, setDraft] = useState("");
   const [check, setCheck] = useCheckResult();
   const [focusRequest, setFocusRequest] = useState(0);
+  const [queue, setQueue] = useState<string[]>([]);
+  const [fileToOpen, setFileToOpen] = useState<{ path: string; n: number } | null>(null);
+  const pointOfRun = useRef(new Map<number, string>());
   const files = useAttachments(t, setNotice);
 
   const runRef = useRef<AgentRun | null>(null);
@@ -195,13 +232,21 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
         setItems((prev) => prev.map((i) => (i.kind === "permission" && i.event.requestId === e.requestId ? { ...i, answer: e.allowed, remember: e.remember } : i)));
         break;
       case "checkpoint":
+        pointOfRun.current.set(n, e.id); // "Undo" under that request's answer goes back to here
         setCheckpoints((prev) => [...prev, { id: e.id, label: e.label, at: e.at }]);
         break;
       case "restored":
         setCheckpoints((prev) => { const i = prev.findIndex((c) => c.id === e.checkpointId); return i === -1 ? prev : prev.slice(0, i); });
         break;
       case "activity":
-        setItems((prev) => [...prev, { kind: "activity", id: `act-${n}-${prev.length}`, text: e.text, details: e.details }]);
+        setItems((prev) => [...prev, { kind: "activity", id: `act-${n}-${prev.length}`, text: e.text, details: e.details, file: "file" in e ? e.file : undefined }]);
+        break;
+      case "question":
+        setStatus(null);
+        setItems((prev) => [...prev, { kind: "question", id: `q-${n}-${e.requestId}`, requestId: e.requestId, question: e.question, options: e.options }]);
+        break;
+      case "answer":
+        setItems((prev) => prev.map((i) => (i.kind === "question" && i.requestId === e.requestId ? { ...i, answer: e.text } : i)));
         break;
       case "retried":
         // "Try again": the error it answers disappears; the same request carries on below.
@@ -275,7 +320,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
           apply(e, Math.max(counter.current, 1));
         }
         // A question left unanswered when the app closed can't be answered any more.
-        setItems((prev) => prev.map((i) => (i.kind === "permission" && i.answer === undefined ? { ...i, answer: false } : i)));
+        setItems((prev) => prev.map((i) => (i.kind === "permission" && i.answer === undefined ? { ...i, answer: false } : i.kind === "question" && i.answer === undefined ? { ...i, answer: "—" } : i)));
         setStatus(null);
         setRunning(false);
       });
@@ -316,6 +361,31 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     const el = listRef.current;
     if (el && stuck.current) el.scrollTop = el.scrollHeight;
   }, [items, status]);
+
+  // Rewind to a point (from the Rewind tab, or "Undo" under an answer).
+  const restoreTo = async (id: string) => {
+    if (!engine.restore) { setNotice(t.work.rewindSoon); return; }
+    if (running) { setNotice(t.work.rewindWhileWorking); return; }
+    const result = await engine.restore(id);
+    if (!result.ok) { setNotice(result.message); return; }
+    // We're back before that point: it and everything after it are replaced by one
+    // "before going back" point, which brings the newer work back if needed.
+    const undo = result.checkpoint;
+    setCheckpoints((prev) => [...prev.slice(0, prev.findIndex((c) => c.id === id)), ...(undo ? [undo] : [])]);
+    setNotice(t.work.rewindDone);
+  };
+
+  // Requests typed while the agent works wait here, and start one by one when it's done.
+  useEffect(() => {
+    if (running || queue.length === 0) return;
+    const last = items[items.length - 1];
+    const finishedWell = !!last && (last.kind === "suggestions" || (last.kind === "activity" && last.id.startsWith("done-")));
+    if (!finishedWell) return; // after an error or a stop, the queue waits for the person
+    const [next, ...rest] = queue;
+    setQueue(rest);
+    startRun(next!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, queue, items]);
 
   const lastRequest = [...items].reverse().find((i): i is Extract<Item, { kind: "user" }> => i.kind === "user")?.text;
 
@@ -390,8 +460,28 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
               }
               case "plan":
                 return <PlanCard key={item.id} title={item.plan.title} steps={item.plan.steps} statusLabels={t.work.planStatus} />;
-              case "activity":
-                return <ActivityLine key={item.id} t={t} text={item.text} details={item.details} />;
+              case "activity": {
+                const line = <ActivityLine key={item.id} t={t} text={item.text} details={item.details} />;
+                if (!item.id.startsWith("done-")) return line;
+                // After "Finished": what this request changed, and one-click Undo for the latest one.
+                const n = Number(item.id.slice(5));
+                const changes = items.flatMap((i) => (i.kind === "activity" && i.file && i.id.startsWith(`act-${n}-`) ? [i.file] : []));
+                const point = pointOfRun.current.get(n);
+                const canUndo = !!point && checkpoints.length > 0 && checkpoints[checkpoints.length - 1]!.id === point && !running;
+                return (
+                  <div key={item.id} className={s.doneBlock}>
+                    {line}
+                    {changes.length > 0 && (
+                      <ChangesCard
+                        t={t}
+                        changes={changes}
+                        onOpen={(path) => { setTab("files"); setFileToOpen({ path, n: Date.now() }); panel.onOpen(); }}
+                        onUndo={canUndo ? () => restoreTo(point!) : undefined}
+                      />
+                    )}
+                  </div>
+                );
+              }
               case "permission": {
                 const ev = item.event;
                 return (
@@ -422,6 +512,21 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                   />
                 );
               }
+              case "question":
+                return (
+                  <QuestionCard
+                    key={item.id}
+                    t={t}
+                    question={item.question}
+                    options={item.options}
+                    answer={item.answer}
+                    disabled={!running}
+                    onAnswer={(text) => {
+                      setItems((prev) => prev.map((i) => (i.id === item.id && i.kind === "question" ? { ...i, answer: text } : i)));
+                      runRef.current?.answer?.(item.requestId, text);
+                    }}
+                  />
+                );
               case "suggestions":
                 return (
                   <div key={item.id} className={s.nextSteps}>
@@ -471,16 +576,28 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
               <Button variant="secondary" size="sm" icon="close" onClick={() => runRef.current?.stop()}>{t.work.stop}</Button>
             </div>
           )}
+          {queue.length > 0 && (
+            <div className={s.queued}>
+              {queue.map((q, i) => (
+                <span key={`${i}-${q}`} className={s.queuedChip}>
+                  <span dir="auto">{t.work.queued}: {q}</span>
+                  <IconButton icon="close" size="sm" label={`${t.work.removeQueued}: ${q}`} onClick={() => setQueue((list) => list.filter((_, j) => j !== i))} />
+                </span>
+              ))}
+            </div>
+          )}
           <Composer
             value={draft}
             onValueChange={setDraft}
             focusRequest={focusRequest}
-            placeholder={running ? t.work.followUpBusy : t.work.followUpPlaceholder}
+            placeholder={running ? t.work.queuePlaceholder : t.work.followUpPlaceholder}
             inputLabel={t.work.followUpPlaceholder}
             sendLabel={t.send}
             attachLabel={t.attach}
-            disabled={running}
-            onSubmit={(text) => { startRun(text, files.files); files.clear(); }}
+            onSubmit={(text) => {
+              if (running) { setQueue((q) => [...q, text]); return; } // waits its turn
+              startRun(text, files.files); files.clear();
+            }}
             onAttach={files.available ? files.choose : undefined}
             onDropFiles={files.available ? files.drop : undefined}
             onPasteImages={files.available ? files.paste : undefined}
@@ -513,7 +630,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
         </div>
         <div key={tab} className={`${s.panelBody} ${s.tabBody}`}>
           {tab === "files" && bridge.tasks ? (
-            <FilesPanel t={t} taskId={taskId} version={pageVersion} onNotice={setNotice} />
+            <FilesPanel t={t} taskId={taskId} version={pageVersion} onNotice={setNotice} openRequest={fileToOpen} />
           ) : tab === "preview" || tab === "files" ? (
             page && bridge.tasks ? (
               <div className={s.preview}>
@@ -563,17 +680,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
             <RewindTimeline
               items={rewindItems}
               restoreLabel={t.work.restoreHere}
-              onRestore={async (id) => {
-                if (!engine.restore) { setNotice(t.work.rewindSoon); return; }
-                if (running) { setNotice(t.work.rewindWhileWorking); return; }
-                const result = await engine.restore(id);
-                if (!result.ok) { setNotice(result.message); return; }
-                // We're back before that point: it and everything after it are replaced by one
-                // "before going back" point, which brings the newer work back if needed.
-                const undo = result.checkpoint;
-                setCheckpoints((prev) => [...prev.slice(0, prev.findIndex((c) => c.id === id)), ...(undo ? [undo] : [])]);
-                setNotice(t.work.rewindDone);
-              }}
+              onRestore={restoreTo}
             />
           )}
         </div>

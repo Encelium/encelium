@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("enceladus", {
   agent: {
     start: (input) => ipcRenderer.invoke("agent:start", input),
     respond: (input) => ipcRenderer.invoke("agent:respond", input),
+    answer: (input) => ipcRenderer.invoke("agent:answer", input),
     stop: (input) => ipcRenderer.invoke("agent:stop", input),
     restore: (input) => ipcRenderer.invoke("agent:restore", input),
     onEvent: (callback) => {

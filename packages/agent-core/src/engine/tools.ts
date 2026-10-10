@@ -3,11 +3,23 @@ import { spawn } from "node:child_process";
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ToolDefinition } from "../providers/types.ts";
-import type { Language, RiskLevel, StepStatus } from "./events.ts";
+import type { FileChange, Language, RiskLevel, StepStatus } from "./events.ts";
 import type { Checkpoints } from "./checkpoints.ts";
 import type { Workspace } from "./workspace.ts";
 
 export const TOOLS: ToolDefinition[] = [
+  {
+    name: "ask_user",
+    description: "Ask the person one short question when the request is vague or a key detail is missing (what it's for, who it's for, the style, the content), before doing the work. Give 2 to 4 short answers to click, the one you'd recommend first. The person can also type their own answer. Don't ask about things you can reasonably decide yourself.",
+    parameters: {
+      type: "object",
+      properties: {
+        question: { type: "string", description: "One short, plain question." },
+        options: { type: "array", items: { type: "string" }, description: "2 to 4 short answers (a few words each), recommended first." },
+      },
+      required: ["question", "options"],
+    },
+  },
   {
     name: "update_plan",
     description: "Show the user your plan as a short checklist, and update it as you go. Call it before starting a multi-step task and whenever a step's status changes. Use plain, non-technical words.",
@@ -85,7 +97,7 @@ const L = {
     askDeleteTitle: "Delete {path}?", askDeleteBody: "You can bring it back with Rewind.",
     askRunTitle: "Run a command?", askRunBody: "I need to run a command to continue.",
     commandNote: "Rewind can’t undo what a command does.", outsideNote: "This command works outside the task folder. Rewind can’t undo it.", allow: "Allow", deny: "Not now",
-    working: { list_files: "Looking at your files", read_file: "Reading {path}", write_file: "Writing {path}", edit_file: "Changing {path}", delete_file: "Deleting {path}", move_file: "Moving {path}", run_command: "Running a command", update_plan: "Planning" },
+    working: { list_files: "Looking at your files", read_file: "Reading {path}", write_file: "Writing {path}", edit_file: "Changing {path}", delete_file: "Deleting {path}", move_file: "Moving {path}", run_command: "Running a command", update_plan: "Planning", ask_user: "Preparing a question" },
   },
   ar: {
     listed: "اطّلعتُ على {path}", read: "قرأتُ {path}", created: "أنشأتُ {path}", changed: "عدّلتُ {path}", deleted: "حذفتُ {path}", moved: "نقلتُ {path} ← {to}",
@@ -95,7 +107,7 @@ const L = {
     askDeleteTitle: "حذف {path}؟", askDeleteBody: "يمكنك استعادته بالتراجع.",
     askRunTitle: "تشغيل أمر؟", askRunBody: "أحتاج إلى تشغيل أمر للمتابعة.",
     commandNote: "لا يستطيع التراجع إلغاء ما يفعله الأمر.", outsideNote: "يعمل هذا الأمر خارج مجلد المهمة، ولا يستطيع التراجع إلغاءه.", allow: "اسمح", deny: "ليس الآن",
-    working: { list_files: "أطّلع على ملفاتك", read_file: "أقرأ {path}", write_file: "أكتب {path}", edit_file: "أعدّل {path}", delete_file: "أحذف {path}", move_file: "أنقل {path}", run_command: "أشغّل أمرًا", update_plan: "أخطّط" },
+    working: { list_files: "أطّلع على ملفاتك", read_file: "أقرأ {path}", write_file: "أكتب {path}", edit_file: "أعدّل {path}", delete_file: "أحذف {path}", move_file: "أنقل {path}", run_command: "أشغّل أمرًا", update_plan: "أخطّط", ask_user: "أجهّز سؤالًا" },
   },
 };
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? "");
@@ -113,7 +125,7 @@ export function checkpointLabel(lang: Language, tool: string, args: Record<strin
 
 /** Fields a tool can't work without. Checked before running, so a model that leaves one out gets a clear retry hint. */
 export function missingFields(tool: string, args: Record<string, unknown>): string[] {
-  if (tool === "update_plan") return []; // lenient: a bad plan just shows fewer steps
+  if (tool === "update_plan" || tool === "ask_user") return []; // lenient: handled by the session, which checks them itself
   const def = TOOLS.find((d) => d.name === tool);
   const required = ((def?.parameters as { required?: string[] } | undefined)?.required ?? []).filter((f) => f !== "reason");
   return required.filter((f) => typeof args[f] !== "string" || (f !== "new_text" && f !== "content" && !(args[f] as string).trim()));
@@ -182,7 +194,7 @@ export interface ToolResult {
   output: string;
   isError?: boolean;
   /** What the person sees (an activity line), if anything. */
-  activity?: { text: string; details?: string };
+  activity?: { text: string; details?: string; file?: FileChange };
 }
 
 const MAX_READ = 200 * 1024;
@@ -226,7 +238,7 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx: 
       await mkdir(path.dirname(file), { recursive: true });
       await writeFile(file, content);
       const rel = ws.display(file);
-      return { output: `${existed ? "Replaced" : "Created"} ${rel} (${content.length} characters).`, activity: { text: fill(existed ? t.changed : t.created, { path: rel }) } };
+      return { output: `${existed ? "Replaced" : "Created"} ${rel} (${content.length} characters).`, activity: { text: fill(existed ? t.changed : t.created, { path: rel }), file: { path: rel, change: existed ? "changed" : "created" } } };
     }
     case "edit_file": {
       const file = await ws.resolve(p);
@@ -237,7 +249,7 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx: 
       await ctx.ensureCheckpoint();
       await ctx.checkpoints.remember(file);
       await writeFile(file, before.replace(oldText, () => String(args.new_text ?? "")));
-      return { output: `Changed ${ws.display(file)}.`, activity: { text: fill(t.changed, { path: ws.display(file) }) } };
+      return { output: `Changed ${ws.display(file)}.`, activity: { text: fill(t.changed, { path: ws.display(file) }), file: { path: ws.display(file), change: "changed" } } };
     }
     case "delete_file": {
       const file = await ws.resolve(p);
@@ -245,7 +257,7 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx: 
       await ctx.ensureCheckpoint();
       await ctx.checkpoints.remember(file);
       await rm(file);
-      return { output: `Deleted ${ws.display(file)}.`, activity: { text: fill(t.deleted, { path: ws.display(file) }) } };
+      return { output: `Deleted ${ws.display(file)}.`, activity: { text: fill(t.deleted, { path: ws.display(file) }), file: { path: ws.display(file), change: "deleted" } } };
     }
     case "move_file": {
       const from = await ws.resolve(String(args.from ?? ""));
@@ -256,7 +268,7 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx: 
       await ctx.checkpoints.rememberMove(from, to);
       await mkdir(path.dirname(to), { recursive: true });
       await rename(from, to);
-      return { output: `Moved ${ws.display(from)} to ${ws.display(to)}.`, activity: { text: fill(t.moved, { path: ws.display(from), to: ws.display(to) }) } };
+      return { output: `Moved ${ws.display(from)} to ${ws.display(to)}.`, activity: { text: fill(t.moved, { path: ws.display(from), to: ws.display(to) }), file: { path: ws.display(from), change: "moved", to: ws.display(to) } } };
     }
     case "run_command": {
       const command = String(args.command ?? "");

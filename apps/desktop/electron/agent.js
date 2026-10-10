@@ -31,8 +31,8 @@ async function takeRewindNote(task) {
 }
 
 const notifyText = {
-  en: { done: "Finished", permission: "Needs your OK to continue" },
-  ar: { done: "انتهت المهمة", permission: "تحتاج موافقتك للمتابعة" },
+  en: { done: "Finished", permission: "Needs your OK to continue", question: "Has a question for you" },
+  ar: { done: "انتهت المهمة", permission: "تحتاج موافقتك للمتابعة", question: "لديها سؤال لك" },
 };
 
 /** Tell the person when a task finishes (or needs them) while they're in another window. */
@@ -40,7 +40,7 @@ function notifyIfAway(sender, task, e, lang) {
   const win = sender.isDestroyed() ? null : BrowserWindow.fromWebContents(sender);
   if (!win || win.isFocused() || !Notification.isSupported()) return;
   if (e.type === "error" && /stopp|توقف/i.test(e.message)) return; // the person stopped it themselves
-  const body = e.type === "error" ? e.message : notifyText[lang][e.type];
+  const body = e.type === "error" ? e.message : e.type === "question" ? `${notifyText[lang].question}: ${e.question}` : notifyText[lang][e.type];
   const note = new Notification({ title: task.meta.title, body, silent: false });
   note.on("click", () => {
     if (win.isDestroyed()) return;
@@ -78,7 +78,7 @@ export function initAgent() {
     const send = (e) => {
       record(e);
       if (!event.sender.isDestroyed()) event.sender.send("agent:event", runId, e);
-      if (e.type === "done" || e.type === "error" || e.type === "permission") notifyIfAway(event.sender, task, e, lang);
+      if (e.type === "done" || e.type === "error" || e.type === "permission" || e.type === "question") notifyIfAway(event.sender, task, e, lang);
     };
     const { prompt: prepared, names } = await prepareAttachments(task.meta.folder, text, Array.isArray(attachments) ? attachments : []);
     const note = await takeRewindNote(task);
@@ -136,6 +136,14 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     }
     run.record({ type: "permission-answer", requestId: String(requestId), allowed: !!allowed, ...(keep ? { remember: true } : {}) });
     run.session.respond(String(requestId), !!allowed);
+  });
+  ipcMain.handle("agent:answer", (_e, { runId, requestId, text }) => {
+    const run = runs.get(runId);
+    if (!run) return;
+    const answer = String(text ?? "").trim().slice(0, 2000);
+    if (!answer) return;
+    run.record({ type: "answer", requestId: String(requestId), text: answer });
+    run.session.answer(String(requestId), answer);
   });
   ipcMain.handle("agent:stop", (_e, { runId }) => runs.get(runId)?.session.stop());
 
