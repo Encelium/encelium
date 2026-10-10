@@ -6,7 +6,7 @@ import type { ChatMessage, ContentPart, ModelConnection, ToolCall } from "../pro
 import type { AgentEvent, AgentRun, Language } from "./events.ts";
 import type { Checkpoints } from "./checkpoints.ts";
 import type { Workspace } from "./workspace.ts";
-import { TOOLS, failureActivity, permissionText, riskOf, runTool, workingText } from "./tools.ts";
+import { TOOLS, checkpointLabel, failureActivity, permissionText, riskOf, runTool, workingText } from "./tools.ts";
 
 export interface SessionOptions {
   connection: ModelConnection;
@@ -20,7 +20,7 @@ export interface SessionOptions {
 
 const S = {
   en: {
-    thinking: "Thinking", finished: "Finished.", before: "Before: {what}",
+    thinking: "Thinking", finished: "Finished.",
     stopped: "Stopped. Nothing else will change.", stoppedHint: "You can continue whenever you like.",
     tooLong: "I’ve taken a lot of steps without finishing, so I stopped to be safe.", tooLongHint: "Tell me what to focus on, and I’ll continue from here.",
     errors: {
@@ -34,7 +34,7 @@ const S = {
     },
   },
   ar: {
-    thinking: "أفكّر", finished: "انتهيت.", before: "قبل: {what}",
+    thinking: "أفكّر", finished: "انتهيت.",
     stopped: "توقفتُ. لن يتغير شيء آخر.", stoppedHint: "يمكنك المتابعة متى شئت.",
     tooLong: "قمتُ بخطوات كثيرة دون أن أنتهي، فتوقفتُ احتياطًا.", tooLongHint: "أخبرني بما أركّز عليه، وسأتابع من هنا.",
     errors: {
@@ -111,6 +111,8 @@ export class AgentSession implements AgentRun {
     const maxTurns = this.opts.maxTurns ?? 40;
 
     try {
+      // One Rewind point per request from the person, made just before the first change.
+      let checkpointMade = false;
       for (let turn = 0; turn < maxTurns; turn++) {
         if (signal.aborted) throw new DOMException("stopped", "AbortError");
         this.emit({ type: "status", phase: "thinking", text: s.thinking });
@@ -130,8 +132,6 @@ export class AgentSession implements AgentRun {
           return;
         }
 
-        // One Rewind point per model turn, made just before its first change.
-        let checkpointMade = false;
         for (const call of calls) {
           let args: Record<string, unknown> = {};
           try { args = call.arguments ? JSON.parse(call.arguments) : {}; } catch {
@@ -158,7 +158,7 @@ export class AgentSession implements AgentRun {
               ensureCheckpoint: async () => {
                 if (checkpointMade) return;
                 checkpointMade = true;
-                const cp = await checkpoints.create(s.before.replace("{what}", what));
+                const cp = await checkpoints.create(checkpointLabel(language, call.name, args));
                 this.emit({ type: "checkpoint", ...cp });
               },
               onPlan: (title, steps) => this.emit({ type: "plan", title, steps }),

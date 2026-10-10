@@ -27,8 +27,10 @@ async function saveIndex() {
 
 // ── Folders ─────────────────────────────────────────────────────────
 function folderName(prompt) {
-  const words = prompt.toLowerCase().normalize("NFKD").replace(/[^a-z0-9\s-]/g, " ").trim().split(/\s+/).filter(Boolean).slice(0, 6);
-  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+  // Letters of any language (an Arabic request gets an Arabic folder name), no accents or marks.
+  const words = prompt.toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "").replace(/[^\p{L}\p{N}\s-]/gu, " ").trim().split(/\s+/).filter(Boolean).slice(0, 6);
+  const d = new Date(), two = (n) => String(n).padStart(2, "0"); // local time, as the person sees it
+  const stamp = `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}${two(d.getHours())}${two(d.getMinutes())}`;
   return `${words.length ? words.join("-") : "task"}-${stamp}`;
 }
 

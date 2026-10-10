@@ -1,5 +1,7 @@
 // Runs agent tasks for the window. Tasks, folders and history live in tasks.js.
 import { ipcMain } from "electron";
+import { readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { AgentSession, ENCELADUS_PRESET } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
 import { getTask, recorder, saveMessages, setTaskStopper } from "./tasks.js";
@@ -21,6 +23,13 @@ function connection() {
   return { protocol: ENCELADUS_PRESET.protocol, baseUrl: ENCELADUS_PRESET.baseUrl, model: "enceladus", usageInStream: true };
 }
 
+// After a Rewind the files changed behind the model's back. The next request carries a
+// note about it, kept on disk so it survives a restart.
+const rewindNoteFile = (task) => path.join(task.dir, "rewind-note.txt");
+async function takeRewindNote(task) {
+  try { const note = await readFile(rewindNoteFile(task), "utf8"); await rm(rewindNoteFile(task), { force: true }); return note; } catch { return ""; }
+}
+
 export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
@@ -35,7 +44,11 @@ export function initAgent() {
       record(e);
       if (!event.sender.isDestroyed()) event.sender.send("agent:event", runId, e);
     };
-    const { prompt: request, names } = await prepareAttachments(task.meta.folder, text, Array.isArray(attachments) ? attachments : []);
+    const { prompt: prepared, names } = await prepareAttachments(task.meta.folder, text, Array.isArray(attachments) ? attachments : []);
+    const note = await takeRewindNote(task);
+    const request = !note ? prepared : typeof prepared === "string" ? `${note}
+
+${prepared}` : [{ type: "text", text: note }, ...prepared];
     record({ type: "user", text, ...(names.length ? { attachments: names } : {}) });
 
     const conn = connection();
@@ -66,8 +79,11 @@ export function initAgent() {
     const task = await getTask(taskId);
     if (!task) return { ok: false, message: language === "ar" ? "لم يعد هذا التراجع متاحًا." : "This Rewind point isn’t available any more." };
     try {
-      await task.checkpoints.restore(String(checkpointId));
+      const cp = (await task.checkpoints.all()).find((c) => c.id === String(checkpointId));
+      const files = await task.checkpoints.restore(String(checkpointId));
       recorder(task)({ type: "restored", checkpointId: String(checkpointId) });
+      const names = files.map((f) => path.relative(task.meta.folder, f) || f).join(", ");
+      await writeFile(rewindNoteFile(task), `[The person used Rewind: the task folder is back to how it was ${cp ? `at "${cp.label}"` : "at an earlier point"}. Everything you changed after that point is undone${names ? ` (files put back: ${names})` : ""}. Read files again before relying on what you remember of them.]`);
       return { ok: true };
     } catch (e) {
       return { ok: false, message: e.message };

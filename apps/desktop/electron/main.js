@@ -11,6 +11,9 @@ import { initAttachments } from "./attachments.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 app.setName("Enceladus"); // user data lives in %APPDATA%\Enceladus, not under the package name
+// Automated tests run in their own profile, so they never touch the person's chats or settings
+// (and can run while the person's copy is open: the single-instance lock is per profile).
+if (process.env.ENCELADUS_PROFILE_DIR) app.setPath("userData", process.env.ENCELADUS_PROFILE_DIR);
 const devUrl = process.env.ENCELADUS_DEV_URL;
 
 // Title bar colors must match --color-bg-sunken / --color-text-muted in tokens.css.

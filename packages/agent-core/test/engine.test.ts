@@ -137,3 +137,11 @@ test("risk: read-only commands are safe, installs are careful, destructive ones 
   assert.equal(riskOf("write_file", { path: "a" }), "safe");
   assert.equal(riskOf("delete_file", { path: "a" }), "careful");
 });
+
+test("a tool call missing a required field gets a clear retry hint, not a crash", async () => {
+  const { missingFields, failureActivity } = await import("../src/engine/tools.ts");
+  assert.deepEqual(missingFields("edit_file", { old_text: "a", new_text: "" }), ["path"]);
+  assert.deepEqual(missingFields("write_file", { path: "index.html", content: "" }), []);
+  assert.deepEqual(missingFields("run_command", { command: "dir" }), []); // "reason" is optional in practice
+  assert.equal(failureActivity("en", "edit_file", {}).text, "Couldn’t change a file");
+});

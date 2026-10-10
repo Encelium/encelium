@@ -74,14 +74,18 @@ export const TOOLS: ToolDefinition[] = [
 const L = {
   en: {
     listed: "Looked through {path}", read: "Read {path}", created: "Created {path}", changed: "Changed {path}", deleted: "Deleted {path}",
-    ran: "Ran a command", failed: "Couldn’t {what}", planUpdated: "Updated the plan",
+    ran: "Ran a command", planUpdated: "Updated the plan", aFile: "a file",
+    before: { write_file: "Before writing {path}", edit_file: "Before changing {path}", delete_file: "Before deleting {path}", other: "Before changing files" },
+    failed: { list_files: "Couldn’t look at your files", read_file: "Couldn’t read {path}", write_file: "Couldn’t write {path}", edit_file: "Couldn’t change {path}", delete_file: "Couldn’t delete {path}", run_command: "Couldn’t run the command", update_plan: "Couldn’t update the plan" },
     askDeleteTitle: "Delete {path}?", askDeleteBody: "You can bring it back with Rewind.",
     askRunTitle: "Run a command?", allow: "Allow", deny: "Not now",
     working: { list_files: "Looking at your files", read_file: "Reading {path}", write_file: "Writing {path}", edit_file: "Changing {path}", delete_file: "Deleting {path}", run_command: "Running a command", update_plan: "Planning" },
   },
   ar: {
     listed: "اطّلعتُ على {path}", read: "قرأتُ {path}", created: "أنشأتُ {path}", changed: "عدّلتُ {path}", deleted: "حذفتُ {path}",
-    ran: "شغّلتُ أمرًا", failed: "تعذّر: {what}", planUpdated: "حدّثتُ الخطة",
+    ran: "شغّلتُ أمرًا", planUpdated: "حدّثتُ الخطة", aFile: "ملفًا",
+    before: { write_file: "قبل كتابة {path}", edit_file: "قبل تعديل {path}", delete_file: "قبل حذف {path}", other: "قبل تغيير الملفات" },
+    failed: { list_files: "تعذّر الاطلاع على ملفاتك", read_file: "تعذّرت قراءة {path}", write_file: "تعذّرت كتابة {path}", edit_file: "تعذّر تعديل {path}", delete_file: "تعذّر حذف {path}", run_command: "تعذّر تشغيل الأمر", update_plan: "تعذّر تحديث الخطة" },
     askDeleteTitle: "حذف {path}؟", askDeleteBody: "يمكنك استعادته بالتراجع.",
     askRunTitle: "تشغيل أمر؟", allow: "اسمح", deny: "ليس الآن",
     working: { list_files: "أطّلع على ملفاتك", read_file: "أقرأ {path}", write_file: "أكتب {path}", edit_file: "أعدّل {path}", delete_file: "أحذف {path}", run_command: "أشغّل أمرًا", update_plan: "أخطّط" },
@@ -91,7 +95,21 @@ const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (
 
 export function workingText(lang: Language, tool: string, args: Record<string, unknown>) {
   const t = (L[lang].working as Record<string, string>)[tool];
-  return t ? fill(t, { path: String(args.path ?? "") }) : L[lang].working.update_plan;
+  return t ? fill(t, { path: String(args.path ?? "") || L[lang].aFile }) : L[lang].working.update_plan;
+}
+
+/** The Rewind point's name, e.g. "Before changing index.html". */
+export function checkpointLabel(lang: Language, tool: string, args: Record<string, unknown>) {
+  const b = L[lang].before as Record<string, string>;
+  return fill(b[tool] ?? b.other ?? "", { path: String(args.path ?? "") || L[lang].aFile });
+}
+
+/** Fields a tool can't work without. Checked before running, so a model that leaves one out gets a clear retry hint. */
+export function missingFields(tool: string, args: Record<string, unknown>): string[] {
+  if (tool === "update_plan") return []; // lenient: a bad plan just shows fewer steps
+  const def = TOOLS.find((d) => d.name === tool);
+  const required = ((def?.parameters as { required?: string[] } | undefined)?.required ?? []).filter((f) => f !== "reason");
+  return required.filter((f) => typeof args[f] !== "string" || (f !== "new_text" && f !== "content" && !(args[f] as string).trim()));
 }
 
 // ── Risk ────────────────────────────────────────────────────────────
@@ -146,6 +164,8 @@ const COMMAND_TIMEOUT_MS = 120_000;
 const SKIP = new Set(["node_modules", ".git", ".enceladus"]);
 
 export async function runTool(name: string, args: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> {
+  const missing = missingFields(name, args);
+  if (missing.length) return { output: `Missing ${missing.map((f) => `"${f}"`).join(", ")}. Send the call again with every required field.`, isError: true };
   const t = L[ctx.language];
   const ws = ctx.workspace;
   const p = typeof args.path === "string" ? args.path : "";
@@ -213,7 +233,8 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx: 
 }
 
 export function failureActivity(lang: Language, tool: string, args: Record<string, unknown>) {
-  return { text: fill(L[lang].failed, { what: workingText(lang, tool, args) }) };
+  const f = (L[lang].failed as Record<string, string>)[tool] ?? L[lang].failed.update_plan;
+  return { text: fill(f, { path: String(args.path ?? "") || L[lang].aFile }) };
 }
 
 async function walk(dir: string, depth: number, out: string[], ws: Workspace) {
