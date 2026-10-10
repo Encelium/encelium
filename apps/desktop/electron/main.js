@@ -1,6 +1,6 @@
 // Enceladus — Electron main process.
 // Owns the window, the native title bar buttons, and the user's settings file.
-import { app, BrowserWindow, ipcMain, nativeTheme, shell } from "electron";
+import { app, BrowserWindow, clipboard, ipcMain, nativeTheme, screen, shell } from "electron";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -57,6 +57,10 @@ const effectiveTheme = () => (nativeTheme.shouldUseDarkColors ? "dark" : "light"
 
 // ── Window ──────────────────────────────────────────────────────────
 let win = null;
+const NORMAL_MIN = { width: 720, height: 520 };
+const COMPACT = { width: 460, height: 760, minWidth: 380, minHeight: 480 };
+/** Where the window was before compact mode, to go back to it. */
+let normalBounds = null;
 
 function applyChrome() {
   if (!win) return;
@@ -71,8 +75,8 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    minWidth: NORMAL_MIN.width,
+    minHeight: NORMAL_MIN.height,
     show: false,
     title: "Enceladus",
     backgroundColor: c.bg,
@@ -113,6 +117,27 @@ ipcMain.handle("settings:set", async (_event, patch) => {
   return { ...settings, effectiveTheme: effectiveTheme() };
 });
 
+// Compact mode: a small chat-only window (the screen hides the sidebar and panel itself).
+ipcMain.handle("window:compact", (_event, on) => {
+  if (!win) return;
+  if (win.isMaximized()) win.unmaximize();
+  if (on) {
+    normalBounds = win.getBounds();
+    const area = screen.getDisplayMatching(normalBounds).workArea;
+    win.setMinimumSize(COMPACT.minWidth, COMPACT.minHeight);
+    // Keep the top-right corner where it was, so the window shrinks in place.
+    const x = Math.max(area.x, Math.min(normalBounds.x + normalBounds.width - COMPACT.width, area.x + area.width - COMPACT.width));
+    win.setBounds({ x, y: Math.max(area.y, normalBounds.y), width: COMPACT.width, height: Math.min(COMPACT.height, area.height) }, true);
+  } else {
+    win.setAlwaysOnTop(false);
+    win.setMinimumSize(NORMAL_MIN.width, NORMAL_MIN.height);
+    if (normalBounds) win.setBounds(normalBounds, true);
+    normalBounds = null;
+  }
+});
+ipcMain.handle("window:on-top", (_event, on) => win?.setAlwaysOnTop(!!on));
+ipcMain.handle("clipboard:write", (_event, text) => clipboard.writeText(String(text ?? "")));
+
 // ── App lifecycle ───────────────────────────────────────────────────
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -123,6 +148,7 @@ if (!app.requestSingleInstanceLock()) {
     win.focus();
   });
 
+  app.setAppUserModelId("app.enceladus.desktop"); // lets Windows show our notifications
   app.whenReady().then(async () => {
     await loadSettings();
     await initModels();

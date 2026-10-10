@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useMediaQuery, useRemembered } from "./useLayout";
 import { bridge, type Settings } from "./bridge";
 import { strings } from "./i18n";
 import { demoEngine } from "./agent/demo";
@@ -43,6 +44,33 @@ export function App() {
   // Bumped when a task is re-opened, so the screen starts fresh.
   const [openCount, setOpenCount] = useState(0);
 
+  // Layout. Wide windows dock the sidebar and the right panel; smaller ones slide them over the
+  // chat instead, closed until asked for. Compact mode is a small chat-only window.
+  const [sidebarDocked, setSidebarDocked] = useRemembered("enceladus.sidebar", true);
+  const [panelDocked, setPanelDocked] = useRemembered("enceladus.panel", true);
+  const [sidebarOver, setSidebarOver] = useState(false);
+  const [panelOver, setPanelOver] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [onTop, setOnTop] = useState(false);
+  const [searchRequest, setSearchRequest] = useState(0);
+  const narrow = useMediaQuery("(max-width: 900px)");
+  const roomy = useMediaQuery("(min-width: 1100px)");
+  const sidebarMode = compact || narrow ? "overlay" : "docked";
+  const panelMode = compact || !roomy ? "overlay" : "docked";
+  const sidebarOpen = sidebarMode === "docked" ? sidebarDocked : sidebarOver;
+  const panelOpen = panelMode === "docked" ? panelDocked : panelOver;
+  const toggleSidebar = () => (sidebarMode === "docked" ? setSidebarDocked(!sidebarDocked) : setSidebarOver(!sidebarOver));
+  const togglePanel = () => (panelMode === "docked" ? setPanelDocked(!panelDocked) : setPanelOver(!panelOver));
+  const toggleCompact = () => {
+    const next = !compact;
+    setCompact(next);
+    setSidebarOver(false);
+    setPanelOver(false);
+    if (!next) setOnTop(false);
+    bridge.window?.setCompact(next);
+  };
+  const toggleOnTop = () => { setOnTop(!onTop); bridge.window?.setOnTop(!onTop); };
+
   useEffect(() => {
     bridge.getSettings().then(setSettings);
     bridge.tasks?.list().then((saved) => setTasks(saved.map((x) => ({ id: x.id, title: taskTitle(x.title), folder: x.folder }))));
@@ -58,6 +86,17 @@ export function App() {
     el.dir = settings.language === "ar" ? "rtl" : "ltr";
     document.title = strings[settings.language].appName;
   }, [settings]);
+
+  // Keyboard shortcuts. Keys are matched by position (e.code), so they work with an Arabic layout too.
+  const keys = useRef<(e: KeyboardEvent) => void>(() => {});
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keys.current(e);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  // A notification was clicked: show that task.
+  const openRef = useRef<(id: string) => void>(() => {});
+  useEffect(() => bridge.tasks?.onOpenRequest((id) => openRef.current(id)), []);
 
   if (!settings) return null; // settings arrive within a frame; avoid a flash of the wrong theme/language
 
@@ -83,25 +122,62 @@ export function App() {
   const openTask = (id: string) => {
     const task = tasks.find((x) => x.id === id);
     if (!task) return;
+    setSidebarOver(false); // a slid-over sidebar gets out of the way once something is picked
     if (view.kind === "task" && view.id === id) return;
     setOpenCount((n) => n + 1);
     // The desktop app re-opens the saved history; the browser demo has nothing saved, so it re-runs.
     setView(bridge.tasks ? { kind: "task", id } : { kind: "task", id, prompt: task.prompt });
   };
 
+  const renameTask = async (id: string, title: string) => {
+    setTasks((prev) => prev.map((x) => (x.id === id ? { ...x, title: taskTitle(title) } : x)));
+    await bridge.tasks?.rename({ taskId: id, title });
+  };
+  const newTask = () => { setSidebarOver(false); setView({ kind: "home" }); };
+  openRef.current = openTask;
+  keys.current = (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const handled = (() => {
+      if (e.shiftKey) return e.code === "KeyM" ? (toggleCompact(), true) : false;
+      switch (e.code) {
+        case "KeyN": newTask(); return true;
+        case "KeyB": toggleSidebar(); return true;
+        case "Backslash": if (view.kind === "task") togglePanel(); return true;
+        case "Comma": setSettingsOpen(true); return true;
+        case "KeyK":
+          if (sidebarMode === "docked") setSidebarDocked(true); else setSidebarOver(true);
+          setSearchRequest((n) => n + 1);
+          return true;
+        default: return false;
+      }
+    })();
+    if (handled) e.preventDefault();
+  };
+
+  const bodyClass = ["app-body", sidebarMode === "docked" && sidebarOpen ? "with-sidebar" : "", compact ? "is-compact" : ""].filter(Boolean).join(" ");
+
   return (
     <div className="app">
-      <TitleBar t={t} />
-      <div className="app-body">
-        <Sidebar
+      <TitleBar
+        t={t}
+        sidebar={{ open: sidebarOpen, onToggle: toggleSidebar }}
+        panel={view.kind === "task" ? { open: panelOpen, onToggle: togglePanel } : undefined}
+        compact={bridge.window ? { on: compact, onToggle: toggleCompact } : undefined}
+        onTop={compact && bridge.window ? { on: onTop, onToggle: toggleOnTop } : undefined}
+      />
+      <div className={bodyClass}>
+        {sidebarMode === "overlay" && sidebarOpen && <div className="app-scrim" onClick={() => setSidebarOver(false)} />}
+        {sidebarOpen && <div className={sidebarMode === "overlay" ? "app-sidebar-over" : "app-sidebar"}><Sidebar
           t={t}
           tasks={tasks.map((x) => ({ id: x.id, title: x.title }))}
           currentTaskId={view.kind === "task" ? view.id : null}
-          onNewTask={() => setView({ kind: "home" })}
+          onNewTask={newTask}
           onOpenTask={openTask}
           onDeleteTask={bridge.tasks ? (id) => { const task = tasks.find((x) => x.id === id); if (task) setDeleting(task); } : undefined}
+          onRenameTask={bridge.tasks ? renameTask : undefined}
           onOpenSettings={() => setSettingsOpen(true)}
-        />
+          searchRequest={searchRequest}
+        /></div>}
         {view.kind === "home" ? (
           <Home t={t} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
         ) : (
@@ -114,6 +190,7 @@ export function App() {
             attachments={view.attachments}
             language={settings.language}
             engine={engineFor(view.id)}
+            panel={{ open: panelOpen, mode: panelMode, onClose: () => (panelMode === "docked" ? setPanelDocked(false) : setPanelOver(false)) }}
           />
         )}
       </div>

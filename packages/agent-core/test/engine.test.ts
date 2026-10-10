@@ -170,3 +170,9 @@ test("folder names: a short name is used, a sentence is not", async () => {
   assert.ok(!looksLikeName("Sure. I'll make a simple page for your bakery."));
   assert.equal(toFolderName("Sweet Crumb Bakery"), "sweet-crumb-bakery");
 });
+
+test("fallback folder names keep the meaningful words", async () => {
+  const { fallbackFolderName } = await import("../src/engine/naming.ts");
+  assert.equal(fallbackFolderName("Make a page for my bakery"), "page-bakery");
+  assert.equal(fallbackFolderName("اصنع صفحة"), "");
+});

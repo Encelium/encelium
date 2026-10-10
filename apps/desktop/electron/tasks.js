@@ -5,7 +5,7 @@ import { existsSync, watch } from "node:fs";
 import { appendFile, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { Checkpoints, Workspace, toFolderName } from "@enceladus/agent-core";
+import { Checkpoints, Workspace, fallbackFolderName } from "@enceladus/agent-core";
 
 export const PREVIEW_SCHEME = "enceladus-preview";
 
@@ -32,7 +32,7 @@ async function saveIndex() {
  */
 function newFolder(prompt, suggested) {
   const parent = path.join(app.getPath("documents"), "Enceladus");
-  const name = suggested || toFolderName(prompt) || "new-project"; // toFolderName keeps English letters only
+  const name = suggested || fallbackFolderName(prompt) || "new-project"; // English words only
   let folder = path.join(parent, name);
   for (let n = 2; existsSync(folder); n++) folder = path.join(parent, `${name}-${n}`);
   return folder;
@@ -178,6 +178,14 @@ export async function initTasks() {
   ipcMain.handle("tasks:list", () => index.map(({ id, title, folder, updatedAt }) => ({ id, title, folder, updatedAt })));
   ipcMain.handle("tasks:events", (_e, { taskId }) => readEvents(taskId));
   ipcMain.handle("tasks:delete", (_e, { taskId }) => deleteTask(taskId));
+  ipcMain.handle("tasks:rename", async (_e, { taskId, title }) => {
+    const meta = index.find((t) => t.id === safeId(taskId));
+    const clean = String(title ?? "").trim().replace(/\s+/g, " ").slice(0, 120);
+    if (!meta || !clean) return false;
+    meta.title = clean; // only the name in the list; the folder keeps its name
+    await saveIndex();
+    return true;
+  });
   ipcMain.handle("tasks:open-folder", async (_e, { taskId }) => {
     const meta = index.find((t) => t.id === safeId(taskId));
     if (meta) await shell.openPath(meta.folder);

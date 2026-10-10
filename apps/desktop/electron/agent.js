@@ -1,5 +1,5 @@
 // Runs agent tasks for the window. Tasks, folders and history live in tasks.js.
-import { ipcMain } from "electron";
+import { BrowserWindow, Notification, ipcMain } from "electron";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { AgentSession, ENCELADUS_PRESET, suggestFolderName } from "@enceladus/agent-core";
@@ -30,6 +30,27 @@ async function takeRewindNote(task) {
   try { const note = await readFile(rewindNoteFile(task), "utf8"); await rm(rewindNoteFile(task), { force: true }); return note; } catch { return ""; }
 }
 
+const notifyText = {
+  en: { done: "Finished", permission: "Needs your OK to continue" },
+  ar: { done: "انتهت المهمة", permission: "تحتاج موافقتك للمتابعة" },
+};
+
+/** Tell the person when a task finishes (or needs them) while they're in another window. */
+function notifyIfAway(sender, task, e, lang) {
+  const win = sender.isDestroyed() ? null : BrowserWindow.fromWebContents(sender);
+  if (!win || win.isFocused() || !Notification.isSupported()) return;
+  if (e.type === "error" && /stopp|توقف/i.test(e.message)) return; // the person stopped it themselves
+  const body = e.type === "error" ? e.message : notifyText[lang][e.type];
+  const note = new Notification({ title: task.meta.title, body, silent: false });
+  note.on("click", () => {
+    if (win.isDestroyed()) return;
+    if (win.isMinimized()) win.restore();
+    win.focus();
+    win.webContents.send("task:open", task.meta.id);
+  });
+  note.show();
+}
+
 export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
@@ -47,6 +68,7 @@ export function initAgent() {
     const send = (e) => {
       record(e);
       if (!event.sender.isDestroyed()) event.sender.send("agent:event", runId, e);
+      if (e.type === "done" || e.type === "error" || e.type === "permission") notifyIfAway(event.sender, task, e, lang);
     };
     const { prompt: prepared, names } = await prepareAttachments(task.meta.folder, text, Array.isArray(attachments) ? attachments : []);
     const note = await takeRewindNote(task);

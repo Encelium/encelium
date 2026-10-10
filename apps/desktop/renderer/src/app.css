@@ -26,7 +26,17 @@ body { overflow: hidden; }
 }
 
 .app-body {
+  position: relative;
   display: grid;
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
 }
+.app-body.with-sidebar { grid-template-columns: 256px minmax(0, 1fr); }
+.app-sidebar { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; min-width: 0; }
+/* Small windows and compact mode: the sidebar slides over the content. */
+.app-sidebar-over {
+  position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 8;
+  width: min(280px, 86%); display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0;
+  box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, .18));
+}
+.app-scrim { position: absolute; inset: 0; z-index: 7; background: var(--color-scrim); }

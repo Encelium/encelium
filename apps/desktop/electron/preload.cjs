@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld("enceladus", {
   },
   attachments: {
     choose: () => ipcRenderer.invoke("attachments:choose"),
+    /** A picture pasted with Ctrl+V (base64), saved as a file so it can be attached. */
+    savePasted: (input) => ipcRenderer.invoke("attachments:save-pasted", input),
     /** Files dropped on the window: resolve their paths here (the page can't see paths). */
     describeDropped: (files) => ipcRenderer.invoke("attachments:describe", { paths: Array.from(files, (f) => webUtils.getPathForFile(f)).filter(Boolean) }),
   },
@@ -31,6 +33,13 @@ contextBridge.exposeInMainWorld("enceladus", {
     list: () => ipcRenderer.invoke("tasks:list"),
     events: (input) => ipcRenderer.invoke("tasks:events", input),
     delete: (input) => ipcRenderer.invoke("tasks:delete", input),
+    rename: (input) => ipcRenderer.invoke("tasks:rename", input),
+    /** A notification was clicked: open that task. */
+    onOpenRequest: (callback) => {
+      const handler = (_event, taskId) => callback(taskId);
+      ipcRenderer.on("task:open", handler);
+      return () => ipcRenderer.removeListener("task:open", handler);
+    },
     openFolder: (input) => ipcRenderer.invoke("tasks:open-folder", input),
     chooseFolder: () => ipcRenderer.invoke("folder:choose"),
     findPreview: (input) => ipcRenderer.invoke("preview:find", input),
@@ -44,6 +53,11 @@ contextBridge.exposeInMainWorld("enceladus", {
       return () => ipcRenderer.removeListener("task:files-changed", handler);
     },
   },
+  window: {
+    setCompact: (on) => ipcRenderer.invoke("window:compact", !!on),
+    setOnTop: (on) => ipcRenderer.invoke("window:on-top", !!on),
+  },
+  copyText: (text) => ipcRenderer.invoke("clipboard:write", text),
   onEffectiveTheme: (callback) => {
     const handler = (_event, theme) => callback(theme);
     ipcRenderer.on("theme:effective", handler);

@@ -56,6 +56,7 @@ export function Home({ t, onSubmit, onNotice }: HomeProps) {
           onSubmit={(text) => { onSubmit(text, folder?.path, files.files); files.clear(); }}
           onAttach={files.available ? files.choose : undefined}
           onDropFiles={files.available ? files.drop : undefined}
+          onPasteImages={files.available ? files.paste : undefined}
           attachments={files.chips}
           onRemoveAttachment={files.remove}
           removeLabel={t.removeAttachment}

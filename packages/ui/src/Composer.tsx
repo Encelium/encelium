@@ -40,6 +40,8 @@ export interface ComposerProps {
   removeLabel?: string;
   /** Files dropped onto the composer. Leave out to disable dropping. */
   onDropFiles?: (files: FileList) => void;
+  /** Pictures pasted with Ctrl+V. Pasted text still goes into the box as usual. */
+  onPasteImages?: (files: File[]) => void;
   className?: string;
 }
 
@@ -47,7 +49,7 @@ export interface ComposerAttachment { id: string; name: string; kind: "image" | 
 
 export function Composer({
   placeholder, sendLabel, attachLabel, inputLabel, folder, value, onValueChange, onSubmit, onAttach, disabled, focusRequest,
-  attachments = [], onRemoveAttachment, removeLabel = "Remove", onDropFiles, className,
+  attachments = [], onRemoveAttachment, removeLabel = "Remove", onDropFiles, onPasteImages, className,
 }: ComposerProps) {
   const [inner, setInner] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -125,6 +127,12 @@ export function Composer({
         disabled={disabled}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKeyDown}
+        onPaste={onPasteImages && ((e) => {
+          const images = Array.from(e.clipboardData.files).filter((f) => f.type.startsWith("image/"));
+          if (!images.length) return;
+          e.preventDefault();
+          onPasteImages(images);
+        })}
       />
       <div className={s.bar}>
         <IconButton icon="paperclip" label={attachLabel} onClick={onAttach} disabled={disabled} />

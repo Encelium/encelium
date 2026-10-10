@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Button, Composer, Icon, Markdown, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
+  Button, Composer, Icon, IconButton, Markdown, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
   type RewindItem,
 } from "@enceladus/ui";
 import { bridge, type Attachment, type Language, type StoredEvent } from "./bridge";
 import { useAttachments } from "./useAttachments";
 import { FilesPanel } from "./FilesPanel";
+import { useRememberedNumber } from "./useLayout";
+import { Splitter } from "./Splitter";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import s from "./Work.module.css";
@@ -35,6 +37,8 @@ export interface WorkProps {
   attachments?: Attachment[];
   language: Language;
   engine: AgentEngine;
+  /** The right panel: docked beside the chat, or slid over it in small windows. */
+  panel?: { open: boolean; mode: "docked" | "overlay"; onClose: () => void };
 }
 
 function ActivityLine({ t, text, details }: { t: Strings; text: string; details?: string }) {
@@ -55,7 +59,25 @@ function ActivityLine({ t, text, details }: { t: Strings; text: string; details?
   );
 }
 
-export function Work({ t, taskId, prompt, folder, attachments, language, engine }: WorkProps) {
+function CopyButton({ t, text }: { t: Strings; text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await (bridge.copyText ? bridge.copyText(text) : navigator.clipboard.writeText(text));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch { /* clipboard unavailable: nothing to do */ }
+  };
+  return (
+    <Button variant="ghost" size="sm" icon={copied ? "check" : "copy"} onClick={copy} aria-live="polite">
+      {copied ? t.work.copied : t.work.copy}
+    </Button>
+  );
+}
+
+export function Work({ t, taskId, prompt, folder, attachments, language, engine, panel = { open: true, mode: "docked", onClose: () => {} } }: WorkProps) {
+  const [chatWidth, setChatWidth] = useRememberedNumber("enceladus.chatWidth", 480);
+  const workRef = useRef<HTMLElement>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [status, setStatus] = useState<Status | null>(null);
   const [running, setRunning] = useState(false);
@@ -245,6 +267,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
     if (el && stuck.current) el.scrollTop = el.scrollHeight;
   }, [items, status]);
 
+  const lastRequest = [...items].reverse().find((i): i is Extract<Item, { kind: "user" }> => i.kind === "user")?.text;
   const timeFormat = new Intl.DateTimeFormat(language, { hour: "numeric", minute: "2-digit" });
   // Rewind points are "how things were before a change", so none of them is "now":
   // a "Now" entry sits on top, and every point below it can be restored.
@@ -256,7 +279,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
     : [];
 
   return (
-    <main className={s.work}>
+    <main
+      ref={workRef}
+      className={[s.work, !panel.open || panel.mode === "overlay" ? s.chatOnly : ""].filter(Boolean).join(" ")}
+      style={{ "--chat-width": `${chatWidth}px` } as React.CSSProperties}
+    >
       <section className={s.chat}>
         <div ref={listRef} className={s.list} role="log" aria-live="polite" aria-label={t.work.messages} onScroll={onScroll}>
           {items.map((item, index) => {
@@ -278,7 +305,13 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
                 // A note made while working (more work follows) is quiet; the final answer is full size.
                 const next = items[index + 1];
                 const note = !!next && (next.kind === "plan" || next.kind === "permission" || (next.kind === "activity" && !next.id.startsWith("done-")));
-                return <Message key={item.id} role="assistant" className={note ? s.note : undefined}><Markdown text={item.text} /></Message>;
+                if (note) return <Message key={item.id} role="assistant" className={s.note}><Markdown text={item.text} /></Message>;
+                return (
+                  <div key={item.id} className={s.answer}>
+                    <Message role="assistant"><Markdown text={item.text} /></Message>
+                    {(next || !running) && <div className={s.answerActions}><CopyButton t={t} text={item.text} /></div>}
+                  </div>
+                );
               }
               case "plan":
                 return <PlanCard key={item.id} title={item.plan.title} steps={item.plan.steps} statusLabels={t.work.planStatus} />;
@@ -317,6 +350,12 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
                   <div key={item.id} className={s.errorBlock}>
                     <Message role="assistant">{item.message}</Message>
                     {item.suggestion && <p className={s.suggestion} dir="auto">{item.suggestion}</p>}
+                    {/* The last request failed (no connection, a limit…): one click sends it again. */}
+                    {index === items.length - 1 && !running && lastRequest && (
+                      <div className={s.answerActions}>
+                        <Button variant="secondary" size="sm" icon="repeat" onClick={() => startRun(lastRequest)}>{t.work.tryAgain}</Button>
+                      </div>
+                    )}
                   </div>
                 );
             }
@@ -344,6 +383,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
             onSubmit={(text) => { startRun(text, files.files); files.clear(); }}
             onAttach={files.available ? files.choose : undefined}
             onDropFiles={files.available ? files.drop : undefined}
+            onPasteImages={files.available ? files.paste : undefined}
             attachments={files.chips}
             onRemoveAttachment={files.remove}
             removeLabel={t.removeAttachment}
@@ -351,7 +391,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
         </div>
       </section>
 
-      <aside className={s.panel}>
+      {panel.open && panel.mode === "docked" && (
+        <Splitter label={t.layout.resize} width={chatWidth} onChange={setChatWidth} containerRef={workRef} />
+      )}
+      {panel.open && panel.mode === "overlay" && <div className={s.scrim} onClick={panel.onClose} />}
+      {panel.open && <aside className={[s.panel, panel.mode === "overlay" ? s.panelOver : ""].filter(Boolean).join(" ")}>
         <div className={s.panelHead}>
           <Segmented
             ariaLabel={t.work.panelTabs}
@@ -364,6 +408,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
               { value: "rewind", label: t.work.tabRewind },
             ]}
           />
+          <IconButton icon="close" size="sm" label={t.layout.hidePanel} className={s.panelClose} onClick={panel.onClose} />
         </div>
         <div className={s.panelBody}>
           {tab === "files" && bridge.tasks ? (
@@ -413,7 +458,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
             />
           )}
         </div>
-      </aside>
+      </aside>}
 
       {notice && (
         <div className="app-toast">

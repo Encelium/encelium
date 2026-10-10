@@ -26,6 +26,7 @@ export interface Attachment { path: string; name: string; size: number; kind: "i
 export interface AttachmentsBridge {
   choose(): Promise<Attachment[]>;
   describeDropped(files: FileList | File[]): Promise<Attachment[]>;
+  savePasted(input: { data: string; type: string }): Promise<Attachment | null>;
 }
 
 export interface TaskSummary { id: string; title: string; folder: string; updatedAt: number }
@@ -47,6 +48,8 @@ export interface TasksBridge {
   list(): Promise<TaskSummary[]>;
   events(input: { taskId: string }): Promise<StoredEvent[]>;
   delete(input: { taskId: string }): Promise<void>;
+  rename(input: { taskId: string; title: string }): Promise<boolean>;
+  onOpenRequest(callback: (taskId: string) => void): () => void;
   openFolder(input: { taskId: string }): Promise<void>;
   chooseFolder(): Promise<{ ok: true; path: string; name: string } | { ok: false; reason: "canceled" | "too-broad" }>;
   findPreview(input: { taskId: string }): Promise<string | null>;
@@ -62,6 +65,9 @@ export interface Bridge {
   agent?: AgentBridge;
   tasks?: TasksBridge;
   attachments?: AttachmentsBridge;
+  /** Desktop app only. */
+  window?: { setCompact(on: boolean): Promise<void>; setOnTop(on: boolean): Promise<void> };
+  copyText?(text: string): Promise<void>;
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Pick<Settings, "theme" | "language">>): Promise<Settings>;
   onEffectiveTheme(callback: (theme: EffectiveTheme) => void): () => void;

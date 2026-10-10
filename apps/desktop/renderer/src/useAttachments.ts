@@ -28,6 +28,18 @@ export function useAttachments(t: Strings, onNotice: (message: string) => void) 
     available: !!bridge.attachments,
     choose: async () => { if (bridge.attachments) add(await bridge.attachments.choose()); },
     drop: async (list: FileList) => { if (bridge.attachments) add(await bridge.attachments.describeDropped(list)); },
+    /** Screenshots pasted with Ctrl+V: saved as files first (they have no path of their own). */
+    paste: async (images: File[]) => {
+      const api = bridge.attachments;
+      if (!api) return;
+      const saved = await Promise.all(images.map(async (image) => {
+        const bytes = new Uint8Array(await image.arrayBuffer());
+        let binary = "";
+        for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        return api.savePasted({ data: btoa(binary), type: image.type });
+      }));
+      add(saved.filter((f): f is Attachment => !!f));
+    },
     remove: (id: string) => setFiles((prev) => prev.filter((f) => f.path !== id)),
     clear: () => setFiles([]),
   };

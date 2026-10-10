@@ -1,8 +1,8 @@
 // Files the person attaches to a request. They are copied into the task folder (so the
 // agent can work with them and the person can find them), and pictures are also shown
 // to the model directly.
-import { BrowserWindow, dialog, ipcMain } from "electron";
-import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const IMAGE_TYPES = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp" };
@@ -59,5 +59,18 @@ export function initAttachments() {
     return result.canceled ? [] : describe(result.filePaths);
   });
   // Paths come from files dropped on the window (resolved by the preload script).
+  // A picture pasted with Ctrl+V: saved as a file first, then attached like any other.
+  ipcMain.handle("attachments:save-pasted", async (_e, { data, type }) => {
+    const ext = { "image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp" }[type];
+    const buf = Buffer.from(String(data ?? ""), "base64");
+    if (!ext || !buf.length || buf.length > MAX_FILE) return null;
+    const dir = path.join(app.getPath("temp"), "enceladus-pasted");
+    await mkdir(dir, { recursive: true });
+    const d = new Date(), two = (n) => String(n).padStart(2, "0");
+    const name = `pasted-${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}${ext}`;
+    const file = path.join(dir, name);
+    await writeFile(file, buf);
+    return { path: file, name, size: buf.length, kind: "image" };
+  });
   ipcMain.handle("attachments:describe", (_e, { paths }) => describe(Array.isArray(paths) ? paths.map(String) : []));
 }

@@ -25,10 +25,31 @@
 .tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .taskRow { position: relative; display: flex; align-items: center; border-radius: var(--radius-md); }
 .taskRow:hover { background: var(--color-surface-muted); }
-/* Shown on hover or keyboard focus; always reachable with Tab. */
-.deleteTask { position: absolute; inset-inline-end: 2px; opacity: 0; }
-.taskRow:hover .deleteTask, .deleteTask:focus-visible { opacity: 1; }
-.taskRow:hover .task, .taskRow:focus-within .task { padding-inline-end: calc(var(--control-sm) + var(--space-1)); }
+/* Rename and delete: shown on hover or keyboard focus; always reachable with Tab. */
+.rowActions { position: absolute; inset-inline-end: 2px; display: flex; gap: 2px; opacity: 0; }
+.taskRow:hover .rowActions, .rowActions:focus-within { opacity: 1; }
+.taskRow:hover .task, .taskRow:focus-within .task { padding-inline-end: calc(2 * var(--control-sm) + var(--space-2)); }
+
+.search {
+  display: flex; align-items: center; gap: var(--space-2);
+  margin: 0 0 var(--space-2); padding-inline: var(--space-3);
+  height: var(--control-md); border-radius: var(--radius-md);
+  background: var(--color-bg); border: 1px solid var(--color-border);
+  color: var(--color-text-subtle);
+}
+.search:focus-within { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-focus-ring); }
+.search input {
+  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: var(--text-md); color: var(--color-text);
+}
+.search input::-webkit-search-cancel-button { display: none; }
+.rename {
+  flex: 1; min-width: 0; height: var(--control-md);
+  padding-inline: var(--space-3); border-radius: var(--radius-md);
+  border: 1px solid var(--color-accent); box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background: var(--color-surface); color: var(--color-text);
+  font: inherit; font-size: var(--text-md); outline: 0;
+}
 .task {
   flex: 1;
   min-width: 0;

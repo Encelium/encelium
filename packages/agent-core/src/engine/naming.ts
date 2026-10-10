@@ -34,3 +34,11 @@ export function looksLikeName(answer: string): boolean {
   const line = answer.split("\n")[0]!.trim();
   return !!line && !answer.includes("\n") && line.split(/[\s-]+/).length <= 5 && !/[.!?,:;'’]/.test(line);
 }
+
+const FILLER = new Set("a an the for of to in on with and or my me our your i we you it this that please can could would want need make create build write do help new some small simple little one".split(" "));
+
+/** When the model can't name it: the request's meaningful English words, e.g. "bakery-page". */
+export function fallbackFolderName(request: string): string {
+  const words = request.toLowerCase().normalize("NFKD").split(/[^a-z0-9]+/).filter((w) => w && !FILLER.has(w));
+  return toFolderName(words.slice(0, 4).join(" "));
+}

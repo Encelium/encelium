@@ -4,4 +4,4 @@ export { AgentSession, type SessionOptions } from "./engine/loop.ts";
 export { Checkpoints } from "./engine/checkpoints.ts";
 export { Workspace, OutsideWorkspaceError } from "./engine/workspace.ts";
 export { riskOf } from "./engine/tools.ts";
-export { suggestFolderName, toFolderName } from "./engine/naming.ts";
+export { fallbackFolderName, suggestFolderName, toFolderName } from "./engine/naming.ts";
