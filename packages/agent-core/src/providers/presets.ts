@@ -33,6 +33,7 @@ export const PRESETS: ProviderPreset[] = [
   { id: "openrouter", name: "OpenRouter", protocol: "openai", baseUrl: "https://openrouter.ai/api/v1", needsKey: true, keyUrl: "https://openrouter.ai/keys", usageInStream: true },
   { id: "deepseek", name: "DeepSeek", protocol: "openai", baseUrl: "https://api.deepseek.com/v1", needsKey: true, keyUrl: "https://platform.deepseek.com/api_keys", usageInStream: true },
   { id: "groq", name: "Groq", protocol: "openai", baseUrl: "https://api.groq.com/openai/v1", needsKey: true, keyUrl: "https://console.groq.com/keys" },
+  { id: "nvidia", name: "NVIDIA", protocol: "openai", baseUrl: "https://integrate.api.nvidia.com/v1", needsKey: true, keyUrl: "https://build.nvidia.com/" },
   { id: "ollama", name: "Ollama", protocol: "openai", baseUrl: "http://localhost:11434/v1", needsKey: false, local: true },
   { id: "lmstudio", name: "LM Studio", protocol: "openai", baseUrl: "http://localhost:1234/v1", needsKey: false, local: true },
 ];

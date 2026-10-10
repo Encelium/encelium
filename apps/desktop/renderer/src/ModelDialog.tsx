@@ -49,6 +49,8 @@ export function ModelDialog({ t, open, onClose, onSaved }: Props) {
   const providerName = isCustom ? address || m.other : preset?.name ?? "";
   const keySaved = current.mode === "own" && current.presetId === presetId && current.hasKey;
   const needsKey = !!preset?.needsKey;
+  // Custom servers may or may not need a key, so the field is shown but optional.
+  const showKey = needsKey || isCustom;
 
   // Any change to where/key invalidates the last test.
   const choose = (id: string) => { setPresetId(id); setTest({ state: "idle" }); setModel(""); setKey(""); };
@@ -121,9 +123,9 @@ export function ModelDialog({ t, open, onClose, onSaved }: Props) {
             onChange={(e) => { setAddress(e.target.value); setTest({ state: "idle" }); }} />
         )}
 
-        {needsKey && (
+        {showKey && (
           <div className={s.keyBlock}>
-            <TextField label={m.key} hint={keySaved ? m.keySaved : m.keyHint} type="password" value={key} dir="ltr" autoComplete="off" spellCheck={false}
+            <TextField label={isCustom ? m.keyOptional : m.key} hint={keySaved ? m.keySaved : isCustom ? m.keyOptionalHint : m.keyHint} type="password" value={key} dir="ltr" autoComplete="off" spellCheck={false}
               onChange={(e) => { setKey(e.target.value.trim()); setTest({ state: "idle" }); }} />
             {preset?.keyUrl && (
               <a className={s.getKey} href={preset.keyUrl} target="_blank" rel="noreferrer">{m.getKey}</a>
