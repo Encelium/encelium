@@ -48,10 +48,11 @@ export function Home({ t, onSubmit, onNotice, theme }: HomeProps) {
             <h1 className={s.heading}>{t.heading}</h1>
           </div>
           {/* Vapor rises while the person types. */}
-          <MoonHero theme={theme} active={draft.trim().length > 0} />
+          <MoonHero className={s.moon} theme={theme} active={draft.trim().length > 0} />
         </div>
 
         <Composer
+          className={s.composer}
           placeholder={t.composerPlaceholder}
           inputLabel={t.heading}
           sendLabel={t.send}

@@ -168,7 +168,7 @@ class EnceladusScene {
         if (mist) { v[0] *= .45; v[1] *= .45; v[2] *= .45; }
         this.ps.push({ x: q[0] * R, y: q[1] * R, z: q[2] * R, vx: v[0], vy: v[1], vz: v[2], life: 0,
           max: mist ? 3 + Math.random() * 2 : 2 + Math.random() * 2, a: mist ? .05 + Math.random() * .05 : .25 + Math.random() * .45,
-          m: mist, sz: 8 + Math.random() * 14 });
+          m: mist, sz: (8 + Math.random() * 14) * Math.min(1, R / 220) }); // puffs scale with the moon: small moons get fine mist, not blobs
       }
     }
     const g = o.speed * .32, ps = this.ps;

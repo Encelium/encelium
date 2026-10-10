@@ -23,12 +23,23 @@
 .empty { margin: 0; padding-inline: var(--space-3); font-size: var(--text-sm); color: var(--color-text-subtle); }
 
 .tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
-.taskRow { position: relative; display: flex; align-items: center; border-radius: var(--radius-md); }
+.taskRow { position: relative; display: flex; align-items: center; border-radius: var(--radius-md); transition: background-color var(--duration-fast) var(--ease-out); }
 .taskRow:hover { background: var(--color-surface-muted); }
-/* Rename and delete: shown on hover or keyboard focus; always reachable with Tab. */
-.rowActions { position: absolute; inset-inline-end: 2px; display: flex; gap: 2px; opacity: 0; }
-.taskRow:hover .rowActions, .rowActions:focus-within { opacity: 1; }
-.taskRow:hover .task, .taskRow:focus-within .task { padding-inline-end: calc(2 * var(--control-sm) + var(--space-2)); }
+/* "⋯" (rename, delete): shown on hover, keyboard focus, or while its menu is open. */
+.rowMenu { position: absolute; inset-inline-end: 4px; opacity: 0; transition: opacity var(--duration-fast) var(--ease-out); }
+.taskRow:hover .rowMenu, .rowMenu:focus-within, .menuOpen .rowMenu { opacity: 1; }
+.menuOpen { background: var(--color-surface-muted); }
+.taskRow:hover .task, .taskRow:focus-within .task, .menuOpen .task { padding-inline-end: calc(var(--control-sm) + var(--space-2)); }
+
+/* The folded sidebar */
+.rail {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+  width: 56px; padding: var(--space-4) 0 var(--space-4);
+  background: var(--color-bg-sunken);
+}
+.railNew { background: var(--color-text); color: var(--color-bg); }
+.railNew:hover { background: var(--color-text); color: var(--color-bg); opacity: .88; }
+.railSpacer { flex: 1; }
 
 .search {
   display: flex; align-items: center; gap: var(--space-2);

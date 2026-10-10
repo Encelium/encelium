@@ -20,7 +20,7 @@
     color var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
 }
-.button:active:not(:disabled) { transform: translateY(1px); }
+.button:active:not(:disabled) { transform: translateY(1px) scale(.985); }
 .button:disabled { opacity: .45; cursor: not-allowed; }
 
 .sm { height: var(--control-sm); padding-inline: var(--space-3); font-size: var(--text-sm); border-radius: var(--radius-sm); }

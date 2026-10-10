@@ -32,6 +32,7 @@ body { overflow: hidden; }
   min-height: 0;
 }
 .app-body.with-sidebar { grid-template-columns: 256px minmax(0, 1fr); }
+.app-body.with-rail { grid-template-columns: 56px minmax(0, 1fr); }
 .app-sidebar { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; min-width: 0; }
 /* Small windows and compact mode: the sidebar slides over the content. */
 .app-sidebar-over {
@@ -40,3 +41,11 @@ body { overflow: hidden; }
   box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, .18));
 }
 .app-scrim { position: absolute; inset: 0; z-index: 7; background: var(--color-scrim); }
+
+/* Motion for the slid-over sidebar. */
+.app-sidebar-over { animation: slideStart var(--duration-enter) var(--ease-out); }
+.app-sidebar-over:dir(rtl) { animation-name: slideStartRtl; }
+@keyframes slideStart { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes slideStartRtl { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.app-scrim { animation: appFade var(--duration-base) var(--ease-out); }
+@keyframes appFade { from { opacity: 0; } to { opacity: 1; } }

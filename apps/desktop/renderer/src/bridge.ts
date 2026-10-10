@@ -29,6 +29,8 @@ export interface AttachmentsBridge {
   choose(): Promise<Attachment[]>;
   describeDropped(files: FileList | File[]): Promise<Attachment[]>;
   savePasted(input: { data: string; type: string }): Promise<Attachment | null>;
+  /** A small data: URL preview of a picture, or null. */
+  thumbnail(input: { path: string }): Promise<string | null>;
 }
 
 export interface TaskSummary { id: string; title: string; folder: string; updatedAt: number }

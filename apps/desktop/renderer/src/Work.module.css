@@ -188,3 +188,16 @@
 .answer { display: flex; flex-direction: column; gap: var(--space-1); }
 .answerActions { display: flex; gap: var(--space-1); margin-inline-start: calc(-1 * var(--space-2)); }
 .errorBlock .answerActions { margin-block-start: var(--space-2); margin-inline-start: 0; }
+.sentFiles li.sentPicture { padding: 0; max-width: none; background: transparent; }
+.sentPicture img { display: block; max-width: 220px; max-height: 160px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); object-fit: cover; }
+
+/* Motion: new things rise into place; panels slide in. Turned off by "reduce motion". */
+.list > * { animation: enter var(--duration-enter) var(--ease-out) both; }
+@keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.panelOver { animation: slideEnd var(--duration-enter) var(--ease-out); }
+.panelOver:dir(rtl) { animation-name: slideEndRtl; }
+@keyframes slideEnd { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes slideEndRtl { from { transform: translateX(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.scrim { animation: fadeIn var(--duration-base) var(--ease-out); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.tabBody { animation: fadeIn var(--duration-base) var(--ease-out); }

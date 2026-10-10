@@ -15,6 +15,8 @@ export { Segmented } from "./Segmented";
 export type { SegmentedProps, SegmentedOption } from "./Segmented";
 export { Composer } from "./Composer";
 export type { ComposerProps, ComposerFolder, ComposerAttachment } from "./Composer";
+export { Menu } from "./Menu";
+export type { MenuItem, MenuProps } from "./Menu";
 export { Message } from "./Message";
 export type { MessageProps, MessageRole } from "./Message";
 export { Markdown } from "./Markdown";

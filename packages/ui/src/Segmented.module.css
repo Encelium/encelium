@@ -29,3 +29,14 @@
   box-shadow: var(--shadow-sm);
 }
 .option:focus-visible { border-radius: var(--radius-full); }
+
+/* The sliding highlight. While it's measured, the chosen button keeps its own background as a fallback. */
+.group { position: relative; isolation: isolate; }
+.thumb {
+  position: absolute; top: 3px; bottom: 3px; z-index: -1;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: left var(--duration-base) var(--ease-out), width var(--duration-base) var(--ease-out);
+}
+.onThumb[aria-pressed="true"] { background: transparent; box-shadow: none; }

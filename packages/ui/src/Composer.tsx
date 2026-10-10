@@ -45,7 +45,7 @@ export interface ComposerProps {
   className?: string;
 }
 
-export interface ComposerAttachment { id: string; name: string; kind: "image" | "file" }
+export interface ComposerAttachment { id: string; name: string; kind: "image" | "file"; /** A picture's preview (any URL the page may show). */ thumbnail?: string }
 
 export function Composer({
   placeholder, sendLabel, attachLabel, inputLabel, folder, value, onValueChange, onSubmit, onAttach, disabled, focusRequest,
@@ -102,9 +102,13 @@ export function Composer({
       {attachments.length > 0 && (
         <ul className={s.attachments}>
           {attachments.map((a) => (
-            <li key={a.id} className={s.attachment}>
-              <Icon name={a.kind === "image" ? "image" : "file"} size={14} />
-              <span className={s.attachmentName} dir="auto" title={a.name}>{a.name}</span>
+            <li key={a.id} className={[s.attachment, a.thumbnail ? s.withThumb : ""].filter(Boolean).join(" ")}>
+              {a.thumbnail
+                ? <img className={s.thumb} src={a.thumbnail} alt={a.name} title={a.name} />
+                : <>
+                    <Icon name={a.kind === "image" ? "image" : "file"} size={14} />
+                    <span className={s.attachmentName} dir="auto" title={a.name}>{a.name}</span>
+                  </>}
               {onRemoveAttachment && (
                 <button type="button" className={s.removeAttachment} aria-label={`${removeLabel}: ${a.name}`} onClick={() => onRemoveAttachment(a.id)} disabled={disabled}>
                   <Icon name="close" size={12} />

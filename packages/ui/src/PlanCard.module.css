@@ -24,3 +24,8 @@
 .done .text { color: var(--color-text-muted); }
 .active .text { color: var(--color-text); font-weight: var(--weight-medium); }
 .pending .text { color: var(--color-text-subtle); }
+
+/* A step that gets done: the check lands with a small bounce. */
+.doneCircle { animation: land var(--duration-enter) var(--ease-spring); }
+.text { transition: color var(--duration-base) var(--ease-out); }
+@keyframes land { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }

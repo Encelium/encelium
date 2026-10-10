@@ -59,6 +59,27 @@ function ActivityLine({ t, text, details }: { t: Strings; text: string; details?
   );
 }
 
+/**
+ * A picture sent with a request, shown from its copy in the task folder. Right after sending,
+ * the copy may not exist yet, so it tries again once; if it still can't, it shows the name.
+ */
+function SentPicture({ taskId, name }: { taskId: string; name: string }) {
+  const [attempt, setAttempt] = useState(0);
+  const failed = attempt > 1;
+  if (failed) return <li><Icon name="image" size={14} /><span dir="auto">{name}</span></li>;
+  return (
+    <li className={s.sentPicture}>
+      <img
+        key={attempt}
+        src={`enceladus-preview://${taskId}/attachments/${encodeURIComponent(name)}${attempt ? `?retry=${attempt}` : ""}`}
+        alt={name}
+        title={name}
+        onError={() => setTimeout(() => setAttempt((n) => n + 1), attempt ? 0 : 1500)}
+      />
+    </li>
+  );
+}
+
 function CopyButton({ t, text }: { t: Strings; text: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -295,7 +316,9 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                     {item.attachments?.length ? (
                       <ul className={s.sentFiles} aria-label={t.attachedFiles}>
                         {item.attachments.map((name) => (
-                          <li key={name}><Icon name={/\.(png|jpe?g|gif|webp)$/i.test(name) ? "image" : "file"} size={14} /><span dir="auto">{name}</span></li>
+                          /\.(png|jpe?g|gif|webp)$/i.test(name) && bridge.tasks
+                            ? <SentPicture key={name} taskId={taskId} name={name} />
+                            : <li key={name}><Icon name="file" size={14} /><span dir="auto">{name}</span></li>
                         ))}
                       </ul>
                     ) : null}
@@ -410,7 +433,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
           />
           <IconButton icon="close" size="sm" label={t.layout.hidePanel} className={s.panelClose} onClick={panel.onClose} />
         </div>
-        <div className={s.panelBody}>
+        <div key={tab} className={`${s.panelBody} ${s.tabBody}`}>
           {tab === "files" && bridge.tasks ? (
             <FilesPanel t={t} taskId={taskId} version={pageVersion} />
           ) : tab === "preview" || tab === "files" ? (

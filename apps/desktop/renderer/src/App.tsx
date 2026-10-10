@@ -15,7 +15,7 @@ function engineFor(taskId: string): AgentEngine {
   return engine;
 }
 import { TitleBar } from "./TitleBar";
-import { Sidebar } from "./Sidebar";
+import { Sidebar, SidebarRail } from "./Sidebar";
 import { Home } from "./Home";
 import { Work } from "./Work";
 import { SettingsDialog } from "./SettingsDialog";
@@ -145,17 +145,17 @@ export function App() {
         case "KeyB": toggleSidebar(); return true;
         case "Backslash": if (view.kind === "task") togglePanel(); return true;
         case "Comma": setSettingsOpen(true); return true;
-        case "KeyK":
-          if (sidebarMode === "docked") setSidebarDocked(true); else setSidebarOver(true);
-          setSearchRequest((n) => n + 1);
-          return true;
+        case "KeyK": openSearch(); return true;
         default: return false;
       }
     })();
     if (handled) e.preventDefault();
   };
 
-  const bodyClass = ["app-body", sidebarMode === "docked" && sidebarOpen ? "with-sidebar" : "", compact ? "is-compact" : ""].filter(Boolean).join(" ");
+  // Sidebar folded away (and not compact mode): a slim bar keeps the main buttons in reach.
+  const showRail = !compact && !(sidebarMode === "docked" && sidebarOpen);
+  const bodyClass = ["app-body", sidebarMode === "docked" && sidebarOpen ? "with-sidebar" : showRail ? "with-rail" : "", compact ? "is-compact" : ""].filter(Boolean).join(" ");
+  const openSearch = () => { if (sidebarMode === "docked") setSidebarDocked(true); else setSidebarOver(true); setSearchRequest((n) => n + 1); };
 
   return (
     <div className="app">
@@ -167,6 +167,7 @@ export function App() {
         onTop={compact && bridge.window ? { on: onTop, onToggle: toggleOnTop } : undefined}
       />
       <div className={bodyClass}>
+        {showRail && <SidebarRail t={t} onNewTask={newTask} onSearch={openSearch} onOpenSettings={() => setSettingsOpen(true)} />}
         {sidebarMode === "overlay" && sidebarOpen && <div className="app-scrim" onClick={() => setSidebarOver(false)} />}
         {sidebarOpen && <div className={sidebarMode === "overlay" ? "app-sidebar-over" : "app-sidebar"}><Sidebar
           t={t}

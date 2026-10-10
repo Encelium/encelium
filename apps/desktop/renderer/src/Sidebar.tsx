@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, EnergyBar, Icon, IconButton } from "@enceladus/ui";
+import { Button, EnergyBar, Icon, IconButton, Menu } from "@enceladus/ui";
 import type { Strings } from "./i18n";
 import s from "./Sidebar.module.css";
 
@@ -23,6 +23,7 @@ interface SidebarProps {
 export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDeleteTask, onRenameTask, onOpenSettings, searchRequest }: SidebarProps) {
   const [query, setQuery] = useState("");
   const [renaming, setRenaming] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (searchRequest) searchRef.current?.focus(); }, [searchRequest]);
@@ -59,7 +60,7 @@ export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDele
         ) : (
           <ul className={s.tasks}>
             {shown.map((task) => (
-              <li key={task.id} className={[s.taskRow, task.id === currentTaskId ? s.current : ""].filter(Boolean).join(" ")}>
+              <li key={task.id} className={[s.taskRow, task.id === currentTaskId ? s.current : "", menuFor === task.id ? s.menuOpen : ""].filter(Boolean).join(" ")}>
                 {renaming === task.id ? (
                   <RenameField
                     initial={task.title}
@@ -81,10 +82,17 @@ export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDele
                     >
                       <span className={s.taskTitle} dir="auto">{task.title}</span>
                     </button>
-                    <span className={s.rowActions}>
-                      {onRenameTask && <IconButton icon="pencil" size="sm" label={`${t.renameChat}: ${task.title}`} onClick={() => setRenaming(task.id)} />}
-                      {onDeleteTask && <IconButton icon="trash" size="sm" label={`${t.deleteChat}: ${task.title}`} onClick={() => onDeleteTask(task.id)} />}
-                    </span>
+                    {(onRenameTask || onDeleteTask) && (
+                      <Menu
+                        className={s.rowMenu}
+                        label={`${t.chatOptions}: ${task.title}`}
+                        onOpenChange={(open) => setMenuFor(open ? task.id : null)}
+                        items={[
+                          ...(onRenameTask ? [{ label: t.renameChat, icon: "pencil" as const, onSelect: () => setRenaming(task.id) }] : []),
+                          ...(onDeleteTask ? [{ label: t.deleteChat, icon: "trash" as const, danger: true, onSelect: () => onDeleteTask(task.id) }] : []),
+                        ]}
+                      />
+                    )}
                   </>
                 )}
               </li>
@@ -130,5 +138,21 @@ function RenameField({ initial, label, onDone }: { initial: string; label: strin
       }}
       onBlur={() => finish(value.trim() || null)}
     />
+  );
+}
+
+/**
+ * The sidebar folded away: a slim bar that keeps the essentials in reach
+ * (new task, search, connections, settings).
+ */
+export function SidebarRail({ t, onNewTask, onSearch, onOpenSettings }: { t: Strings; onNewTask: () => void; onSearch: () => void; onOpenSettings: () => void }) {
+  return (
+    <nav className={s.rail} aria-label={t.recent}>
+      <IconButton icon="plus" label={`${t.newTask} (Ctrl+N)`} className={s.railNew} onClick={onNewTask} />
+      <IconButton icon="search" label={`${t.searchChats} (Ctrl+K)`} onClick={onSearch} />
+      <span className={s.railSpacer} />
+      <IconButton icon="plug" label={t.connections} />
+      <IconButton icon="settings" label={`${t.settings} (Ctrl+,)`} onClick={onOpenSettings} />
+    </nav>
   );
 }

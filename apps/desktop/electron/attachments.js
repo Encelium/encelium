@@ -1,7 +1,7 @@
 // Files the person attaches to a request. They are copied into the task folder (so the
 // agent can work with them and the person can find them), and pictures are also shown
 // to the model directly.
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, nativeImage } from "electron";
 import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -71,6 +71,22 @@ export function initAttachments() {
     const file = path.join(dir, name);
     await writeFile(file, buf);
     return { path: file, name, size: buf.length, kind: "image" };
+  });
+  // A small preview of a picture the person is about to send (the page can't read files itself).
+  ipcMain.handle("attachments:thumbnail", async (_e, { path: file }) => {
+    const p = String(file ?? "");
+    if (!IMAGE_TYPES[path.extname(p).toLowerCase()]) return null;
+    try {
+      const info = await stat(p);
+      if (!info.isFile() || info.size > MAX_FILE) return null;
+      const image = nativeImage.createFromPath(p);
+      if (image.isEmpty()) return null;
+      const { width, height } = image.getSize();
+      const scale = Math.min(1, 240 / Math.max(width, height));
+      return image.resize({ width: Math.round(width * scale), height: Math.round(height * scale), quality: "good" }).toDataURL();
+    } catch {
+      return null;
+    }
   });
   ipcMain.handle("attachments:describe", (_e, { paths }) => describe(Array.isArray(paths) ? paths.map(String) : []));
 }

@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld("enceladus", {
     choose: () => ipcRenderer.invoke("attachments:choose"),
     /** A picture pasted with Ctrl+V (base64), saved as a file so it can be attached. */
     savePasted: (input) => ipcRenderer.invoke("attachments:save-pasted", input),
+    thumbnail: (input) => ipcRenderer.invoke("attachments:thumbnail", input),
     /** Files dropped on the window: resolve their paths here (the page can't see paths). */
     describeDropped: (files) => ipcRenderer.invoke("attachments:describe", { paths: Array.from(files, (f) => webUtils.getPathForFile(f)).filter(Boolean) }),
   },
