@@ -6,6 +6,8 @@ export interface Settings {
   theme: ThemeSetting;
   language: Language;
   effectiveTheme: EffectiveTheme;
+  /** The first-run welcome has been seen. */
+  welcomed: boolean;
 }
 
 export interface ProviderOption { id: string; name: string; needsKey: boolean; keyUrl: string | null; local: boolean }
@@ -69,7 +71,7 @@ export interface Bridge {
   window?: { setCompact(on: boolean): Promise<void>; setOnTop(on: boolean): Promise<void> };
   copyText?(text: string): Promise<void>;
   getSettings(): Promise<Settings>;
-  setSettings(patch: Partial<Pick<Settings, "theme" | "language">>): Promise<Settings>;
+  setSettings(patch: Partial<Pick<Settings, "theme" | "language" | "welcomed">>): Promise<Settings>;
   onEffectiveTheme(callback: (theme: EffectiveTheme) => void): () => void;
   models: {
     presets(): Promise<ProviderOption[]>;
@@ -92,9 +94,9 @@ function browserFallback(): Bridge {
   const read = (): Omit<Settings, "effectiveTheme"> => {
     try {
       const s = JSON.parse(localStorage.getItem("enceladus.settings") ?? "{}");
-      return { theme: s.theme ?? "light", language: s.language ?? (navigator.language.startsWith("ar") ? "ar" : "en") };
+      return { theme: s.theme ?? "light", language: s.language ?? (navigator.language.startsWith("ar") ? "ar" : "en"), welcomed: !!s.welcomed };
     } catch {
-      return { theme: "light", language: "en" };
+      return { theme: "light", language: "en", welcomed: false };
     }
   };
   return {

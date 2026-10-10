@@ -19,6 +19,7 @@ import { Sidebar } from "./Sidebar";
 import { Home } from "./Home";
 import { Work } from "./Work";
 import { SettingsDialog } from "./SettingsDialog";
+import { Welcome } from "./Welcome";
 import { ModelDialog } from "./ModelDialog";
 import { Button, Dialog, Toast } from "@enceladus/ui";
 import type { Attachment } from "./bridge";
@@ -101,7 +102,7 @@ export function App() {
   if (!settings) return null; // settings arrive within a frame; avoid a flash of the wrong theme/language
 
   const t = strings[settings.language];
-  const update = (patch: Partial<Pick<Settings, "theme" | "language">>) => bridge.setSettings(patch).then(setSettings);
+  const update = (patch: Partial<Pick<Settings, "theme" | "language" | "welcomed">>) => bridge.setSettings(patch).then(setSettings);
 
   const startTask = (prompt: string, folder?: string, attachments?: Attachment[]) => {
     const id = `task-${Date.now()}`;
@@ -179,7 +180,7 @@ export function App() {
           searchRequest={searchRequest}
         /></div>}
         {view.kind === "home" ? (
-          <Home t={t} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
+          <Home t={t} theme={settings.effectiveTheme} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
         ) : (
           <Work
             key={`${view.id}-${openCount}`}
@@ -221,6 +222,13 @@ export function App() {
           </p>
         )}
       </Dialog>
+      <Welcome
+        t={t}
+        open={!settings.welcomed}
+        language={settings.language}
+        onLanguage={(language) => update({ language })}
+        onDone={() => update({ welcomed: true })}
+      />
       <ModelDialog t={t} open={modelOpen} onClose={() => setModelOpen(false)} onSaved={(message) => setNotice({ message, tone: "safe" })} />
       {notice && (
         <div className="app-toast">

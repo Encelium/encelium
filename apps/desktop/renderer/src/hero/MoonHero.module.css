@@ -1,0 +1,2 @@
+.moon { display: block; flex: none; pointer-events: none; }
+@media (max-width: 640px) { .moon { display: none; } }

@@ -3,6 +3,7 @@ import { Composer, Icon, type IconName } from "@enceladus/ui";
 import type { Strings } from "./i18n";
 import { bridge, type Attachment } from "./bridge";
 import { useAttachments } from "./useAttachments";
+import { MoonHero } from "./hero/MoonHero";
 import s from "./Home.module.css";
 
 const starterIcons: Record<keyof Strings["starters"], IconName> = {
@@ -22,9 +23,10 @@ interface HomeProps {
   /** `folder` is set when the person chose one; otherwise a new folder is made. */
   onSubmit: (text: string, folder?: string, attachments?: Attachment[]) => void;
   onNotice: (message: string) => void;
+  theme: "light" | "dark";
 }
 
-export function Home({ t, onSubmit, onNotice }: HomeProps) {
+export function Home({ t, onSubmit, onNotice, theme }: HomeProps) {
   const [draft, setDraft] = useState("");
   const files = useAttachments(t, onNotice);
   const [focusRequest, setFocusRequest] = useState(0);
@@ -40,9 +42,13 @@ export function Home({ t, onSubmit, onNotice }: HomeProps) {
   return (
     <main className={s.main}>
       <div className={s.column}>
-        <div className={s.titles}>
-          <p className={s.greeting}>{greeting(t)}</p>
-          <h1 className={s.heading}>{t.heading}</h1>
+        <div className={s.hero}>
+          <div className={s.titles}>
+            <p className={s.greeting}>{greeting(t)}</p>
+            <h1 className={s.heading}>{t.heading}</h1>
+          </div>
+          {/* Vapor rises while the person types. */}
+          <MoonHero theme={theme} active={draft.trim().length > 0} />
         </div>
 
         <Composer

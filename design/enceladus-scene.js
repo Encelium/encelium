@@ -13,7 +13,8 @@
 //   jets: 11,             // vents = jets × 3
 //   speed: 95, rate: 3,   // vapor speed (px/s, scale with R) and emission per vent (/s)
 //   active: true,         // working (vapor on, brighter) or resting
-//   seed: 7               // crack layout; same seed = same moon
+//   seed: 7,              // crack layout; same seed = same moon
+//   transparent: false    // true: no sky, the page shows through (e.g. the app home screen)
 // });
 // s.setActive(true | false)
 class EnceladusScene {
@@ -99,7 +100,7 @@ class EnceladusScene {
     const sky = x.createLinearGradient(0, 0, 0, H);
     if (dark) { sky.addColorStop(0, '#0A0D11'); sky.addColorStop(1, '#10151A'); }
     else { sky.addColorStop(0, '#FBFCFD'); sky.addColorStop(1, '#EDF2F6'); }
-    x.fillStyle = sky; x.fillRect(0, 0, W, H);
+    if (!o.transparent) { x.fillStyle = sky; x.fillRect(0, 0, W, H); }
     const x0 = Math.max(0, Math.floor((o.cx - o.R) * d)), x1 = Math.min(W, Math.ceil((o.cx + o.R) * d));
     const y0 = Math.max(0, Math.floor((o.cy - o.R) * d)), y1 = Math.min(H, Math.ceil((o.cy + o.R) * d));
     if (x1 > x0 && y1 > y0) {
@@ -130,8 +131,9 @@ class EnceladusScene {
         for (let c = 0; c < 3; c++) {
           let v = (amb[c] + (lt[c] - amb[c]) * df) * tex * plate;
           v = v * (1 - groove * (dark ? .75 : .45) * (.3 + .7 * df)) + 255 * bevel + rimC[c] * rim + grain;
-          px[i + c] = px[i + c] * (1 - edgeA) + v * edgeA;
+          px[i + c] = o.transparent ? v : px[i + c] * (1 - edgeA) + v * edgeA;
         }
+        if (o.transparent) px[i + 3] = edgeA * 255; // no sky to blend with: fade the edge itself
         // glow through the cracks, split into two halves that breathe out of phase (slow waves)
         const halo = 1 - smooth(0, w1 * 5, e[0]);
         let gv = (main * .55 + (dark ? halo * .06 : 0)) * (.35 + .65 * nz) * (1 - .85 * df) * edgeA;
@@ -181,6 +183,7 @@ class EnceladusScene {
   draw() {
     const x = this.ctx, o = this.o, d = this.dpr, t = this.t, k = this.k;
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+    if (this.o.transparent) x.clearRect(0, 0, this.cv.width, this.cv.height);
     x.drawImage(this.bg, 0, 0);
     // ocean light through the crack network, in two slow out-of-phase waves; brighter while working
     x.globalCompositeOperation = this.dark ? 'lighter' : 'source-over';

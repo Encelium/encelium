@@ -34,6 +34,14 @@ const en = {
   connections: "Connections",
   settings: "Settings",
   privacy: "We never train on your data.",
+  welcome: {
+    title: "Welcome to Enceladus",
+    intro: "A helper that does real work on your computer: websites, small scripts, tidying files, fixing what’s broken.",
+    say: { title: "Say what you want, in your own words", body: "No technical terms needed. Describe the result you want, and attach pictures or files if it helps." },
+    watch: { title: "Watch it work", body: "You see every step. Before anything that could do harm, it asks you first." },
+    undo: { title: "Changed your mind? Rewind", body: "Every change to your files can be undone with one click." },
+    start: "Let’s start",
+  },
   starters: {
     website: { title: "Make a website", body: "A page for your shop, portfolio or idea. Watch it appear as it’s built.", prompt: "Make a one-page website for " },
     files: { title: "Organize my files", body: "Sort, rename or clean up a folder. Every change can be rewound.", prompt: "Organize the files in " },
@@ -173,6 +181,14 @@ const ar: Strings = {
   connections: "الاتصالات",
   settings: "الإعدادات",
   privacy: "لا نستخدم بياناتك أبدًا لتدريب النموذج.",
+  welcome: {
+    title: "أهلًا بك في إنسيلادوس",
+    intro: "مساعد يُنجز العمل على جهازك: مواقع ويب، وسكربتات صغيرة، وترتيب الملفات، وإصلاح ما تعطّل.",
+    say: { title: "قل ما تريد بكلماتك", body: "لا حاجة إلى مصطلحات تقنية. صف النتيجة التي تريدها، ويمكنك إرفاق صور وملفات." },
+    watch: { title: "شاهده وهو يعمل", body: "ترى كل خطوة. وقبل أي شيء قد يضر، يسألك أولًا." },
+    undo: { title: "غيّرت رأيك؟ تراجع", body: "كل تغيير في الملفات يمكن التراجع عنه بنقرة واحدة." },
+    start: "لنبدأ",
+  },
   starters: {
     website: { title: "اصنع موقعًا", body: "صفحة لمتجرك أو أعمالك أو فكرتك. شاهدها تُبنى أمامك.", prompt: "أنشئ موقعًا من صفحة واحدة لـ " },
     files: { title: "رتّب ملفاتي", body: "فرز مجلد أو إعادة تسمية ملفاته أو تنظيفه. يمكن التراجع عن كل تغيير.", prompt: "رتّب الملفات في " },
