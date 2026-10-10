@@ -1,6 +1,6 @@
 // What the agent can do, how risky each action is, and how to describe it in plain words.
 import { spawn } from "node:child_process";
-import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ToolDefinition } from "../providers/types.ts";
 import type { Language, RiskLevel, StepStatus } from "./events.ts";
@@ -57,6 +57,11 @@ export const TOOLS: ToolDefinition[] = [
     parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] },
   },
   {
+    name: "move_file",
+    description: "Move or rename one file inside the task folder (creates folders as needed; never overwrites). Use this instead of commands for moving or renaming, so the user can rewind it.",
+    parameters: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } }, required: ["from", "to"] },
+  },
+  {
     name: "run_command",
     description: "Run a Windows PowerShell command in the task folder (for example to install packages, run tests or start a build). Asks the user first. Commands time out after 2 minutes; don't start servers that run forever. Changes made by commands can't be rewound.",
     parameters: {
@@ -73,35 +78,35 @@ export const TOOLS: ToolDefinition[] = [
 // ── Plain-language labels ───────────────────────────────────────────
 const L = {
   en: {
-    listed: "Looked through {path}", read: "Read {path}", created: "Created {path}", changed: "Changed {path}", deleted: "Deleted {path}",
+    listed: "Looked through {path}", read: "Read {path}", created: "Created {path}", changed: "Changed {path}", deleted: "Deleted {path}", moved: "Moved {path} → {to}",
     ran: "Ran a command", planUpdated: "Updated the plan", aFile: "a file",
-    before: { write_file: "Before writing {path}", edit_file: "Before changing {path}", delete_file: "Before deleting {path}", other: "Before changing files" },
-    failed: { list_files: "Couldn’t look at your files", read_file: "Couldn’t read {path}", write_file: "Couldn’t write {path}", edit_file: "Couldn’t change {path}", delete_file: "Couldn’t delete {path}", run_command: "Couldn’t run the command", update_plan: "Couldn’t update the plan" },
+    before: { write_file: "Before writing {path}", edit_file: "Before changing {path}", delete_file: "Before deleting {path}", move_file: "Before moving {path}", other: "Before changing files" },
+    failed: { list_files: "Couldn’t look at your files", read_file: "Couldn’t read {path}", write_file: "Couldn’t write {path}", edit_file: "Couldn’t change {path}", delete_file: "Couldn’t delete {path}", move_file: "Couldn’t move {path}", run_command: "Couldn’t run the command", update_plan: "Couldn’t update the plan" },
     askDeleteTitle: "Delete {path}?", askDeleteBody: "You can bring it back with Rewind.",
     askRunTitle: "Run a command?", askRunBody: "I need to run a command to continue.", allow: "Allow", deny: "Not now",
-    working: { list_files: "Looking at your files", read_file: "Reading {path}", write_file: "Writing {path}", edit_file: "Changing {path}", delete_file: "Deleting {path}", run_command: "Running a command", update_plan: "Planning" },
+    working: { list_files: "Looking at your files", read_file: "Reading {path}", write_file: "Writing {path}", edit_file: "Changing {path}", delete_file: "Deleting {path}", move_file: "Moving {path}", run_command: "Running a command", update_plan: "Planning" },
   },
   ar: {
-    listed: "اطّلعتُ على {path}", read: "قرأتُ {path}", created: "أنشأتُ {path}", changed: "عدّلتُ {path}", deleted: "حذفتُ {path}",
+    listed: "اطّلعتُ على {path}", read: "قرأتُ {path}", created: "أنشأتُ {path}", changed: "عدّلتُ {path}", deleted: "حذفتُ {path}", moved: "نقلتُ {path} ← {to}",
     ran: "شغّلتُ أمرًا", planUpdated: "حدّثتُ الخطة", aFile: "ملفًا",
-    before: { write_file: "قبل كتابة {path}", edit_file: "قبل تعديل {path}", delete_file: "قبل حذف {path}", other: "قبل تغيير الملفات" },
-    failed: { list_files: "تعذّر الاطلاع على ملفاتك", read_file: "تعذّرت قراءة {path}", write_file: "تعذّرت كتابة {path}", edit_file: "تعذّر تعديل {path}", delete_file: "تعذّر حذف {path}", run_command: "تعذّر تشغيل الأمر", update_plan: "تعذّر تحديث الخطة" },
+    before: { write_file: "قبل كتابة {path}", edit_file: "قبل تعديل {path}", delete_file: "قبل حذف {path}", move_file: "قبل نقل {path}", other: "قبل تغيير الملفات" },
+    failed: { list_files: "تعذّر الاطلاع على ملفاتك", read_file: "تعذّرت قراءة {path}", write_file: "تعذّرت كتابة {path}", edit_file: "تعذّر تعديل {path}", delete_file: "تعذّر حذف {path}", move_file: "تعذّر نقل {path}", run_command: "تعذّر تشغيل الأمر", update_plan: "تعذّر تحديث الخطة" },
     askDeleteTitle: "حذف {path}؟", askDeleteBody: "يمكنك استعادته بالتراجع.",
     askRunTitle: "تشغيل أمر؟", askRunBody: "أحتاج إلى تشغيل أمر للمتابعة.", allow: "اسمح", deny: "ليس الآن",
-    working: { list_files: "أطّلع على ملفاتك", read_file: "أقرأ {path}", write_file: "أكتب {path}", edit_file: "أعدّل {path}", delete_file: "أحذف {path}", run_command: "أشغّل أمرًا", update_plan: "أخطّط" },
+    working: { list_files: "أطّلع على ملفاتك", read_file: "أقرأ {path}", write_file: "أكتب {path}", edit_file: "أعدّل {path}", delete_file: "أحذف {path}", move_file: "أنقل {path}", run_command: "أشغّل أمرًا", update_plan: "أخطّط" },
   },
 };
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (_, k: string) => v[k] ?? "");
 
 export function workingText(lang: Language, tool: string, args: Record<string, unknown>) {
   const t = (L[lang].working as Record<string, string>)[tool];
-  return t ? fill(t, { path: String(args.path ?? "") || L[lang].aFile }) : L[lang].working.update_plan;
+  return t ? fill(t, { path: String(args.path ?? args.from ?? "") || L[lang].aFile }) : L[lang].working.update_plan;
 }
 
 /** The Rewind point's name, e.g. "Before changing index.html". */
 export function checkpointLabel(lang: Language, tool: string, args: Record<string, unknown>) {
   const b = L[lang].before as Record<string, string>;
-  return fill(b[tool] ?? b.other ?? "", { path: String(args.path ?? "") || L[lang].aFile });
+  return fill(b[tool] ?? b.other ?? "", { path: String(args.path ?? args.from ?? "") || L[lang].aFile });
 }
 
 /** Fields a tool can't work without. Checked before running, so a model that leaves one out gets a clear retry hint. */
@@ -222,6 +227,17 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx: 
       await rm(file);
       return { output: `Deleted ${ws.display(file)}.`, activity: { text: fill(t.deleted, { path: ws.display(file) }) } };
     }
+    case "move_file": {
+      const from = await ws.resolve(String(args.from ?? ""));
+      const to = await ws.resolve(String(args.to ?? ""));
+      if ((await stat(from)).isDirectory()) return { output: "That is a folder. Move the files inside it one by one.", isError: true };
+      if (await stat(to).then(() => true, () => false)) return { output: `${ws.display(to)} already exists. Choose another name; files are never overwritten.`, isError: true };
+      await ctx.ensureCheckpoint();
+      await ctx.checkpoints.rememberMove(from, to);
+      await mkdir(path.dirname(to), { recursive: true });
+      await rename(from, to);
+      return { output: `Moved ${ws.display(from)} to ${ws.display(to)}.`, activity: { text: fill(t.moved, { path: ws.display(from), to: ws.display(to) }) } };
+    }
     case "run_command": {
       const command = String(args.command ?? "");
       const r = await runPowerShell(command, ws.root, ctx.signal);
@@ -236,7 +252,7 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx: 
 
 export function failureActivity(lang: Language, tool: string, args: Record<string, unknown>) {
   const f = (L[lang].failed as Record<string, string>)[tool] ?? L[lang].failed.update_plan;
-  return { text: fill(f, { path: String(args.path ?? "") || L[lang].aFile }) };
+  return { text: fill(f, { path: String(args.path ?? args.from ?? "") || L[lang].aFile }) };
 }
 
 async function walk(dir: string, depth: number, out: string[], ws: Workspace) {

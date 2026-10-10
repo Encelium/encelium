@@ -1,6 +1,7 @@
 .main {
   min-height: 0;
   overflow-y: auto;
+  overflow-x: clip; /* the moon may hang past the edge; never a sideways scrollbar */
   padding: var(--space-16) var(--space-12) var(--space-10);
 }
 .column {
@@ -14,7 +15,7 @@
 /* The moon sits at the end side and its lower part tucks behind the message box. */
 .hero { position: relative; min-height: 132px; display: flex; align-items: flex-end; }
 .titles { position: relative; z-index: 1; display: flex; flex-direction: column; gap: var(--space-2); max-width: calc(100% - 230px); }
-.moon { position: absolute; inset-inline-end: -28px; bottom: -118px; z-index: 0; }
+.moon { position: absolute; inset-inline-end: -120px; bottom: -118px; z-index: 0; }
 .composer { position: relative; z-index: 1; }
 @media (max-width: 700px) { .titles { max-width: none; } }
 .greeting { margin: 0; font-size: var(--text-lg); color: var(--color-text-muted); }
@@ -27,33 +28,18 @@
 }
 .heading:lang(ar) { line-height: 1.35; }
 
-.starters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: var(--color-text);
-  text-align: start;
-  cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+.recipes { display: flex; flex-direction: column; gap: var(--space-3); }
+.recipesHead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.recipesTitle { margin: 0; font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--color-text-muted); }
+.allRecipes {
+  display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2);
+  border: 0; border-radius: var(--radius-md); background: transparent;
+  color: var(--color-accent); font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium); cursor: pointer;
 }
-.card:hover { border-color: var(--color-border-strong); box-shadow: var(--shadow-md); }
-.card:active { transform: translateY(1px); }
-.cardIcon {
-  width: 40px; height: 40px;
-  display: grid; place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  margin-block-end: var(--space-1);
-}
-.cardTitle { font-size: var(--text-lg); font-weight: var(--weight-semibold); }
-.cardBody { font-size: var(--text-md); line-height: var(--leading-md); color: var(--color-text-muted); }
+.allRecipes:hover { background: var(--color-accent-soft); }
+.allRecipes:dir(rtl) svg { transform: scaleX(-1); }
+.recipeGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+@media (max-width: 980px) { .recipeGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .privacy {
   margin: 0;
@@ -69,11 +55,9 @@
 }
 
 /* The home screen settles in, top to bottom. */
-.titles, .composer, .card, .privacy { animation: homeIn 520ms var(--ease-out) both; }
+.titles, .composer, .recipes, .privacy { animation: homeIn 520ms var(--ease-out) both; }
 .composer { animation-delay: 60ms; }
-.card:nth-child(1) { animation-delay: 120ms; } .card:nth-child(2) { animation-delay: 160ms; }
-.card:nth-child(3) { animation-delay: 200ms; } .card:nth-child(4) { animation-delay: 240ms; }
+.recipes { animation-delay: 140ms; }
 .privacy { animation-delay: 280ms; }
-.card:active { transform: translateY(1px) scale(.99); }
 @keyframes homeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .titles, .composer, .card, .privacy { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .titles, .composer, .recipes, .privacy { animation: none; } }

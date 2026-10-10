@@ -176,3 +176,20 @@ test("fallback folder names keep the meaningful words", async () => {
   assert.equal(fallbackFolderName("Make a page for my bakery"), "page-bakery");
   assert.equal(fallbackFolderName("اصنع صفحة"), "");
 });
+
+test("moving a file can be rewound, even without keeping a copy", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "enc-move-"));
+  const { Checkpoints } = await import("../src/engine/checkpoints.ts");
+  const cps = new Checkpoints(path.join(dir, ".history"));
+  const from = path.join(dir, "IMG_1.jpg"), to = path.join(dir, "Pictures", "2026-06-12 01.jpg");
+  await writeFile(from, "photo");
+  const cp = await cps.create("Before moving IMG_1.jpg");
+  await cps.rememberMove(from, to);
+  const { mkdir, rename } = await import("node:fs/promises");
+  await mkdir(path.dirname(to), { recursive: true });
+  await rename(from, to);
+  await cps.restore(cp.id);
+  assert.equal(await readFile(from, "utf8"), "photo");
+  assert.ok(!existsSync(to));
+  await rm(dir, { recursive: true, force: true });
+});

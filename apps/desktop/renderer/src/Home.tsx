@@ -1,17 +1,13 @@
 import { useState } from "react";
-import { Composer, Icon, type IconName } from "@enceladus/ui";
+import { Composer, Icon } from "@enceladus/ui";
 import type { Strings } from "./i18n";
 import { bridge, type Attachment } from "./bridge";
 import { useAttachments } from "./useAttachments";
 import { MoonHero } from "./hero/MoonHero";
+import { RecipeCard, RecipesDialog } from "./Recipes";
+import { RECIPES, type Recipe } from "./recipeList";
+import type { Language } from "./bridge";
 import s from "./Home.module.css";
-
-const starterIcons: Record<keyof Strings["starters"], IconName> = {
-  website: "browser",
-  files: "folderSort",
-  automate: "repeat",
-  fix: "wrench",
-};
 
 function greeting(t: Strings) {
   const h = new Date().getHours();
@@ -24,9 +20,12 @@ interface HomeProps {
   onSubmit: (text: string, folder?: string, attachments?: Attachment[]) => void;
   onNotice: (message: string) => void;
   theme: "light" | "dark";
+  language: Language;
 }
 
-export function Home({ t, onSubmit, onNotice, theme }: HomeProps) {
+export function Home({ t, onSubmit, onNotice, theme, language }: HomeProps) {
+  const [recipesOpen, setRecipesOpen] = useState(false);
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [draft, setDraft] = useState("");
   const files = useAttachments(t, onNotice);
   const [focusRequest, setFocusRequest] = useState(0);
@@ -76,18 +75,28 @@ export function Home({ t, onSubmit, onNotice, theme }: HomeProps) {
           } : undefined}
         />
 
-        <div className={s.starters}>
-          {(Object.keys(starterIcons) as (keyof Strings["starters"])[]).map((key) => {
-            const card = t.starters[key];
-            return (
-              <button key={key} type="button" className={s.card} onClick={() => { setDraft(card.prompt); setFocusRequest((n) => n + 1); }}>
-                <span className={s.cardIcon}><Icon name={starterIcons[key]} size={20} /></span>
-                <span className={s.cardTitle}>{card.title}</span>
-                <span className={s.cardBody}>{card.body}</span>
-              </button>
-            );
-          })}
-        </div>
+        <section className={s.recipes} aria-labelledby="recipes-heading">
+          <div className={s.recipesHead}>
+            <h2 id="recipes-heading" className={s.recipesTitle}>{t.recipes.homeTitle}</h2>
+            <button type="button" className={s.allRecipes} onClick={() => { setRecipe(null); setRecipesOpen(true); }}>
+              {t.recipes.all}<Icon name="arrowRight" size={14} />
+            </button>
+          </div>
+          <div className={s.recipeGrid}>
+            {RECIPES.filter((r) => r.featured).map((r) => (
+              <RecipeCard key={r.id} recipe={r} language={language} onClick={() => { setRecipe(r); setRecipesOpen(true); }} />
+            ))}
+          </div>
+        </section>
+        <RecipesDialog
+          t={t}
+          language={language}
+          open={recipesOpen}
+          initial={recipe}
+          onClose={() => setRecipesOpen(false)}
+          onStart={(prompt, recipeFolder) => onSubmit(prompt, recipeFolder ?? folder?.path)}
+          onNotice={onNotice}
+        />
 
         <p className={s.privacy}>
           <Icon name="lock" size={14} />

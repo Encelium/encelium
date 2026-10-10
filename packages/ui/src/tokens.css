@@ -39,7 +39,7 @@
 
   /* ── Type ─────────────────────────────────────────────────────── */
   --font-latin: "Geist Variable", "Geist", system-ui, sans-serif;
-  --font-arabic: "Readex Pro Variable", "Readex Pro", "Geist Variable", sans-serif;
+  --font-arabic: "Noto Sans Arabic Variable", "Noto Sans Arabic", "Geist Variable", sans-serif;
   --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "Cascadia Mono", monospace;
   --font-sans: var(--font-latin);
 

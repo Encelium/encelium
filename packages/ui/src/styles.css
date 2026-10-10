@@ -1,6 +1,6 @@
 /* Entry stylesheet: fonts (bundled, works offline), tokens, base. */
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
-@import "@fontsource-variable/readex-pro";
+@import "@fontsource-variable/noto-sans-arabic";
 @import "./tokens.css";
 @import "./base.css";

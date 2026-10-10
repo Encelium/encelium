@@ -4,13 +4,14 @@
 // (content, or "did not exist"). Restoring checkpoint C replays the saved originals
 // from the newest checkpoint back to C, so every file ends up exactly as it was at C.
 // Works without Git, so it works on every user's PC.
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /** Files bigger than this are not copied; the agent is told it can't safely change them. */
 export const MAX_REWIND_BYTES = 5 * 1024 * 1024;
 
-interface Saved { existed: boolean; content?: string } // base64
+/** How a file was: its content (base64), "did not exist", or "was moved to movedTo" (moves keep no copy, so big files can move too). */
+interface Saved { existed: boolean; content?: string; movedTo?: string }
 interface Checkpoint { id: string; label: string; at: number; files: Record<string, Saved> }
 
 export class Checkpoints {
@@ -58,8 +59,17 @@ export class Checkpoints {
     await this.persist();
   }
 
-  /**
-   * Put every file back the way it was when checkpoint `id` was made. Returns the files restored.
+  /** Call before moving `from` to `to`. Undoing a move just moves it back, so no copy is kept. */
+  async rememberMove(from: string, to: string): Promise<void> {
+    await this.load();
+    const cp = this.list[this.list.length - 1];
+    if (!cp) throw new Error("No Rewind point yet: create one before changing files.");
+    if (!(from in cp.files)) cp.files[from] = { existed: true, movedTo: to };
+    if (!(to in cp.files)) cp.files[to] = { existed: false };
+    await this.persist();
+  }
+
+  /** Put every file back the way it was when checkpoint `id` was made. Returns the files restored.
    * With `undoLabel`, the files as they are now are kept first, in a new point with that name,
    * so going back can itself be undone.
    */
@@ -87,7 +97,13 @@ export class Checkpoints {
     const restored = new Set<string>();
     for (let i = this.list.length - 1; i >= index; i--) {
       for (const [file, saved] of Object.entries(this.list[i]!.files)) {
-        if (saved.existed) {
+        if (saved.movedTo) {
+          // Moved away during this step: move it back (if it's still where it went).
+          if (await access(saved.movedTo).then(() => true, () => false)) {
+            await mkdir(path.dirname(file), { recursive: true });
+            await rename(saved.movedTo, file);
+          }
+        } else if (saved.existed) {
           await mkdir(path.dirname(file), { recursive: true });
           await writeFile(file, Buffer.from(saved.content ?? "", "base64"));
         } else {

@@ -62,6 +62,7 @@ function systemPrompt(lang: Language, root: string) {
     "- For anything with more than one step, first call update_plan with a short checklist in plain words. Keep it updated as you go: mark a step done as soon as it's finished and the next one active, in the same reply as your next action. Don't save all the ticks for the end.",
     "- While working, say little: at most one short sentence before a group of actions, or nothing. Save explanations for the final summary, and don't repeat there what you already said.",
     "- Work only inside the task folder, using relative paths. Don't try to reach other folders.",
+    "- To move or rename files, use move_file (the person can undo it). Don't use commands for moving, renaming or deleting files.",
     "- Check your own work before saying it's done: read files back, run the program or its tests when you can, and fix problems you find.",
     "- Be honest. If something failed or you couldn't do it, say so plainly and say what the person can try.",
     "- Do the work yourself with the tools. Never ask the person to run commands or edit files.",

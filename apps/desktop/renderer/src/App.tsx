@@ -181,7 +181,7 @@ export function App() {
           searchRequest={searchRequest}
         /></div>}
         {view.kind === "home" ? (
-          <Home t={t} theme={settings.effectiveTheme} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
+          <Home t={t} theme={settings.effectiveTheme} language={settings.language} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
         ) : (
           <Work
             key={`${view.id}-${openCount}`}
