@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useMediaQuery, useRemembered } from "./useLayout";
+import { useMediaQuery, useRemembered, useRememberedNumber } from "./useLayout";
+import { Splitter } from "./Splitter";
 import { bridge, type Settings } from "./bridge";
 import { strings } from "./i18n";
 import { demoEngine } from "./agent/demo";
@@ -54,6 +55,8 @@ export function App() {
   const [compact, setCompact] = useState(false);
   const [onTop, setOnTop] = useState(false);
   const [searchRequest, setSearchRequest] = useState(0);
+  const [sidebarWidth, setSidebarWidth] = useRememberedNumber("enceladus.sidebarWidth", 256);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const narrow = useMediaQuery("(max-width: 900px)");
   const roomy = useMediaQuery("(min-width: 1100px)");
   const sidebarMode = compact || narrow ? "overlay" : "docked";
@@ -166,7 +169,7 @@ export function App() {
         compact={bridge.window ? { on: compact, onToggle: toggleCompact } : undefined}
         onTop={compact && bridge.window ? { on: onTop, onToggle: toggleOnTop } : undefined}
       />
-      <div className={bodyClass}>
+      <div ref={bodyRef} className={bodyClass} style={{ "--sidebar-width": `${sidebarWidth}px` } as React.CSSProperties}>
         {showRail && <SidebarRail t={t} onNewTask={newTask} onSearch={openSearch} onOpenSettings={() => setSettingsOpen(true)} />}
         {sidebarMode === "overlay" && sidebarOpen && <div className="app-scrim" onClick={() => setSidebarOver(false)} />}
         {sidebarOpen && <div className={sidebarMode === "overlay" ? "app-sidebar-over" : "app-sidebar"}><Sidebar
@@ -179,7 +182,9 @@ export function App() {
           onRenameTask={bridge.tasks ? renameTask : undefined}
           onOpenSettings={() => setSettingsOpen(true)}
           searchRequest={searchRequest}
-        /></div>}
+        />{sidebarMode === "docked" && (
+          <Splitter className="app-sidebar-handle" label={t.layout.resize} width={sidebarWidth} onChange={setSidebarWidth} containerRef={bodyRef} min={200} max={420} minAfter={480} initial={256} />
+        )}</div>}
         {view.kind === "home" ? (
           <Home t={t} theme={settings.effectiveTheme} language={settings.language} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
         ) : (

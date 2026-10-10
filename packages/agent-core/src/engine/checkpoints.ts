@@ -123,6 +123,21 @@ export class Checkpoints {
     return [...restored];
   }
 
+  /**
+   * How `fullPath` was at point `id`: the first original saved at or after it, or null if it
+   * hasn't changed since (then the file as it is now is also how it was).
+   */
+  async originalAt(id: string, fullPath: string): Promise<Saved | null> {
+    await this.load();
+    const index = this.list.findIndex((c) => c.id === id);
+    if (index === -1) return null;
+    for (let i = index; i < this.list.length; i++) {
+      const saved = this.list[i]!.files[fullPath];
+      if (saved) return saved;
+    }
+    return null;
+  }
+
   /** The newest point (after a restore with undo, that's the "before going back" point). */
   async latest() {
     await this.load();

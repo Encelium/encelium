@@ -31,7 +31,7 @@ export function electronEngine(agent: AgentBridge, taskId: string): AgentEngine 
       const whenStarted = (fn: () => void) => (runId ? fn() : queued.push(fn));
       const run: AgentRun = {
         onEvent(listener) { listeners.add(listener); return () => { listeners.delete(listener); if (!listeners.size) unsubscribe(); }; },
-        respond(requestId, allowed) { whenStarted(() => void agent.respond({ runId: runId!, requestId, allowed })); },
+        respond(requestId, allowed, remember) { whenStarted(() => void agent.respond({ runId: runId!, requestId, allowed, remember })); },
         stop() { whenStarted(() => void agent.stop({ runId: runId! })); },
       };
       return run;

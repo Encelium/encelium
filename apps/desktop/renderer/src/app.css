@@ -31,9 +31,15 @@ body { overflow: hidden; }
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;
 }
-.app-body.with-sidebar { grid-template-columns: 256px minmax(0, 1fr); }
+.app-body.with-sidebar { grid-template-columns: var(--sidebar-width, 256px) minmax(0, 1fr); }
 .app-body.with-rail { grid-template-columns: 56px minmax(0, 1fr); }
-.app-sidebar { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; min-width: 0; }
+.app-sidebar { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; min-width: 0; }
+/* The sidebar's drag handle sits on its end edge (styles come from the shared splitter). */
+.app-sidebar-handle { position: absolute !important; inset-block: 0; inset-inline-end: 0; width: 1px; margin: 0 !important; background: transparent !important; }
+.app-sidebar-handle:hover, .app-sidebar-handle:focus-visible, .app-sidebar-handle:active { background: var(--color-accent) !important; }
+/* While dragging a handle: no text selection, and iframes don't swallow the pointer. */
+body.is-resizing { cursor: col-resize; user-select: none; }
+body.is-resizing iframe { pointer-events: none; }
 /* Small windows and compact mode: the sidebar slides over the content. */
 .app-sidebar-over {
   position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 8;

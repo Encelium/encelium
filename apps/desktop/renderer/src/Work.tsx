@@ -8,6 +8,7 @@ import { useAttachments } from "./useAttachments";
 import { FilesPanel } from "./FilesPanel";
 import { useRememberedNumber } from "./useLayout";
 import { Splitter } from "./Splitter";
+import { Compare } from "./Compare";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import s from "./Work.module.css";
@@ -20,7 +21,7 @@ type Item =
   | { kind: "assistant"; id: string; text: string }
   | { kind: "plan"; id: string; plan: PlanEvent }
   | { kind: "activity"; id: string; text: string; details?: string }
-  | { kind: "permission"; id: string; event: PermissionEvent; answer?: boolean }
+  | { kind: "permission"; id: string; event: PermissionEvent; answer?: boolean; remember?: boolean }
   | { kind: "error"; id: string; message: string; suggestion?: string };
 
 interface Checkpoint { id: string; label: string; at: number }
@@ -107,6 +108,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   const [notice, setNotice] = useState<string | null>(null);
   const [page, setPage] = useState<string | null>(null);
   const [pageVersion, setPageVersion] = useState(0);
+  const [comparing, setComparing] = useState(false);
   const files = useAttachments(t, setNotice);
 
   const runRef = useRef<AgentRun | null>(null);
@@ -174,7 +176,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
         setItems((prev) => [...prev, { kind: "permission", id: `perm-${n}-${e.requestId}`, event: e }]);
         break;
       case "permission-answer":
-        setItems((prev) => prev.map((i) => (i.kind === "permission" && i.event.requestId === e.requestId ? { ...i, answer: e.allowed } : i)));
+        setItems((prev) => prev.map((i) => (i.kind === "permission" && i.event.requestId === e.requestId ? { ...i, answer: e.allowed, remember: e.remember } : i)));
         break;
       case "checkpoint":
         setCheckpoints((prev) => [...prev, { id: e.id, label: e.label, at: e.at }]);
@@ -273,9 +275,9 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     return tasks.onFilesChanged((id) => { if (id === taskId) refresh(); });
   }, [taskId]);
 
-  const answer = (item: Extract<Item, { kind: "permission" }>, allowed: boolean) => {
-    setItems((prev) => prev.map((i) => (i.id === item.id && i.kind === "permission" ? { ...i, answer: allowed } : i)));
-    runRef.current?.respond(item.event.requestId, allowed);
+  const answer = (item: Extract<Item, { kind: "permission" }>, allowed: boolean, remember = false) => {
+    setItems((prev) => prev.map((i) => (i.id === item.id && i.kind === "permission" ? { ...i, answer: allowed, remember } : i)));
+    runRef.current?.respond(item.event.requestId, allowed, remember);
   };
 
   // Follow new content unless the person scrolled up to read.
@@ -356,12 +358,14 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                       item.answer === undefined ? (
                         <>
                           <Button variant="primary" onClick={() => answer(item, true)}>{ev.allowLabel}</Button>
-                          <Button variant="secondary" onClick={() => answer(item, false)}>{ev.denyLabel}</Button>
+                          {/* Careful requests only: risky ones always ask. */}
+                          {ev.tool && bridge.agent && <Button variant="secondary" onClick={() => answer(item, true, true)}>{t.work.allowForTask}</Button>}
+                          <Button variant="ghost" onClick={() => answer(item, false)}>{ev.denyLabel}</Button>
                         </>
                       ) : (
                         <span className={s.answered}>
                           <Icon name={item.answer ? "check" : "close"} size={14} />
-                          {item.answer ? t.work.allowed : t.work.notAllowed}
+                          {item.answer ? (item.remember ? t.work.allowedForTask : t.work.allowed) : t.work.notAllowed}
                         </span>
                       )
                     }
@@ -415,7 +419,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
       </section>
 
       {panel.open && panel.mode === "docked" && (
-        <Splitter label={t.layout.resize} width={chatWidth} onChange={setChatWidth} containerRef={workRef} />
+        <Splitter label={t.layout.resize} width={chatWidth} onChange={setChatWidth} containerRef={workRef} min={340} minAfter={320} initial={480} />
       )}
       {panel.open && panel.mode === "overlay" && <div className={s.scrim} onClick={panel.onClose} />}
       {panel.open && <aside className={[s.panel, panel.mode === "overlay" ? s.panelOver : ""].filter(Boolean).join(" ")}>
@@ -435,15 +439,32 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
         </div>
         <div key={tab} className={`${s.panelBody} ${s.tabBody}`}>
           {tab === "files" && bridge.tasks ? (
-            <FilesPanel t={t} taskId={taskId} version={pageVersion} />
+            <FilesPanel t={t} taskId={taskId} version={pageVersion} onNotice={setNotice} />
           ) : tab === "preview" || tab === "files" ? (
             page && bridge.tasks ? (
               <div className={s.preview}>
                 <div className={s.previewBar}>
                   <span className={s.previewPage} dir="ltr">{page}</span>
-                  <Button variant="ghost" size="sm" iconEnd="arrowRight" onClick={() => bridge.tasks?.openPreview({ taskId, page })}>{t.work.openInBrowser}</Button>
+                  <span className={s.previewActions}>
+                    {/* Before / after: compares with the newest Rewind point (just before the last change). */}
+                    {checkpoints.length > 0 && (
+                      <Button variant={comparing ? "secondary" : "ghost"} size="sm" icon="rewind" aria-pressed={comparing} onClick={() => setComparing((c) => !c)}>
+                        {t.work.compare}
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" iconEnd="arrowRight" onClick={() => bridge.tasks?.openPreview({ taskId, page })}>{t.work.openInBrowser}</Button>
+                  </span>
                 </div>
-                {/* Sandboxed: the page can run its own scripts but can't reach the app. */}
+                {comparing && checkpoints.length > 0 ? (
+                  <Compare
+                    taskId={taskId}
+                    page={page}
+                    pointId={checkpoints[checkpoints.length - 1]!.id}
+                    version={pageVersion}
+                    labels={{ before: t.work.before, after: t.work.after, handle: t.work.compareHandle }}
+                  />
+                ) : (
+                /* Sandboxed: the page can run its own scripts but can't reach the app. */
                 <iframe
                   key={pageVersion}
                   className={s.frame}
@@ -451,6 +472,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                   src={`enceladus-preview://${taskId}/${page}`}
                   sandbox="allow-scripts allow-forms allow-modals"
                 />
+                )}
               </div>
             ) : (
               <div className={s.empty}>

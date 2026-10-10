@@ -6,6 +6,7 @@ import { appendFile, mkdir, readFile, readdir, rm, stat, writeFile } from "node:
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Checkpoints, Workspace, fallbackFolderName } from "@enceladus/agent-core";
+import { writeZip } from "./zip.js";
 
 export const PREVIEW_SCHEME = "enceladus-preview";
 
@@ -137,17 +138,35 @@ async function findPage(task) {
   return top.find((f) => /\.html?$/i.test(f)) ?? null;
 }
 
+// Shown on the "before" side when the page was only just created (both languages: the page has no app language).
+const NOT_YET = "This page didn’t exist yet · لم تكن هذه الصفحة موجودة بعد";
+
 function registerPreview() {
   protocol.handle(PREVIEW_SCHEME, async (request) => {
     const url = new URL(request.url);
     const task = await getTask(url.hostname);
     if (!task) return new Response("Not found", { status: 404 });
     try {
-      const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html";
+      let rel = decodeURIComponent(url.pathname).replace(/^\/+/, "") || "index.html";
+      // "@before/<point>/<path>": the file as it was at that Rewind point (for before/after).
+      const before = rel.match(/^@before\/([\w-]+)\/(.*)$/);
+      if (before) rel = before[2] || "index.html";
       const file = await task.workspace.resolve(rel); // refuses anything outside the task folder
-      const res = await net.fetch(pathToFileURL(file).toString());
       const type = MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream";
-      return new Response(res.body, { status: res.status, headers: { "content-type": type, "cache-control": "no-store" } });
+      const headers = { "content-type": type, "cache-control": "no-store" };
+      let source = file;
+      if (before) {
+        const saved = await task.checkpoints.originalAt(before[1], file);
+        if (saved && !saved.existed) {
+          // The page didn't exist yet at that point: say so calmly instead of a blank error.
+          if (!/^text\/html/.test(type)) return new Response("Not found", { status: 404 });
+          return new Response(`<!doctype html><meta charset="utf-8"><body style="margin:0;height:100vh;display:grid;place-items:center;font:15px system-ui,sans-serif;color:#6B7B88;background:#F3F6F9">${NOT_YET}</body>`, { headers });
+        }
+        if (saved?.content !== undefined) return new Response(Buffer.from(saved.content, "base64"), { headers });
+        if (saved?.movedTo) source = saved.movedTo;
+      }
+      const res = await net.fetch(pathToFileURL(source).toString());
+      return new Response(res.body, { status: res.status, headers });
     } catch {
       return new Response("Not found", { status: 404 });
     }
@@ -231,6 +250,29 @@ export async function initTasks() {
       return { kind: "missing" };
     }
   });
+  // "Save as zip": the whole task folder (minus tool caches), wherever the person chooses.
+  ipcMain.handle("files:zip", async (event, { taskId }) => {
+    const task = await getTask(taskId);
+    if (!task) return { ok: false, reason: "missing" };
+    const name = path.basename(task.meta.folder);
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(win, {
+      defaultPath: path.join(app.getPath("downloads"), `${name}.zip`),
+      filters: [{ name: "Zip", extensions: ["zip"] }],
+    });
+    if (canceled || !filePath) return { ok: false, reason: "canceled" };
+    const files = await zipList(task.meta.folder, name);
+    if (!files.length) return { ok: false, reason: "empty" };
+    try {
+      await writeZip(filePath, files);
+    } catch (e) {
+      await rm(filePath, { force: true }).catch(() => {});
+      return { ok: false, reason: e.message === "too-big" || e.message === "too-many" ? e.message : "failed" };
+    }
+    shell.showItemInFolder(filePath);
+    return { ok: true, path: filePath, count: files.length };
+  });
+
   // Shows the file in Explorer (never runs it: opening a .js or .bat directly would execute it).
   ipcMain.handle("files:show", async (_e, { taskId, path: rel }) => {
     const task = await getTask(taskId);
@@ -243,6 +285,22 @@ export async function initTasks() {
 const IMAGE = /\.(png|jpe?g|gif|webp|svg|ico)$/i;
 const MAX_VIEW_BYTES = 512 * 1024;
 const SKIP_DIRS = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", ".next", "dist", "build", ".cache"]);
+
+const ZIP_SKIP = new Set(["node_modules", ".git", ".venv", "venv", "__pycache__", ".cache"]);
+
+/** Every file to put in the zip, named "<folder>/<path inside it>". */
+async function zipList(root, top) {
+  const out = [];
+  async function walk(dir) {
+    for (const entry of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { if (!ZIP_SKIP.has(entry.name)) await walk(full); }
+      else if (entry.isFile()) out.push({ path: full, name: `${top}/${path.relative(root, full).replaceAll("\\", "/")}` });
+    }
+  }
+  await walk(root);
+  return out;
+}
 
 /** Files in the folder (relative paths, folders first), skipping bulky tool folders. At most 500. */
 async function listFiles(root) {

@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld("enceladus", {
     listFiles: (input) => ipcRenderer.invoke("files:list", input),
     readFile: (input) => ipcRenderer.invoke("files:read", input),
     showFile: (input) => ipcRenderer.invoke("files:show", input),
+    saveZip: (input) => ipcRenderer.invoke("files:zip", input),
     onFilesChanged: (callback) => {
       const handler = (_event, taskId) => callback(taskId);
       ipcRenderer.on("task:files-changed", handler);

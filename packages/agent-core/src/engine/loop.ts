@@ -9,6 +9,8 @@ import type { Workspace } from "./workspace.ts";
 import { TOOLS, checkpointLabel, failureActivity, permissionText, riskOf, runTool, workingText } from "./tools.ts";
 
 export interface SessionOptions {
+  /** "Allow for this task": careful requests from these tools run without asking. Risky ones always ask. */
+  preApproved?: (tool: string) => boolean;
   connection: ModelConnection;
   workspace: Workspace;
   checkpoints: Checkpoints;
@@ -152,8 +154,8 @@ export class AgentSession implements AgentRun {
           if (signal.aborted) throw new DOMException("stopped", "AbortError");
 
           const risk = riskOf(call.name, args);
-          if (risk !== "safe") {
-            const allowed = await this.ask({ level: risk, ...permissionText(language, call.name, args) });
+          if (risk !== "safe" && !(risk === "careful" && this.opts.preApproved?.(call.name))) {
+            const allowed = await this.ask({ level: risk, ...permissionText(language, call.name, args), ...(risk === "careful" ? { tool: call.name } : {}) });
             if (!allowed) {
               if (signal.aborted) throw new DOMException("stopped", "AbortError");
               this.messages.push({ role: "tool", toolCallId: call.id, content: DENIED, isError: true });

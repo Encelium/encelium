@@ -18,7 +18,7 @@ export type TestResult = { ok: true; models: string[] } | { ok: false; reason: M
 
 export interface AgentBridge {
   start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[] }): Promise<{ runId: string; folder?: string }>;
-  respond(input: { runId: string; requestId: string; allowed: boolean }): Promise<void>;
+  respond(input: { runId: string; requestId: string; allowed: boolean; remember?: boolean }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
   restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true; checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;
   onEvent(callback: (runId: string, event: import("./agent/types").AgentEvent) => void): () => void;
@@ -39,7 +39,7 @@ export type StoredEvent =
   | import("./agent/types").AgentEvent
   | { type: "user"; text: string; attachments?: string[] }
   | { type: "message"; text: string }
-  | { type: "permission-answer"; requestId: string; allowed: boolean }
+  | { type: "permission-answer"; requestId: string; allowed: boolean; remember?: boolean }
   | { type: "restored"; checkpointId: string };
 
 export interface TaskFile { path: string; size: number }
@@ -61,6 +61,7 @@ export interface TasksBridge {
   listFiles(input: { taskId: string }): Promise<TaskFile[]>;
   readFile(input: { taskId: string; path: string }): Promise<FileView>;
   showFile(input: { taskId: string; path: string }): Promise<void>;
+  saveZip(input: { taskId: string }): Promise<{ ok: true; path: string; count: number } | { ok: false; reason: "canceled" | "empty" | "too-big" | "too-many" | "missing" | "failed" }>;
   onFilesChanged(callback: (taskId: string) => void): () => void;
 }
 

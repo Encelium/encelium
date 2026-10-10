@@ -15,7 +15,7 @@ export type AgentEvent =
   /** The assistant message is complete. */
   | { type: "message-done"; id: string }
   /** The agent needs a yes/no before continuing. Answer with respond(requestId, allowed). */
-  | { type: "permission"; requestId: string; level: RiskLevel; title: string; description: string; /** The exact command, shown only if the person asks. */ details?: string; allowLabel: string; denyLabel: string }
+  | { type: "permission"; requestId: string; level: RiskLevel; title: string; description: string; /** The exact command, shown only if the person asks. */ details?: string; allowLabel: string; denyLabel: string; /** The tool asking, so "Allow for this task" can remember it. Only for "careful" requests. */ tool?: string }
   /** A Rewind point was saved (before a change). */
   | { type: "checkpoint"; id: string; label: string; at: number }
   /** One line summary of a finished step, with optional technical details for "Show details". */
@@ -29,7 +29,8 @@ export interface AgentRun {
   /** Subscribe to events. Returns an unsubscribe function. */
   onEvent(listener: (event: AgentEvent) => void): () => void;
   /** Answer a permission request. */
-  respond(requestId: string, allowed: boolean): void;
+  /** `remember`: also allow this kind of request for the rest of the task ("careful" requests only). */
+  respond(requestId: string, allowed: boolean, remember?: boolean): void;
   /** Ask the agent to stop as soon as it safely can. */
   stop(): void;
 }

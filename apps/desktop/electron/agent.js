@@ -51,6 +51,16 @@ function notifyIfAway(sender, task, e, lang) {
   note.show();
 }
 
+// "Allow for this task": tools whose careful requests the person allowed for the whole task.
+// Kept next to the task's history, so it lasts across restarts and ends with the task.
+const allowedFile = (task) => path.join(task.dir, "allowed.json");
+async function allowedFor(task) {
+  if (!task.allowed) {
+    try { task.allowed = new Set(JSON.parse(await readFile(allowedFile(task), "utf8"))); } catch { task.allowed = new Set(); }
+  }
+  return task.allowed;
+}
+
 export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
@@ -82,8 +92,12 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
       return { runId, folder: task.meta.folder };
     }
 
-    const session = new AgentSession(request, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages });
-    runs.set(runId, { session, record, taskId: task.meta.id });
+    const allowed = await allowedFor(task);
+    const session = new AgentSession(request, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages, preApproved: (tool) => allowed.has(tool) });
+    /** requestId → tool, so "Allow for this task" knows what to remember. */
+    const asked = new Map();
+    session.onEvent((e) => { if (e.type === "permission" && e.tool) asked.set(e.requestId, e.tool); });
+    runs.set(runId, { session, record, task, asked, taskId: task.meta.id });
     session.onEvent(send);
     session.finished.then(async () => {
       runs.delete(runId);
@@ -92,10 +106,17 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     return { runId, folder: task.meta.folder };
   });
 
-  ipcMain.handle("agent:respond", (_e, { runId, requestId, allowed }) => {
+  ipcMain.handle("agent:respond", async (_e, { runId, requestId, allowed, remember }) => {
     const run = runs.get(runId);
     if (!run) return;
-    run.record({ type: "permission-answer", requestId: String(requestId), allowed: !!allowed });
+    const tool = run.asked.get(String(requestId));
+    const keep = !!allowed && !!remember && !!tool;
+    if (keep) {
+      const set = await allowedFor(run.task);
+      set.add(tool);
+      await writeFile(allowedFile(run.task), JSON.stringify([...set])).catch(() => {});
+    }
+    run.record({ type: "permission-answer", requestId: String(requestId), allowed: !!allowed, ...(keep ? { remember: true } : {}) });
     run.session.respond(String(requestId), !!allowed);
   });
   ipcMain.handle("agent:stop", (_e, { runId }) => runs.get(runId)?.session.stop());

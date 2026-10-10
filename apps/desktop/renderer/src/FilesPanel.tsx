@@ -13,8 +13,17 @@ function sizeText(bytes: number, t: Strings) {
 }
 
 /** The task folder's files, and a read-only look inside one. Never runs anything. */
-export function FilesPanel({ t, taskId, version }: { t: Strings; taskId: string; version: number }) {
+export function FilesPanel({ t, taskId, version, onNotice }: { t: Strings; taskId: string; version: number; onNotice: (message: string) => void }) {
   const tasks = bridge.tasks;
+  const [zipping, setZipping] = useState(false);
+  const saveZip = async () => {
+    if (!tasks || zipping) return;
+    setZipping(true);
+    const result = await tasks.saveZip({ taskId });
+    setZipping(false);
+    if (result.ok) onNotice(t.files.zipSaved.replace("{count}", String(result.count)));
+    else if (result.reason !== "canceled") onNotice(t.files.zipErrors[result.reason]);
+  };
   const [files, setFiles] = useState<TaskFile[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [view, setView] = useState<FileView | null>(null);
@@ -57,7 +66,10 @@ export function FilesPanel({ t, taskId, version }: { t: Strings; taskId: string;
     <div className={s.list}>
       <div className={s.bar}>
         <span className={s.count}>{files ? `${files.length} ${files.length === 1 ? t.files.file : t.files.filesWord}` : ""}</span>
-        <Button variant="ghost" size="sm" icon="folder" onClick={() => tasks.openFolder({ taskId })}>{t.files.openFolder}</Button>
+        <span className={s.barActions}>
+          {!!files?.length && <Button variant="ghost" size="sm" icon="download" onClick={saveZip} disabled={zipping}>{zipping ? t.files.zipping : t.files.saveZip}</Button>}
+          <Button variant="ghost" size="sm" icon="folder" onClick={() => tasks.openFolder({ taskId })}>{t.files.openFolder}</Button>
+        </span>
       </div>
       {files && files.length === 0 ? (
         <div className={s.empty}>
