@@ -103,7 +103,13 @@
 | Files tab (list + read-only viewer) when there is no web page | ✅ Done |
 | Undo a Rewind ("Before going back" point) | ✅ Done |
 | The moon on the home screen (vapor while typing) | ✅ Done |
-| "Allow for this task" on permission prompts | Planned |
+| "Allow for this task" on permission prompts | ✅ Done |
+| Recipes: 15 tested requests with blanks to fill (home shows 6) | ✅ Done |
+| Before / after slider for website changes | ✅ Done |
+| Save the task folder as a .zip | ✅ Done |
+| Resizable sidebar; slim bar when folded; ⋯ menu on chats | ✅ Done |
+| Picture previews (composer and sent messages) | ✅ Done |
+| Rewindable move/rename tool (move_file) | ✅ Done |
 | Installer, auto-update, crash reports | Phase 5 |
 
 ### Later (not v1)
@@ -183,7 +189,7 @@ Enceladus (Saturn's moon) has the brightest icy surface in the solar system and 
 
 ### Typography (design board v0.2)
 - UI Latin: **Geist** (Inter dropped — too common in AI products)
-- UI Arabic: **Readex Pro** (primary RTL language; IBM Plex Sans Arabic rejected — cramped and too small next to Geist)
+- UI Arabic: **Noto Sans Arabic** (primary RTL language; IBM Plex Sans Arabic rejected — cramped and too small next to Geist)
 - UI Persian (later): **Vazirmatn**
 - Code: **Geist Mono**
 (All free, open licenses.)
