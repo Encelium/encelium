@@ -17,7 +17,7 @@ export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limite
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
 export interface AgentBridge {
-  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean }): Promise<{ runId: string; folder?: string }>;
+  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean; pointed?: { label: string; context: string } }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean; remember?: boolean }): Promise<void>;
   answer(input: { runId: string; requestId: string; text: string }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
@@ -40,7 +40,7 @@ export interface TaskSummary { id: string; title: string; folder: string; update
 /** What was shown on screen, saved per task: agent events plus a few bookkeeping entries. */
 export type StoredEvent =
   | import("./agent/types").AgentEvent
-  | { type: "user"; text: string; attachments?: string[] }
+  | { type: "user"; text: string; attachments?: string[]; pointed?: string }
   | { type: "message"; text: string }
   | { type: "permission-answer"; requestId: string; allowed: boolean; remember?: boolean }
   | { type: "restored"; checkpointId: string }

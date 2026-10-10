@@ -20,7 +20,7 @@ type PermissionEvent = Extract<AgentEvent, { type: "permission" }>;
 type PlanEvent = Extract<AgentEvent, { type: "plan" }>;
 
 type Item =
-  | { kind: "user"; id: string; text: string; attachments?: string[] }
+  | { kind: "user"; id: string; text: string; attachments?: string[]; pointed?: string }
   | { kind: "assistant"; id: string; text: string }
   | { kind: "plan"; id: string; plan: PlanEvent }
   | { kind: "activity"; id: string; text: string; details?: string; file?: FileChange }
@@ -160,6 +160,10 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   const [check, setCheck] = useCheckResult();
   const [focusRequest, setFocusRequest] = useState(0);
   const [queue, setQueue] = useState<string[]>([]);
+  // "Point at it": picking a part of the preview, and the part picked for the next message.
+  const [picking, setPicking] = useState(false);
+  const [pointed, setPointed] = useState<{ tag: string; text: string; path: string } | null>(null);
+  const frameRef = useRef<HTMLIFrameElement>(null);
   const [fileToOpen, setFileToOpen] = useState<{ path: string; n: number } | null>(null);
   const pointOfRun = useRef(new Map<number, string>());
   // Live thinking text (models that stream it), and how much the model has written in this step.
@@ -184,7 +188,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     const planId = `plan-${n}`;
     switch (e.type) {
       case "user":
-        setItems((prev) => [...prev, { kind: "user", id: `user-${n}`, text: e.text, attachments: e.attachments }]);
+        setItems((prev) => [...prev, { kind: "user", id: `user-${n}`, text: e.text, attachments: e.attachments, pointed: "pointed" in e ? e.pointed : undefined }]);
         break;
       case "status":
         setStatus({ phase: e.phase, text: e.text });
@@ -281,17 +285,17 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     }
   }, []);
 
-  const startRun = useCallback((text: string, files?: Attachment[], retry = false) => {
+  const startRun = useCallback((text: string, files?: Attachment[], retry = false, point?: { label: string; context: string }) => {
     // A retry belongs to the same request: same number, no new message, the error goes away.
     const n = retry ? Math.max(counter.current, 1) : ++counter.current;
     unsubRef.current?.();
     setItems((prev) => prev.filter((i) => i.kind !== "suggestions"));
     if (retry) apply({ type: "retried" }, n);
-    else apply({ type: "user", text, attachments: files?.length ? files.map((f) => f.name) : undefined }, n);
+    else apply({ type: "user", text, attachments: files?.length ? files.map((f) => f.name) : undefined, pointed: point?.label }, n);
     setRunning(true);
     setStatus(null);
     stuck.current = true;
-    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check, retry });
+    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check, retry, pointed: point });
     firstRun.current = false;
     runRef.current = run;
     unsubRef.current = run.onEvent((e) => apply(e, n, true));
@@ -372,6 +376,23 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     const el = listRef.current;
     if (el && stuck.current) el.scrollTop = el.scrollHeight;
   }, [items, status]);
+
+  useEffect(() => {
+    if (!picking) return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.source !== frameRef.current?.contentWindow) return; // only our preview
+      const data = e.data as { type?: string; tag?: string; text?: string; path?: string };
+      if (data?.type === "enceladus-pick" && data.tag) {
+        setPointed({ tag: data.tag, text: String(data.text ?? ""), path: String(data.path ?? "") });
+        setPicking(false);
+        setFocusRequest((x) => x + 1);
+      } else if (data?.type === "enceladus-pick-cancel") setPicking(false);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [picking]);
+  const pointLabel = pointed ? `${t.work.partNames[pointed.tag as keyof typeof t.work.partNames] ?? `<${pointed.tag}>`}${pointed.text ? `: “${pointed.text.slice(0, 40)}${pointed.text.length > 40 ? "…" : ""}”` : ""}` : "";
+  const pointContext = pointed && page ? `[The person pointed at a part of ${page} in the preview: a <${pointed.tag}> element${pointed.text ? ` with the text "${pointed.text}"` : ""}${pointed.path ? ` (CSS path: ${pointed.path})` : ""}. Their request is about that part.]` : "";
 
   // Rewind to a point (from the Rewind tab, or "Undo" under an answer).
   const restoreTo = async (id: string) => {
@@ -458,6 +479,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                 return (
                   <div key={item.id} className={s.userTurn}>
                     {item.text && <Message role="user">{item.text}</Message>}
+                    {item.pointed && <span className={s.pointedSent} dir="auto"><Icon name="search" size={12} />{item.pointed}</span>}
                     {item.attachments?.length ? (
                       <ul className={s.sentFiles} aria-label={t.attachedFiles}>
                         {item.attachments.map((name) => (
@@ -603,6 +625,15 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
               <Button variant="secondary" size="sm" icon="close" onClick={() => runRef.current?.stop()}>{t.work.stop}</Button>
             </div>
           )}
+          {pointed && (
+            <div className={s.queued}>
+              <span className={s.pointChip}>
+                <Icon name="search" size={14} />
+                <span dir="auto">{t.work.pointingAt} {pointLabel}</span>
+                <IconButton icon="close" size="sm" label={t.work.removeQueued} onClick={() => setPointed(null)} />
+              </span>
+            </div>
+          )}
           {queue.length > 0 && (
             <div className={s.queued}>
               {queue.map((q, i) => (
@@ -623,7 +654,8 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
             attachLabel={t.attach}
             onSubmit={(text) => {
               if (running) { setQueue((q) => [...q, text]); return; } // waits its turn
-              startRun(text, files.files); files.clear();
+              startRun(text, files.files, false, pointed ? { label: pointLabel, context: pointContext } : undefined);
+              files.clear(); setPointed(null);
             }}
             onAttach={files.available ? files.choose : undefined}
             onDropFiles={files.available ? files.drop : undefined}
@@ -664,6 +696,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                 <div className={s.previewBar}>
                   <span className={s.previewPage} dir="ltr">{page}</span>
                   <span className={s.previewActions}>
+                    {!comparing && (
+                      <Button variant={picking ? "secondary" : "ghost"} size="sm" icon="search" aria-pressed={picking} onClick={() => setPicking((p) => !p)} title={t.work.pointHint}>
+                        {picking ? t.work.pointCancel : t.work.point}
+                      </Button>
+                    )}
                     {/* Before / after: compares with the newest Rewind point (just before the last change). */}
                     {checkpoints.length > 0 && (
                       <Button variant={comparing ? "secondary" : "ghost"} size="sm" icon="rewind" aria-pressed={comparing} onClick={() => setComparing((c) => !c)}>
@@ -684,10 +721,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                 ) : (
                 /* Sandboxed: the page can run its own scripts but can't reach the app. */
                 <iframe
-                  key={pageVersion}
-                  className={s.frame}
+                  ref={frameRef}
+                  key={`${pageVersion}-${picking}`}
+                  className={[s.frame, picking ? s.framePicking : ""].filter(Boolean).join(" ")}
                   title={t.work.previewTitle}
-                  src={`enceladus-preview://${taskId}/${page}`}
+                  src={`enceladus-preview://${taskId}/${page}${picking ? "?enceladus-pick=1" : ""}`}
                   sandbox="allow-scripts allow-forms allow-modals"
                 />
                 )}

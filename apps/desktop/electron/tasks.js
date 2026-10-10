@@ -142,6 +142,42 @@ async function findPage(task) {
 // Shown on the "before" side when the page was only just created (both languages: the page has no app language).
 const NOT_YET = "This page didn’t exist yet · لم تكن هذه الصفحة موجودة بعد";
 
+// The "point at it" picker, added to a preview page on request. It highlights what's under the
+// pointer and reports the clicked part (tag, text, a short CSS path) to the app.
+const PICKER = String.raw`<script>(function () {
+  var box = document.createElement("div");
+  box.style.cssText = "position:fixed;pointer-events:none;z-index:2147483647;border:2px solid #0F6E8C;background:rgba(15,110,140,.12);border-radius:4px;transition:all .08s ease-out;display:none";
+  document.documentElement.appendChild(box);
+  document.documentElement.style.cursor = "crosshair";
+  var cur = null;
+  function cssPath(el) {
+    var parts = [];
+    while (el && el.nodeType === 1 && el !== document.body && parts.length < 6) {
+      var name = el.tagName.toLowerCase();
+      if (el.id) { parts.unshift(name + "#" + el.id); break; }
+      var i = 1, s = el;
+      while ((s = s.previousElementSibling)) if (s.tagName === el.tagName) i++;
+      parts.unshift(name + (i > 1 ? ":nth-of-type(" + i + ")" : ""));
+      el = el.parentElement;
+    }
+    return parts.join(" > ");
+  }
+  document.addEventListener("mousemove", function (e) {
+    var el = document.elementFromPoint(e.clientX, e.clientY);
+    if (!el || el === cur || el === document.documentElement || el === document.body) return;
+    cur = el;
+    var r = el.getBoundingClientRect();
+    box.style.display = "block"; box.style.left = r.left + "px"; box.style.top = r.top + "px"; box.style.width = r.width + "px"; box.style.height = r.height + "px";
+  }, true);
+  document.addEventListener("click", function (e) {
+    e.preventDefault(); e.stopPropagation();
+    var el = cur || e.target;
+    var text = (el.innerText || el.getAttribute("alt") || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim().slice(0, 120);
+    parent.postMessage({ type: "enceladus-pick", tag: el.tagName.toLowerCase(), text: text, path: cssPath(el) }, "*");
+  }, true);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") parent.postMessage({ type: "enceladus-pick-cancel" }, "*"); });
+})();</script>`;
+
 function registerPreview() {
   protocol.handle(PREVIEW_SCHEME, async (request) => {
     const url = new URL(request.url);
@@ -165,6 +201,12 @@ function registerPreview() {
         }
         if (saved?.content !== undefined) return new Response(Buffer.from(saved.content, "base64"), { headers });
         if (saved?.movedTo) source = saved.movedTo;
+      }
+      // "Point at it": the page gets a small picker (highlight on hover, report the clicked part).
+      if (url.searchParams.has("enceladus-pick") && /^text\/html/.test(type)) {
+        const page = await readFile(source, "utf8");
+        const withPicker = /<\/body>/i.test(page) ? page.replace(/<\/body>(?![\s\S]*<\/body>)/i, `${PICKER}</body>`) : page + PICKER;
+        return new Response(withPicker, { headers });
       }
       const res = await net.fetch(pathToFileURL(source).toString());
       return new Response(res.body, { status: res.status, headers });

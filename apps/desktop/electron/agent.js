@@ -65,7 +65,7 @@ export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
 
-  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments, check, retry }) => {
+  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments, check, retry, pointed }) => {
     const lang = language === "ar" ? "ar" : "en";
     const text = String(prompt);
     const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -81,7 +81,9 @@ export function initAgent() {
       if (e.type === "done" || e.type === "error" || e.type === "permission" || e.type === "question") notifyIfAway(event.sender, task, e, lang);
     };
     const { prompt: prepared, names } = await prepareAttachments(task.meta.folder, text, Array.isArray(attachments) ? attachments : []);
-    const note = await takeRewindNote(task);
+    // "Point at it": tell the model exactly which part of the page the person means.
+    const pointNote = pointed?.context ? String(pointed.context).slice(0, 600) : "";
+    const note = [await takeRewindNote(task), pointNote].filter(Boolean).join("\n");
     const request = !note ? prepared : typeof prepared === "string" ? `${note}
 
 ${prepared}` : [{ type: "text", text: note }, ...prepared];
@@ -95,7 +97,7 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
       if (last?.role === "user") { ask = last.content; history = history.slice(0, -1); }
       else ask = lang === "ar" ? "توقّف الطلب السابق بسبب خطأ. تابع من حيث توقفت." : "The last request was cut off by an error. Carry on from where you stopped.";
     } else {
-      record({ type: "user", text, ...(names.length ? { attachments: names } : {}) });
+      record({ type: "user", text, ...(names.length ? { attachments: names } : {}), ...(pointed?.label ? { pointed: String(pointed.label).slice(0, 140) } : {}) });
     }
 
     if (!conn) {
