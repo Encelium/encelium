@@ -2,9 +2,9 @@
 import { ipcMain } from "electron";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { AgentSession, ENCELADUS_PRESET } from "@enceladus/agent-core";
+import { AgentSession, ENCELADUS_PRESET, suggestFolderName } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
-import { getTask, recorder, saveMessages, setTaskStopper } from "./tasks.js";
+import { getTask, hasTask, recorder, saveMessages, setTaskStopper } from "./tasks.js";
 import { prepareAttachments } from "./attachments.js";
 
 /** runId → { session, record } */
@@ -38,7 +38,11 @@ export function initAgent() {
     const lang = language === "ar" ? "ar" : "en";
     const text = String(prompt);
     const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-    const task = await getTask(taskId, { prompt: text, folder: typeof folder === "string" ? folder : undefined });
+    const chosen = typeof folder === "string" ? folder : undefined;
+    const conn = connection();
+    // A new task without a chosen folder gets one named by the model (short, English, descriptive).
+    const folderName = !chosen && conn && !hasTask(taskId) ? await suggestFolderName(conn, text) : "";
+    const task = await getTask(taskId, { prompt: text, folder: chosen, folderName });
     const record = recorder(task);
     const send = (e) => {
       record(e);
@@ -51,7 +55,6 @@ export function initAgent() {
 ${prepared}` : [{ type: "text", text: note }, ...prepared];
     record({ type: "user", text, ...(names.length ? { attachments: names } : {}) });
 
-    const conn = connection();
     if (!conn) {
       setTimeout(() => send({ type: "error", ...notConnected[lang] }), 0);
       return { runId, folder: task.meta.folder };

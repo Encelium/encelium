@@ -26,3 +26,22 @@
   border-radius: var(--radius-lg);
   border-end-end-radius: var(--radius-sm);
 }
+
+/* Code in replies */
+.content :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+.codeBlock {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  overflow-x: auto;
+  text-align: left;
+  font-size: var(--text-sm);
+  line-height: var(--leading-md);
+}
+.codeBlock code { font-family: var(--font-mono); font-size: inherit; white-space: pre; }
+.content li + li { margin-block-start: var(--space-1); }

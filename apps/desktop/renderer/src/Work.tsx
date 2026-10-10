@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Button, Composer, Icon, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
+  Button, Composer, Icon, Markdown, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
   type RewindItem,
 } from "@enceladus/ui";
 import { bridge, type Attachment, type Language, type StoredEvent } from "./bridge";
@@ -71,6 +71,8 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
   const listRef = useRef<HTMLDivElement>(null);
   const stuck = useRef(true);
   const firstRun = useRef(true);
+  const alive = useRef(true);
+  const pendingLeave = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Apply one event (live or replayed) for run number `n`. */
   const apply = useCallback((e: AgentEvent | StoredEvent, n: number) => {
@@ -147,7 +149,24 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
 
   // New task: start it. Saved task: show what happened, then wait for a follow-up.
   useEffect(() => {
-    let cancelled = false;
+    // Leaving the screen stops the run, but only on the next tick: React's development mode
+    // unmounts and remounts every screen once, and that must not start the task twice.
+    const leave = () => {
+      pendingLeave.current = setTimeout(() => {
+        pendingLeave.current = null;
+        alive.current = false;
+        unsubRef.current?.();
+        unsubRef.current = null;
+        runRef.current?.stop(); // quiet: no "stopped" message if the screen goes away
+        runRef.current = null;
+      }, 0);
+    };
+    if (pendingLeave.current) { // the development-mode remount: carry on as if nothing happened
+      clearTimeout(pendingLeave.current);
+      pendingLeave.current = null;
+      return leave;
+    }
+    alive.current = true;
     counter.current = 0;
     setItems([]);
     setCheckpoints([]);
@@ -156,7 +175,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
     } else if (bridge.tasks) {
       firstRun.current = false;
       bridge.tasks.events({ taskId }).then((events) => {
-        if (cancelled) return;
+        if (!alive.current) return;
         for (const e of events) {
           if (e.type === "user") counter.current++;
           apply(e, Math.max(counter.current, 1));
@@ -167,13 +186,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
         setRunning(false);
       });
     }
-    return () => {
-      cancelled = true;
-      unsubRef.current?.();
-      unsubRef.current = null;
-      runRef.current?.stop(); // quiet: no "stopped" message if the screen goes away
-      runRef.current = null;
-    };
+    return leave;
     // The task is fixed for this screen; App re-mounts it for another task.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -239,7 +252,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine 
                   </div>
                 );
               case "assistant":
-                return <Message key={item.id} role="assistant">{item.text}</Message>;
+                return <Message key={item.id} role="assistant"><Markdown text={item.text} /></Message>;
               case "plan":
                 return <PlanCard key={item.id} title={item.plan.title} steps={item.plan.steps} statusLabels={t.work.planStatus} />;
               case "activity":

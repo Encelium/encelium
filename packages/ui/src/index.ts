@@ -17,6 +17,7 @@ export { Composer } from "./Composer";
 export type { ComposerProps, ComposerFolder, ComposerAttachment } from "./Composer";
 export { Message } from "./Message";
 export type { MessageProps, MessageRole } from "./Message";
+export { Markdown } from "./Markdown";
 export { PlanCard } from "./PlanCard";
 export type { PlanCardProps, PlanStep, PlanStepStatus } from "./PlanCard";
 export { PermissionPrompt } from "./PermissionPrompt";

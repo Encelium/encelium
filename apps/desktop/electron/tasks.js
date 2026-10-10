@@ -1,11 +1,11 @@
 // Tasks that survive a restart: their folder, conversation (for the model), and what
 // was shown on screen (to re-open them). Also: choosing a folder, and the live preview.
 import { app, dialog, ipcMain, net, protocol, shell, BrowserWindow } from "electron";
-import { watch } from "node:fs";
+import { existsSync, watch } from "node:fs";
 import { appendFile, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { Checkpoints, Workspace } from "@enceladus/agent-core";
+import { Checkpoints, Workspace, toFolderName } from "@enceladus/agent-core";
 
 export const PREVIEW_SCHEME = "enceladus-preview";
 
@@ -26,12 +26,16 @@ async function saveIndex() {
 }
 
 // ── Folders ─────────────────────────────────────────────────────────
-function folderName(prompt) {
-  // Letters of any language (an Arabic request gets an Arabic folder name), no accents or marks.
-  const words = prompt.toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "").replace(/[^\p{L}\p{N}\s-]/gu, " ").trim().split(/\s+/).filter(Boolean).slice(0, 6);
-  const d = new Date(), two = (n) => String(n).padStart(2, "0"); // local time, as the person sees it
-  const stamp = `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}${two(d.getHours())}${two(d.getMinutes())}`;
-  return `${words.length ? words.join("-") : "task"}-${stamp}`;
+/**
+ * A new task's folder in Documents\Enceladus: the model's suggested English name, or English
+ * words from the request, or "new-project". A number is added only if the name is taken.
+ */
+function newFolder(prompt, suggested) {
+  const parent = path.join(app.getPath("documents"), "Enceladus");
+  const name = suggested || toFolderName(prompt) || "new-project"; // toFolderName keeps English letters only
+  let folder = path.join(parent, name);
+  for (let n = 2; existsSync(folder); n++) folder = path.join(parent, `${name}-${n}`);
+  return folder;
 }
 
 /** Folders that are far too broad (or too important) to hand to an agent. */
@@ -48,13 +52,16 @@ function tooBroad(p) {
 }
 
 // ── Task lifecycle ──────────────────────────────────────────────────
-export async function getTask(id, { prompt, folder } = {}) {
+/** True once a task exists (its folder is already decided). */
+export const hasTask = (id) => index.some((t) => t.id === safeId(id));
+
+export async function getTask(id, { prompt, folder, folderName } = {}) {
   id = safeId(id);
   if (open.has(id)) return open.get(id);
   let meta = index.find((t) => t.id === id);
   if (!meta) {
     if (prompt === undefined) return null;
-    const root = folder ?? path.join(app.getPath("documents"), "Enceladus", folderName(prompt));
+    const root = folder ?? newFolder(prompt, folderName);
     meta = { id, title: titleOf(prompt), folder: root, createdAt: Date.now(), updatedAt: Date.now() };
     index.unshift(meta);
     await saveIndex();
