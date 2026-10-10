@@ -1,7 +1,7 @@
 // OpenAI-compatible Chat Completions. Also covers Google Gemini, OpenRouter, DeepSeek,
 // Groq, Ollama, LM Studio and — we've asked for it — the Enceladus model.
 import { readSse } from "./sse.ts";
-import { ProviderError, reasonForStatus } from "./types.ts";
+import { ProviderError, chatFailure, reasonForStatus } from "./types.ts";
 import type { ChatMessage, ChatRequest, ModelConnection, StreamEvent, ToolCall } from "./types.ts";
 
 const trim = (url: string) => url.replace(/\/+$/, "");
@@ -52,7 +52,7 @@ export async function* streamChat(conn: ModelConnection, req: ChatRequest, signa
   if (req.tools?.length) body.tools = req.tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.parameters } }));
   if (conn.usageInStream) body.stream_options = { include_usage: true };
 
-  const res = await send(`${trim(conn.baseUrl)}/chat/completions`, { method: "POST", headers: headers(conn), body: JSON.stringify(body), signal });
+  const res = await send(`${trim(conn.baseUrl)}/chat/completions`, { method: "POST", headers: headers(conn), body: JSON.stringify(body), signal }).catch((e) => { throw chatFailure(e); });
   if (!res.body) throw new ProviderError("bad-response", "The server sent an empty response.");
 
   // Tool calls arrive in pieces, keyed by index; assemble them before handing them on.
@@ -64,7 +64,7 @@ export async function* streamChat(conn: ModelConnection, req: ChatRequest, signa
     if (msg.data === "[DONE]") break;
     let chunk: any;
     try { chunk = JSON.parse(msg.data); } catch { continue; }
-    if (chunk.error) throw new ProviderError("server", String(chunk.error.message ?? "The server reported an error."));
+    if (chunk.error) throw chatFailure(new ProviderError(chunk.error.code === 404 ? "not-found" : "server", String(chunk.error.message ?? "The server reported an error."), typeof chunk.error.code === "number" ? chunk.error.code : undefined));
     if (chunk.usage) usage = { inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens };
     const choice = chunk.choices?.[0];
     if (!choice) continue;

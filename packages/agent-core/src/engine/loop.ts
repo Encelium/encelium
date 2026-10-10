@@ -28,10 +28,13 @@ const S = {
     errors: {
       "no-network": ["I couldn’t reach the AI model.", "Check your internet connection, then try again."],
       "bad-key": ["The AI model didn’t accept the key.", "Check the key in Settings → Advanced."],
-      "not-found": ["The AI model wasn’t found at its address.", "Check the model settings in Settings → Advanced."],
+      "not-found": ["The AI model’s address didn’t answer.", "Check the address in Settings → Advanced."],
+      "model-unavailable": ["This AI model isn’t available with your key.", "Pick another model in Settings → Advanced. Some models in the list need a paid plan."],
+      "no-tools": ["This AI model can’t use tools, and I need them to work on files.", "Pick another model in Settings → Advanced."],
+      "too-long": ["This conversation is too long for the AI model.", "Start a new task, or ask me to sum up what we did so far."],
       "rate-limited": ["You’ve reached today’s limit for the AI model.", "Try again later."],
       server: ["The AI model is having trouble right now.", "Try again in a few minutes."],
-      "bad-response": ["The AI model sent an answer I couldn’t understand.", "Try again. If it keeps happening, try another model."],
+      "bad-response": ["The AI model turned down the request.", "Try again. If it keeps happening, pick another model in Settings → Advanced."],
       unknown: ["Something went wrong on my side.", "Try again. Your files are safe, and Rewind still works."],
     },
   },
@@ -42,10 +45,13 @@ const S = {
     errors: {
       "no-network": ["تعذّر الوصول إلى نموذج الذكاء الاصطناعي.", "تحقّق من اتصالك بالإنترنت ثم حاول مرة أخرى."],
       "bad-key": ["لم يقبل النموذج المفتاح.", "تحقّق من المفتاح في الإعدادات ← متقدّم."],
-      "not-found": ["لم يُعثر على النموذج في عنوانه.", "تحقّق من إعدادات النموذج في الإعدادات ← متقدّم."],
+      "not-found": ["لم يستجب عنوان النموذج.", "تحقّق من العنوان في الإعدادات ← متقدّم."],
+      "model-unavailable": ["هذا النموذج غير متاح بمفتاحك.", "اختر نموذجًا آخر في الإعدادات ← متقدّم. بعض النماذج في القائمة تحتاج إلى خطة مدفوعة."],
+      "no-tools": ["هذا النموذج لا يستطيع استخدام الأدوات، وأنا أحتاجها للعمل على الملفات.", "اختر نموذجًا آخر في الإعدادات ← متقدّم."],
+      "too-long": ["هذه المحادثة أطول مما يستطيع النموذج قراءته.", "ابدأ مهمة جديدة، أو اطلب مني تلخيص ما أنجزناه حتى الآن."],
       "rate-limited": ["بلغتَ حدّ اليوم لاستخدام النموذج.", "حاول لاحقًا."],
       server: ["يواجه النموذج مشكلة الآن.", "حاول بعد بضع دقائق."],
-      "bad-response": ["أرسل النموذج إجابة لم أفهمها.", "حاول مرة أخرى. إذا تكرر ذلك، جرّب نموذجًا آخر."],
+      "bad-response": ["رفض النموذج الطلب.", "حاول مرة أخرى. إذا تكرر ذلك، اختر نموذجًا آخر في الإعدادات ← متقدّم."],
       unknown: ["حدث خطأ من جهتي.", "حاول مرة أخرى. ملفاتك بأمان، والتراجع ما زال يعمل."],
     },
   },
@@ -63,7 +69,7 @@ function systemPrompt(lang: Language, root: string) {
     `- Write to the person in ${lang === "ar" ? "Arabic (Modern Standard Arabic)" : "English"}. Use plain words and short sentences. No jargon; if a technical word is unavoidable, explain it in a few words.`,
     "- For anything with more than one step, first call update_plan with a short checklist in plain words. Keep it updated as you go: mark a step done as soon as it's finished and the next one active, in the same reply as your next action. Don't save all the ticks for the end.",
     "- While working, say little: at most one short sentence before a group of actions, or nothing. Save explanations for the final summary, and don't repeat there what you already said.",
-    "- Work only inside the task folder, using relative paths. Don't try to reach other folders.",
+    "- Work only inside the task folder, using relative paths. Don't try to reach other folders, not even with commands. If the person asks for a file somewhere else (like the Desktop), make it in the task folder, tell them where it is, and explain that they can pick another folder for a task on the home screen. Only Rewind protects the task folder.",
     "- To move or rename files, use move_file (the person can undo it). Don't use commands for moving, renaming or deleting files.",
     "- Check your own work before saying it's done: read files back, run the program or its tests when you can, and fix problems you find.",
     "- Be honest. If something failed or you couldn't do it, say so plainly and say what the person can try.",
@@ -194,7 +200,7 @@ export class AgentSession implements AgentRun {
       }
       const reason = e instanceof ProviderError ? e.reason : "unknown";
       const [message = "", suggestion] = s.errors[reason as keyof typeof s.errors] ?? s.errors.unknown;
-      this.emit({ type: "error", message, suggestion });
+      this.emit({ type: "error", message, suggestion, ...(e instanceof Error && e.message ? { details: e.message } : {}) });
     }
   }
 }

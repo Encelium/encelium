@@ -23,7 +23,7 @@ export type AgentEvent =
   /** The task finished. */
   | { type: "done"; summary: string }
   /** Something failed. Always honest and in plain words, with what the user can try. */
-  | { type: "error"; message: string; suggestion?: string };
+  | { type: "error"; message: string; suggestion?: string; /** What the server actually said, for "Show details". */ details?: string };
 
 export interface AgentRun {
   /** Subscribe to events. Returns an unsubscribe function. */

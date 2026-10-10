@@ -189,7 +189,7 @@ Enceladus (Saturn's moon) has the brightest icy surface in the solar system and 
 
 ### Typography (design board v0.2)
 - UI Latin: **Geist** (Inter dropped — too common in AI products)
-- UI Arabic: **Noto Sans Arabic** (primary RTL language; IBM Plex Sans Arabic rejected — cramped and too small next to Geist)
+- UI Arabic: **Vazirmatn** (primary RTL language; IBM Plex Sans Arabic rejected — cramped and too small next to Geist)
 - UI Persian (later): **Vazirmatn**
 - Code: **Geist Mono**
 (All free, open licenses.)

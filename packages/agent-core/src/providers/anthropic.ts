@@ -1,7 +1,7 @@
 // Anthropic Messages API.
 import { readSse } from "./sse.ts";
 import { send } from "./openai.ts";
-import { ProviderError } from "./types.ts";
+import { ProviderError, chatFailure } from "./types.ts";
 import type { ChatMessage, ChatRequest, ModelConnection, StreamEvent, ToolCall } from "./types.ts";
 
 const API_VERSION = "2023-06-01";
@@ -53,7 +53,7 @@ export async function* streamChat(conn: ModelConnection, req: ChatRequest, signa
   if (req.system) body.system = req.system;
   if (req.tools?.length) body.tools = req.tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters }));
 
-  const res = await send(`${trim(conn.baseUrl)}/v1/messages`, { method: "POST", headers: headers(conn), body: JSON.stringify(body), signal });
+  const res = await send(`${trim(conn.baseUrl)}/v1/messages`, { method: "POST", headers: headers(conn), body: JSON.stringify(body), signal }).catch((e) => { throw chatFailure(e); });
   if (!res.body) throw new ProviderError("bad-response", "The server sent an empty response.");
 
   const blocks = new Map<number, ToolCall>();

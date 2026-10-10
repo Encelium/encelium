@@ -22,7 +22,7 @@ type Item =
   | { kind: "plan"; id: string; plan: PlanEvent }
   | { kind: "activity"; id: string; text: string; details?: string }
   | { kind: "permission"; id: string; event: PermissionEvent; answer?: boolean; remember?: boolean }
-  | { kind: "error"; id: string; message: string; suggestion?: string };
+  | { kind: "error"; id: string; message: string; suggestion?: string; details?: string };
 
 interface Checkpoint { id: string; label: string; at: number }
 interface Status { phase: "thinking" | "working"; text: string }
@@ -78,6 +78,17 @@ function SentPicture({ taskId, name }: { taskId: string; name: string }) {
         onError={() => setTimeout(() => setAttempt((n) => n + 1), attempt ? 0 : 1500)}
       />
     </li>
+  );
+}
+
+/** What the server said, hidden until asked for (useful when reporting a problem). */
+function ErrorDetails({ t, details }: { t: Strings; details: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={s.errorDetails}>
+      <button type="button" className={s.detailsToggle} aria-expanded={open} onClick={() => setOpen((o) => !o)}>{open ? t.work.hideDetails : t.work.showDetails}</button>
+      {open && <pre className={s.code} dir="ltr">{details}</pre>}
+    </div>
   );
 }
 
@@ -196,7 +207,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
       case "error":
         setStatus(null);
         setRunning(false);
-        setItems((prev) => [...prev, { kind: "error", id: `err-${n}`, message: e.message, suggestion: e.suggestion }]);
+        setItems((prev) => [...prev, { kind: "error", id: `err-${n}`, message: e.message, suggestion: e.suggestion, details: "details" in e ? e.details : undefined }]);
         break;
     }
   }, []);
@@ -377,6 +388,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                   <div key={item.id} className={s.errorBlock}>
                     <Message role="assistant">{item.message}</Message>
                     {item.suggestion && <p className={s.suggestion} dir="auto">{item.suggestion}</p>}
+                    {item.details && <ErrorDetails t={t} details={item.details} />}
                     {/* The last request failed (no connection, a limit…): one click sends it again. */}
                     {index === items.length - 1 && !running && lastRequest && (
                       <div className={s.answerActions}>

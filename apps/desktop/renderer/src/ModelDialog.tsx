@@ -110,7 +110,7 @@ export function ModelDialog({ t, open, onClose, onSaved }: Props) {
           {current.mode === "own" && <Button variant="ghost" onClick={backToEnceladus}>{m.useEnceladus}</Button>}
           <span className={s.spacer} />
           <Button variant="secondary" onClick={onClose}>{m.cancel}</Button>
-          <Button variant="primary" onClick={save} disabled={!canSave}>{m.save}</Button>
+          <Button variant="primary" onClick={save} disabled={!canSave}>{saving ? m.checking : m.save}</Button>
         </div>
       }
     >

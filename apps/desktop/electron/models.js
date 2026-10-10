@@ -3,7 +3,7 @@
 import { app, ipcMain, safeStorage } from "electron";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { PRESETS, CUSTOM_PRESET_ID, testConnection } from "@enceladus/agent-core";
+import { PRESETS, CUSTOM_PRESET_ID, checkModel, testConnection } from "@enceladus/agent-core";
 
 const file = () => path.join(app.getPath("userData"), "model.json");
 
@@ -72,6 +72,9 @@ export async function initModels() {
     if (conn.error) return { ok: false, reason: conn.error };
     const model = String(input.model ?? "").trim();
     if (!model) return { ok: false, reason: "no-model" };
+    // One tiny request first: refuse models this key can't use, or that can't use tools.
+    const check = await checkModel({ ...conn, model });
+    if (!check.ok) return { ok: false, reason: check.reason, detail: check.detail };
     let key = state.mode === "own" && state.presetId === input.presetId ? state.key : undefined;
     if (input.apiKey) {
       key = encrypt(input.apiKey);

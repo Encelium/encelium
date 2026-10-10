@@ -193,3 +193,13 @@ test("moving a file can be rewound, even without keeping a copy", async () => {
   assert.ok(!existsSync(to));
   await rm(dir, { recursive: true, force: true });
 });
+
+test("commands that reach outside the task folder are risky", async () => {
+  const { riskOf } = await import("../src/engine/tools.ts");
+  const r = (command: string) => riskOf("run_command", { command });
+  assert.equal(r(String.raw`Set-Content "$env:USERPROFILE\Desktop\hello.txt" (Get-Date)`), "risky");
+  assert.equal(r(String.raw`New-Item C:\Users\me\Desktop\a.txt`), "risky");
+  assert.equal(r(String.raw`Copy-Item a.txt ..\b.txt`), "risky");
+  assert.equal(r(`node build.js`), "careful");
+  assert.equal(r(`Get-ChildItem`), "safe");
+});
