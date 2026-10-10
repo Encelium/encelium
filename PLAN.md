@@ -88,16 +88,22 @@
 |---|---|
 | Delete a chat (keeps the person's files) | ✅ Done |
 | Attach files and pictures (paperclip + drag & drop; copied into the task folder, pictures shown to the model) | ✅ Done |
-| Rename a chat | Planned |
-| Search chats | Planned |
-| Paste a screenshot from the clipboard (Ctrl+V) | Planned |
-| Copy a message; retry the last answer | Planned |
+| Rename a chat (pencil, double-click, F2) | ✅ Done |
+| Search chats (Ctrl+K) | ✅ Done |
+| Paste a screenshot from the clipboard (Ctrl+V) | ✅ Done |
+| Copy an answer; "Try again" after a failed request | ✅ Done |
 | Edit and resend the last request | Planned |
-| Notification when a long task finishes (window in background) | Planned |
-| Keyboard shortcuts (new task, settings, stop) | Planned |
+| Notification when a task finishes or needs permission (window in background) | ✅ Done |
+| Keyboard shortcuts (Ctrl+N, Ctrl+K, Ctrl+B, Ctrl+\, Ctrl+Shift+M, Ctrl+,) | ✅ Done |
 | Show attached pictures as thumbnails in the chat | Planned |
 | Fallback when a model can't read pictures (send the file path only) | Planned |
-| Onboarding / first task (F7) | Planned |
+| First-run welcome (F7) | ✅ Done |
+| Resizable layout: hide sidebar/panel, drag to resize, small windows slide panels over | ✅ Done |
+| Compact mode (small chat-only window, optional keep-on-top) | ✅ Done |
+| Files tab (list + read-only viewer) when there is no web page | ✅ Done |
+| Undo a Rewind ("Before going back" point) | ✅ Done |
+| The moon on the home screen (vapor while typing) | ✅ Done |
+| "Allow for this task" on permission prompts | Planned |
 | Installer, auto-update, crash reports | Phase 5 |
 
 ### Later (not v1)
