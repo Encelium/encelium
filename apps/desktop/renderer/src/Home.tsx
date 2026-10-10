@@ -4,6 +4,7 @@ import type { Strings } from "./i18n";
 import { bridge, type Attachment } from "./bridge";
 import { useAttachments } from "./useAttachments";
 import { MoonHero } from "./hero/MoonHero";
+import { CheckToggle, useCheckResult } from "./CheckToggle";
 import { RecipeCard, RecipesDialog } from "./Recipes";
 import { RECIPES, type Recipe } from "./recipeList";
 import type { Language } from "./bridge";
@@ -25,6 +26,7 @@ interface HomeProps {
 
 export function Home({ t, onSubmit, onNotice, theme, language }: HomeProps) {
   const [recipesOpen, setRecipesOpen] = useState(false);
+  const [check, setCheck] = useCheckResult();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [draft, setDraft] = useState("");
   const files = useAttachments(t, onNotice);
@@ -63,6 +65,7 @@ export function Home({ t, onSubmit, onNotice, theme, language }: HomeProps) {
           onAttach={files.available ? files.choose : undefined}
           onDropFiles={files.available ? files.drop : undefined}
           onPasteImages={files.available ? files.paste : undefined}
+          extra={<CheckToggle t={t} on={check} onChange={setCheck} />}
           attachments={files.chips}
           onRemoveAttachment={files.remove}
           removeLabel={t.removeAttachment}

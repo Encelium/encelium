@@ -9,6 +9,7 @@ import { FilesPanel } from "./FilesPanel";
 import { useRememberedNumber } from "./useLayout";
 import { Splitter } from "./Splitter";
 import { Compare } from "./Compare";
+import { CheckToggle, useCheckResult } from "./CheckToggle";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import s from "./Work.module.css";
@@ -22,7 +23,8 @@ type Item =
   | { kind: "plan"; id: string; plan: PlanEvent }
   | { kind: "activity"; id: string; text: string; details?: string }
   | { kind: "permission"; id: string; event: PermissionEvent; answer?: boolean; remember?: boolean }
-  | { kind: "error"; id: string; message: string; suggestion?: string; details?: string };
+  | { kind: "error"; id: string; message: string; suggestion?: string; details?: string }
+  | { kind: "suggestions"; id: string; items: string[] };
 
 interface Checkpoint { id: string; label: string; at: number }
 interface Status { phase: "thinking" | "working"; text: string }
@@ -120,6 +122,9 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   const [page, setPage] = useState<string | null>(null);
   const [pageVersion, setPageVersion] = useState(0);
   const [comparing, setComparing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [check, setCheck] = useCheckResult();
+  const [focusRequest, setFocusRequest] = useState(0);
   const files = useAttachments(t, setNotice);
 
   const runRef = useRef<AgentRun | null>(null);
@@ -198,6 +203,10 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
       case "activity":
         setItems((prev) => [...prev, { kind: "activity", id: `act-${n}-${prev.length}`, text: e.text, details: e.details }]);
         break;
+      case "suggestions":
+        // Only the newest set is useful; older ones were answered already.
+        setItems((prev) => [...prev.filter((i) => i.kind !== "suggestions"), { kind: "suggestions", id: `next-${n}`, items: e.items }]);
+        break;
       case "done":
         setStatus(null);
         setRunning(false);
@@ -215,15 +224,16 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   const startRun = useCallback((text: string, files?: Attachment[]) => {
     const n = ++counter.current;
     unsubRef.current?.();
+    setItems((prev) => prev.filter((i) => i.kind !== "suggestions"));
     apply({ type: "user", text, attachments: files?.length ? files.map((f) => f.name) : undefined }, n);
     setRunning(true);
     setStatus(null);
     stuck.current = true;
-    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files });
+    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check });
     firstRun.current = false;
     runRef.current = run;
     unsubRef.current = run.onEvent((e) => apply(e, n, true));
-  }, [engine, language, folder, apply]);
+  }, [engine, language, folder, apply, check]);
 
   // New task: start it. Saved task: show what happened, then wait for a follow-up.
   useEffect(() => {
@@ -302,6 +312,24 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   }, [items, status]);
 
   const lastRequest = [...items].reverse().find((i): i is Extract<Item, { kind: "user" }> => i.kind === "user")?.text;
+
+  // Rough progress for the current request, from its plan: done steps count fully, the active one half.
+  const plan = running ? items.find((i): i is Extract<Item, { kind: "plan" }> => i.kind === "plan" && i.id === `plan-${counter.current}`)?.plan : undefined;
+  const steps = plan?.steps ?? [];
+  const doneCount = steps.filter((st) => st.status === "done").length;
+  const active = steps.find((st) => st.status === "active");
+  const fraction = steps.length ? Math.min(0.97, (doneCount + (active ? 0.5 : 0)) / steps.length) : null;
+  const stepNumber = Math.min(steps.length, doneCount + 1);
+  const progressLabel = !running ? "" : steps.length
+    ? t.work.progressStep.replace("{n}", String(stepNumber)).replace("{total}", String(steps.length)) + (active ? `: ${active.label}` : "")
+    : t.work.progressStarting;
+  const progressKey = running ? `${fraction ?? "x"}|${progressLabel}` : "";
+  useEffect(() => {
+    // The same progress under the app's taskbar icon.
+    bridge.window?.setProgress(running ? { value: fraction ?? undefined, label: progressLabel } : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progressKey]);
+  useEffect(() => () => { bridge.window?.setProgress(null); }, []);
   const timeFormat = new Intl.DateTimeFormat(language, { hour: "numeric", minute: "2-digit" });
   // Rewind points are "how things were before a change", so none of them is "now":
   // a "Now" entry sits on top, and every point below it can be restored.
@@ -383,6 +411,19 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                   />
                 );
               }
+              case "suggestions":
+                return (
+                  <div key={item.id} className={s.nextSteps}>
+                    <span className={s.nextLabel}>{t.work.whatNext}</span>
+                    <div className={s.nextChips}>
+                      {item.items.map((text) => (
+                        <button key={text} type="button" className={s.nextChip} dir="auto" disabled={running} onClick={() => { setDraft(text); setFocusRequest((x) => x + 1); }}>
+                          {text}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
               case "error":
                 return (
                   <div key={item.id} className={s.errorBlock}>
@@ -409,11 +450,20 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
 
         <div className={s.footer}>
           {running && (
-            <div className={s.stopRow}>
+            <div className={s.progressRow}>
+              <div className={s.progress} role="progressbar" aria-label={progressLabel} aria-valuemin={0} aria-valuemax={100} aria-valuenow={fraction === null ? undefined : Math.round(fraction * 100)}>
+                <div className={s.progressTrack}>
+                  <div className={fraction === null ? s.progressMoving : s.progressFill} style={fraction === null ? undefined : { width: `${Math.max(4, fraction * 100)}%` }} />
+                </div>
+                <span className={s.progressLabel} dir="auto">{progressLabel}</span>
+              </div>
               <Button variant="secondary" size="sm" icon="close" onClick={() => runRef.current?.stop()}>{t.work.stop}</Button>
             </div>
           )}
           <Composer
+            value={draft}
+            onValueChange={setDraft}
+            focusRequest={focusRequest}
             placeholder={running ? t.work.followUpBusy : t.work.followUpPlaceholder}
             inputLabel={t.work.followUpPlaceholder}
             sendLabel={t.send}
@@ -423,6 +473,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
             onAttach={files.available ? files.choose : undefined}
             onDropFiles={files.available ? files.drop : undefined}
             onPasteImages={files.available ? files.paste : undefined}
+            extra={<CheckToggle t={t} on={check} onChange={setCheck} disabled={running} />}
             attachments={files.chips}
             onRemoveAttachment={files.remove}
             removeLabel={t.removeAttachment}

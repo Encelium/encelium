@@ -2,7 +2,7 @@
 import { BrowserWindow, Notification, ipcMain } from "electron";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { AgentSession, ENCELADUS_PRESET, suggestFolderName } from "@enceladus/agent-core";
+import { AgentSession, ENCELADUS_PRESET, suggestFolderName, suggestNext } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
 import { getTask, hasTask, recorder, saveMessages, setTaskStopper } from "./tasks.js";
 import { prepareAttachments } from "./attachments.js";
@@ -65,7 +65,7 @@ export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
 
-  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments }) => {
+  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments, check }) => {
     const lang = language === "ar" ? "ar" : "en";
     const text = String(prompt);
     const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -93,15 +93,22 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     }
 
     const allowed = await allowedFor(task);
-    const session = new AgentSession(request, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages, preApproved: (tool) => allowed.has(tool) });
+    const session = new AgentSession(request, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history: task.messages, preApproved: (tool) => allowed.has(tool), check: check !== false });
     /** requestId → tool, so "Allow for this task" knows what to remember. */
     const asked = new Map();
     session.onEvent((e) => { if (e.type === "permission" && e.tool) asked.set(e.requestId, e.tool); });
     runs.set(runId, { session, record, task, asked, taskId: task.meta.id });
     session.onEvent(send);
+    let finishedWell = false;
+    session.onEvent((e) => { if (e.type === "done") finishedWell = true; });
     session.finished.then(async () => {
       runs.delete(runId);
       await saveMessages(task, session.messages); // follow-ups (even after a restart) continue the conversation
+      // "What next?": three short follow-ups, only after a task that finished well.
+      if (!finishedWell) return;
+      const answer = [...session.messages].reverse().find((m) => m.role === "assistant" && m.content)?.content ?? "";
+      const items = await suggestNext(conn, text, String(answer), lang);
+      if (items.length) send({ type: "suggestions", items });
     });
     return { runId, folder: task.meta.folder };
   });

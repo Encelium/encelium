@@ -68,3 +68,4 @@
   font-size: var(--text-sm); line-height: var(--leading-md); white-space: pre-wrap;
 }
 .actions { display: flex; justify-content: flex-end; }
+.actionsSplit { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }

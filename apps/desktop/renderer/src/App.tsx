@@ -21,6 +21,7 @@ import { Home } from "./Home";
 import { Work } from "./Work";
 import { SettingsDialog } from "./SettingsDialog";
 import { Welcome } from "./Welcome";
+import { SaveRecipeDialog } from "./SaveRecipe";
 import { ModelDialog } from "./ModelDialog";
 import { Button, Dialog, Toast } from "@enceladus/ui";
 import type { Attachment } from "./bridge";
@@ -43,6 +44,7 @@ export function App() {
   // Saved tasks (desktop app) or this session's tasks (browser preview, demo agent).
   const [tasks, setTasks] = useState<{ id: string; title: string; prompt?: string; folder?: string }[]>([]);
   const [deleting, setDeleting] = useState<{ id: string; title: string; folder?: string } | null>(null);
+  const [savingRecipe, setSavingRecipe] = useState<{ id: string; title: string } | null>(null);
   // Bumped when a task is re-opened, so the screen starts fresh.
   const [openCount, setOpenCount] = useState(0);
 
@@ -180,6 +182,7 @@ export function App() {
           onOpenTask={openTask}
           onDeleteTask={bridge.tasks ? (id) => { const task = tasks.find((x) => x.id === id); if (task) setDeleting(task); } : undefined}
           onRenameTask={bridge.tasks ? renameTask : undefined}
+          onSaveRecipe={bridge.recipes ? (id) => { const task = tasks.find((x) => x.id === id); if (task) setSavingRecipe({ id, title: task.title }); } : undefined}
           onOpenSettings={() => setSettingsOpen(true)}
           searchRequest={searchRequest}
         />{sidebarMode === "docked" && (
@@ -228,6 +231,7 @@ export function App() {
           </p>
         )}
       </Dialog>
+      <SaveRecipeDialog t={t} task={savingRecipe} onClose={() => setSavingRecipe(null)} onSaved={(message) => setNotice({ message, tone: "safe" })} />
       <Welcome
         t={t}
         open={!settings.welcomed}

@@ -58,8 +58,15 @@ contextBridge.exposeInMainWorld("enceladus", {
   window: {
     setCompact: (on) => ipcRenderer.invoke("window:compact", !!on),
     setOnTop: (on) => ipcRenderer.invoke("window:on-top", !!on),
+    /** null clears it; value 0..1, or no value for a moving bar. */
+    setProgress: (state) => ipcRenderer.invoke("window:progress", state),
   },
   copyText: (text) => ipcRenderer.invoke("clipboard:write", text),
+  recipes: {
+    list: () => ipcRenderer.invoke("recipes:list"),
+    save: (input) => ipcRenderer.invoke("recipes:save", input),
+    delete: (input) => ipcRenderer.invoke("recipes:delete", input),
+  },
   onEffectiveTheme: (callback) => {
     const handler = (_event, theme) => callback(theme);
     ipcRenderer.on("theme:effective", handler);

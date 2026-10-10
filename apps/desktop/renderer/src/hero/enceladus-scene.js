@@ -195,12 +195,12 @@ class EnceladusScene {
     x.globalAlpha = 1; x.setTransform(d, 0, 0, d, 0, 0); x.lineCap = 'round';
     if (k > .01) {
       // vapor curtains rising from the vents
-      const bc = this.dark ? '206,232,244' : '30,118,148';
+      const bc = this.dark ? '206,232,244' : '14,92,120';
       for (const s of this.sources) {
         const pulse = (.2 + .8 * Math.pow(.5 + .5 * Math.sin(t * s.w + s.ph), 2)) * k;
         const len = o.speed * (.35 + .6 * pulse);
         const a0 = this.proj(s.q), a1 = this.proj(s.q, o.R + len);
-        for (const [w, a] of (this.dark ? [[6, .045], [1, .17]] : [[5, .04], [1, .15]])) {
+        for (const [w, a] of (this.dark ? [[6, .045], [1, .17]] : [[6, .1], [1.3, .36]])) { // light mode needs more: pale vapor on a pale page
           const g = x.createLinearGradient(a0[0], a0[1], a1[0], a1[1]);
           g.addColorStop(0, 'rgba(' + bc + ',' + (a * pulse) + ')'); g.addColorStop(1, 'rgba(' + bc + ',0)');
           x.strokeStyle = g; x.lineWidth = w;
@@ -208,9 +208,9 @@ class EnceladusScene {
         }
       }
     }
-    const pc = this.dark ? '226,240,248' : '30,118,148';
+    const pc = this.dark ? '226,240,248' : '14,92,120';
     for (const p of this.ps) {
-      const u = p.life / p.max, a = p.a * Math.min(1, p.life * 4) * Math.pow(1 - u, 2) * (this.dark ? .5 : .35);
+      const u = p.life / p.max, a = p.a * Math.min(1, p.life * 4) * Math.pow(1 - u, 2) * (this.dark ? .5 : .75);
       if (a < .004) continue;
       const X = o.cx + p.x, Y = o.cy - p.y;
       if (p.m) { const s = p.sz * (1 + u * 1.5); x.globalAlpha = a; x.drawImage(this.sprite, X - s, Y - s, s * 2, s * 2); x.globalAlpha = 1; continue; }

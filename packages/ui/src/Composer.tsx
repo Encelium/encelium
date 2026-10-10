@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import { Icon } from "./icons";
 import { IconButton } from "./Button";
 import s from "./Composer.module.css";
@@ -42,6 +42,8 @@ export interface ComposerProps {
   onDropFiles?: (files: FileList) => void;
   /** Pictures pasted with Ctrl+V. Pasted text still goes into the box as usual. */
   onPasteImages?: (files: File[]) => void;
+  /** Small extra controls for the bottom bar (e.g. a switch). */
+  extra?: ReactNode;
   className?: string;
 }
 
@@ -49,7 +51,7 @@ export interface ComposerAttachment { id: string; name: string; kind: "image" | 
 
 export function Composer({
   placeholder, sendLabel, attachLabel, inputLabel, folder, value, onValueChange, onSubmit, onAttach, disabled, focusRequest,
-  attachments = [], onRemoveAttachment, removeLabel = "Remove", onDropFiles, onPasteImages, className,
+  attachments = [], onRemoveAttachment, removeLabel = "Remove", onDropFiles, onPasteImages, extra, className,
 }: ComposerProps) {
   const [inner, setInner] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -156,6 +158,7 @@ export function Composer({
             </button>
           ) : <span className={s.folder}>{content}</span>;
         })()}
+        {extra}
         <IconButton
           icon="arrowUp"
           label={sendLabel}

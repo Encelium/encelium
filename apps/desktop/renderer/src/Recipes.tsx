@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Dialog, Icon, Segmented, TextField } from "@enceladus/ui";
-import { bridge, type Language } from "./bridge";
+import { bridge, type Language, type MyRecipe } from "./bridge";
 import type { Strings } from "./i18n";
 import { RECIPES, recipeText, type Recipe, type RecipeCategory } from "./recipeList";
 import s from "./Recipes.module.css";
@@ -33,16 +33,31 @@ interface RecipesDialogProps {
 /** All recipes by category, and the short form that turns one into a request. */
 export function RecipesDialog({ t, language, open, initial, onClose, onStart, onNotice }: RecipesDialogProps) {
   const [picked, setPicked] = useState<Recipe | null>(null);
-  const [category, setCategory] = useState<"all" | RecipeCategory>("all");
+  const [category, setCategory] = useState<"all" | "mine" | RecipeCategory>("all");
+  const [mine, setMine] = useState<MyRecipe[]>([]);
+  const [pickedMine, setPickedMine] = useState<MyRecipe | null>(null);
 
-  useEffect(() => { if (open) { setPicked(initial ?? null); setCategory("all"); } }, [open, initial]);
+  useEffect(() => {
+    if (!open) return;
+    setPicked(initial ?? null); setPickedMine(null); setCategory("all");
+    bridge.recipes?.list().then(setMine);
+  }, [open, initial]);
 
   const shown = category === "all" ? RECIPES : RECIPES.filter((r) => r.category === category);
-  const title = picked ? recipeText(picked, language).title : t.recipes.title;
+  const title = picked ? recipeText(picked, language).title : pickedMine ? pickedMine.title : t.recipes.title;
 
   return (
     <Dialog open={open} onClose={onClose} title={title} size="lg">
-      {picked ? (
+      {pickedMine ? (
+        <MyRecipeForm
+          key={pickedMine.id}
+          t={t}
+          recipe={pickedMine}
+          onBack={() => setPickedMine(null)}
+          onStart={(prompt) => { onClose(); onStart(prompt); }}
+          onDelete={async () => { await bridge.recipes?.delete({ id: pickedMine.id }); setMine((m) => m.filter((r) => r.id !== pickedMine.id)); setPickedMine(null); }}
+        />
+      ) : picked ? (
         <RecipeForm
           key={picked.id}
           t={t}
@@ -55,12 +70,13 @@ export function RecipesDialog({ t, language, open, initial, onClose, onStart, on
       ) : (
         <div className={s.gallery}>
           <p className={s.intro}>{t.recipes.intro}</p>
-          <Segmented<"all" | RecipeCategory>
+          <Segmented<"all" | "mine" | RecipeCategory>
             ariaLabel={t.recipes.title}
             value={category}
             onChange={setCategory}
             options={[
               { value: "all", label: t.recipes.all },
+              ...(mine.length ? [{ value: "mine" as const, label: t.recipes.mine }] : []),
               { value: "web", label: t.recipes.categories.web },
               { value: "files", label: t.recipes.categories.files },
               { value: "tools", label: t.recipes.categories.tools },
@@ -68,7 +84,16 @@ export function RecipesDialog({ t, language, open, initial, onClose, onStart, on
             ]}
           />
           <div className={s.grid} key={category}>
-            {shown.map((r) => <RecipeCard key={r.id} recipe={r} language={language} onClick={() => setPicked(r)} />)}
+            {(category === "all" || category === "mine") && mine.map((r) => (
+              <button key={r.id} type="button" className={s.card} onClick={() => setPickedMine(r)}>
+                <span className={s.cardIcon}><Icon name="repeat" size={18} /></span>
+                <span className={s.cardText}>
+                  <span className={s.cardTitle} dir="auto">{r.title}</span>
+                  <span className={s.cardHint} dir="auto">{r.prompt}</span>
+                </span>
+              </button>
+            ))}
+            {category !== "mine" && shown.map((r) => <RecipeCard key={r.id} recipe={r} language={language} onClick={() => setPicked(r)} />)}
           </div>
         </div>
       )}
@@ -152,6 +177,24 @@ function RecipeForm({ t, recipe, language, onBack, onStart, onNotice }: {
 
       <div className={s.actions}>
         <Button type="submit" variant="primary" size="lg" disabled={missing}>{t.recipes.start}</Button>
+      </div>
+    </form>
+  );
+}
+
+/** One of the person's own recipes: the saved request, editable before starting. */
+function MyRecipeForm({ t, recipe, onBack, onStart, onDelete }: { t: Strings; recipe: MyRecipe; onBack: () => void; onStart: (prompt: string) => void; onDelete: () => void }) {
+  const [prompt, setPrompt] = useState(recipe.prompt);
+  return (
+    <form className={s.form} onSubmit={(e) => { e.preventDefault(); if (prompt.trim()) onStart(prompt.trim()); }}>
+      <button type="button" className={s.back} onClick={onBack}><Icon name="arrowRight" size={16} />{t.recipes.back}</button>
+      <label className={s.longField}>
+        <span className={s.label}>{t.recipes.request}</span>
+        <textarea rows={6} dir="auto" value={prompt} autoFocus onChange={(e) => setPrompt(e.target.value)} />
+      </label>
+      <div className={s.actionsSplit}>
+        <Button variant="ghost" icon="trash" onClick={onDelete}>{t.recipes.deleteMine}</Button>
+        <Button type="submit" variant="primary" size="lg" disabled={!prompt.trim()}>{t.recipes.start}</Button>
       </div>
     </form>
   );

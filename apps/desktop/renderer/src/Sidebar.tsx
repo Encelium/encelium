@@ -15,12 +15,14 @@ interface SidebarProps {
   onDeleteTask?: (id: string) => void;
   /** Leave out to hide renaming. */
   onRenameTask?: (id: string, title: string) => void;
+  /** "Save as recipe" (leave out to hide). */
+  onSaveRecipe?: (id: string) => void;
   onOpenSettings: () => void;
   /** Bumped by Ctrl+K: move the keyboard into the search box. */
   searchRequest?: number;
 }
 
-export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDeleteTask, onRenameTask, onOpenSettings, searchRequest }: SidebarProps) {
+export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDeleteTask, onRenameTask, onSaveRecipe, onOpenSettings, searchRequest }: SidebarProps) {
   const [query, setQuery] = useState("");
   const [renaming, setRenaming] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -89,6 +91,7 @@ export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDele
                         onOpenChange={(open) => setMenuFor(open ? task.id : null)}
                         items={[
                           ...(onRenameTask ? [{ label: t.renameChat, icon: "pencil" as const, onSelect: () => setRenaming(task.id) }] : []),
+                          ...(onSaveRecipe ? [{ label: t.recipes.saveAs, icon: "repeat" as const, onSelect: () => onSaveRecipe(task.id) }] : []),
                           ...(onDeleteTask ? [{ label: t.deleteChat, icon: "trash" as const, danger: true, onSelect: () => onDeleteTask(task.id) }] : []),
                         ]}
                       />

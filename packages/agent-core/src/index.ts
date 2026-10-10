@@ -5,3 +5,4 @@ export { Checkpoints } from "./engine/checkpoints.ts";
 export { Workspace, OutsideWorkspaceError } from "./engine/workspace.ts";
 export { riskOf } from "./engine/tools.ts";
 export { fallbackFolderName, suggestFolderName, toFolderName } from "./engine/naming.ts";
+export { cleanSuggestions, suggestNext } from "./engine/suggest.ts";

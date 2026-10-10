@@ -6,7 +6,7 @@ import type { AgentEngine, AgentEvent, AgentRun } from "./types";
 export function electronEngine(agent: AgentBridge, taskId: string): AgentEngine {
   let lastLanguage: "en" | "ar" = "en";
   return {
-    start(prompt, { language, folder, attachments }) {
+    start(prompt, { language, folder, attachments, check }) {
       lastLanguage = language;
       const listeners = new Set<(e: AgentEvent) => void>();
       let runId: string | null = null;
@@ -20,7 +20,7 @@ export function electronEngine(agent: AgentBridge, taskId: string): AgentEngine 
         else if (rid === runId) deliver(e);
       });
 
-      agent.start({ taskId, prompt, language, folder, attachments }).then((r) => {
+      agent.start({ taskId, prompt, language, folder, attachments, check }).then((r) => {
         runId = r.runId;
         for (const [rid, e] of early.splice(0)) if (rid === runId) deliver(e);
         queued.splice(0).forEach((fn) => fn());

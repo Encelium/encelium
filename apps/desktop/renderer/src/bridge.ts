@@ -17,7 +17,7 @@ export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limite
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
 export interface AgentBridge {
-  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[] }): Promise<{ runId: string; folder?: string }>;
+  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean; remember?: boolean }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
   restore(input: { taskId: string; checkpointId: string; language: Language }): Promise<{ ok: true; checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;
@@ -32,6 +32,8 @@ export interface AttachmentsBridge {
   /** A small data: URL preview of a picture, or null. */
   thumbnail(input: { path: string }): Promise<string | null>;
 }
+
+export interface MyRecipe { id: string; title: string; prompt: string; createdAt: number }
 
 export interface TaskSummary { id: string; title: string; folder: string; updatedAt: number }
 /** What was shown on screen, saved per task: agent events plus a few bookkeeping entries. */
@@ -71,8 +73,14 @@ export interface Bridge {
   tasks?: TasksBridge;
   attachments?: AttachmentsBridge;
   /** Desktop app only. */
-  window?: { setCompact(on: boolean): Promise<void>; setOnTop(on: boolean): Promise<void> };
+  window?: { setCompact(on: boolean): Promise<void>; setOnTop(on: boolean): Promise<void>; setProgress(state: { value?: number; label: string } | null): Promise<void> };
   copyText?(text: string): Promise<void>;
+  /** The person's own recipes (desktop app only). */
+  recipes?: {
+    list(): Promise<MyRecipe[]>;
+    save(input: { title: string; prompt: string }): Promise<MyRecipe | null>;
+    delete(input: { id: string }): Promise<void>;
+  };
   getSettings(): Promise<Settings>;
   setSettings(patch: Partial<Pick<Settings, "theme" | "language" | "welcomed">>): Promise<Settings>;
   onEffectiveTheme(callback: (theme: EffectiveTheme) => void): () => void;

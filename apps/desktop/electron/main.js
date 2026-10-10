@@ -1,6 +1,6 @@
 // Enceladus — Electron main process.
 // Owns the window, the native title bar buttons, and the user's settings file.
-import { app, BrowserWindow, clipboard, ipcMain, nativeTheme, screen, shell } from "electron";
+import { app, BrowserWindow, clipboard, ipcMain, nativeImage, nativeTheme, screen, shell } from "electron";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ import { initModels } from "./models.js";
 import { initAgent } from "./agent.js";
 import { initTasks } from "./tasks.js";
 import { initAttachments } from "./attachments.js";
+import { initRecipes } from "./recipes.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 app.setName("Enceladus"); // user data lives in %APPDATA%\Enceladus, not under the package name
@@ -81,6 +82,7 @@ function createWindow() {
     minHeight: NORMAL_MIN.height,
     show: false,
     title: "Enceladus",
+    icon: path.join(here, "../build/icon.ico"),
     backgroundColor: c.bg,
     titleBarStyle: "hidden",
     titleBarOverlay: { color: c.bar, symbolColor: c.symbol, height: TITLE_BAR_HEIGHT },
@@ -138,6 +140,33 @@ ipcMain.handle("window:compact", (_event, on) => {
   }
 });
 ipcMain.handle("window:on-top", (_event, on) => win?.setAlwaysOnTop(!!on));
+
+// Taskbar: a progress bar under the icon while a task runs (a fraction when there's a plan,
+// a moving bar when there isn't), and a small dot on the icon. Cleared when the task ends.
+let workingDot = null;
+function dotImage() {
+  if (workingDot) return workingDot;
+  const size = 16, buf = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const d = Math.hypot(x + 0.5 - 8, y + 0.5 - 8), i = (y * size + x) * 4;
+    const ring = d <= 7.5, core = d <= 5.5;
+    const [b, g, r] = core ? [0xe0, 0xb8, 0x2f] : [0xff, 0xff, 0xff]; // BGRA: accent core, white ring
+    buf[i] = b; buf[i + 1] = g; buf[i + 2] = r;
+    buf[i + 3] = ring ? Math.round(255 * Math.min(1, 7.5 - d + 0.5)) : 0;
+  }
+  return (workingDot = nativeImage.createFromBitmap(buf, { width: size, height: size }));
+}
+ipcMain.handle("window:progress", (_event, state) => {
+  if (!win) return;
+  if (!state) {
+    win.setProgressBar(-1);
+    win.setOverlayIcon(null, "");
+    return;
+  }
+  const value = typeof state.value === "number" ? Math.max(0, Math.min(1, state.value)) : null;
+  win.setProgressBar(value ?? 2, { mode: value === null ? "indeterminate" : "normal" });
+  win.setOverlayIcon(dotImage(), String(state.label ?? "Working"));
+});
 ipcMain.handle("clipboard:write", (_event, text) => clipboard.writeText(String(text ?? "")));
 
 // ── App lifecycle ───────────────────────────────────────────────────
@@ -157,6 +186,7 @@ if (!app.requestSingleInstanceLock()) {
     await initTasks();
     initAgent();
     initAttachments();
+    initRecipes();
     nativeTheme.themeSource = settings.theme;
     nativeTheme.on("updated", applyChrome);
     createWindow();

@@ -1,0 +1,16 @@
+.toggle {
+  display: inline-flex; align-items: center; gap: var(--space-2); flex: none;
+  height: var(--control-sm); padding-inline: var(--space-2) var(--space-3);
+  border: 1px solid transparent; border-radius: var(--radius-full); background: transparent;
+  color: var(--color-text-muted); font: inherit; font-size: var(--text-sm); cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.toggle:hover:not(:disabled) { background: var(--color-surface-muted); color: var(--color-text); }
+.toggle:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; }
+.toggle:disabled { opacity: .55; cursor: default; }
+.box {
+  width: 16px; height: 16px; display: grid; place-items: center; border-radius: 5px;
+  border: 1.5px solid var(--color-text-subtle); color: #fff;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+.toggle[aria-pressed="true"] .box { background: var(--color-accent); border-color: var(--color-accent); }

@@ -22,6 +22,8 @@ export type AgentEvent =
   | { type: "activity"; text: string; details?: string }
   /** The task finished. */
   | { type: "done"; summary: string }
+  /** After a finished task: short follow-ups the person might ask next (sent by the app, not the engine). */
+  | { type: "suggestions"; items: string[] }
   /** Something failed. Always honest and in plain words, with what the user can try. */
   | { type: "error"; message: string; suggestion?: string; /** What the server actually said, for "Show details". */ details?: string };
 
@@ -43,6 +45,8 @@ export interface AgentEngine {
     folder?: string;
     /** Files the person attached; copied into the task folder, pictures shown to the model. */
     attachments?: { path: string; name: string; size: number; kind: "image" | "file" }[];
+    /** "Check the result": the agent tests its own work (default). Off: faster, fewer requests. */
+    check?: boolean;
   }): AgentRun;
   /** Put the task's files back the way they were at a Rewind point. Absent in the demo. */
   restore?(checkpointId: string): Promise<{ ok: true; /** The new "before going back" point, so going back can be undone. */ checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;

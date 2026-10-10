@@ -11,6 +11,8 @@ import { TOOLS, checkpointLabel, failureActivity, permissionText, riskOf, runToo
 export interface SessionOptions {
   /** "Allow for this task": careful requests from these tools run without asking. Risky ones always ask. */
   preApproved?: (tool: string) => boolean;
+  /** "Check the result" (default true). */
+  check?: boolean;
   connection: ModelConnection;
   workspace: Workspace;
   checkpoints: Checkpoints;
@@ -60,7 +62,7 @@ const S = {
 /** Told to the model (not the person) when the person declines an action. */
 const DENIED = "The person said no to this. Don't try it again; continue without it, or explain what you need and why.";
 
-function systemPrompt(lang: Language, root: string) {
+function systemPrompt(lang: Language, root: string, check: boolean) {
   return [
     "You are Enceladus, a friendly agent that does real work on the person's Windows computer, inside one task folder:",
     root,
@@ -71,7 +73,9 @@ function systemPrompt(lang: Language, root: string) {
     "- While working, say little: at most one short sentence before a group of actions, or nothing. Save explanations for the final summary, and don't repeat there what you already said.",
     "- Work only inside the task folder, using relative paths. Don't try to reach other folders, not even with commands. If the person asks for a file somewhere else (like the Desktop), make it in the task folder, tell them where it is, and explain that they can pick another folder for a task on the home screen. Only Rewind protects the task folder.",
     "- To move or rename files, use move_file (the person can undo it). Don't use commands for moving, renaming or deleting files.",
-    "- Check your own work before saying it's done: read files back, run the program or its tests when you can, and fix problems you find.",
+    check
+      ? "- Check your own work before saying it's done: read files back, run the program or its tests when you can, and fix problems you find."
+      : "- The person asked you to be quick: don't spend extra steps re-reading or testing your work. Only check something if it looks wrong. Say in your summary that you didn't test it.",
     "- Be honest. If something failed or you couldn't do it, say so plainly and say what the person can try.",
     "- Do the work yourself with the tools. Never ask the person to run commands or edit files.",
     "- Before asking to run a command, make sure it's needed. Give a plain reason the person will understand.",
@@ -119,7 +123,7 @@ export class AgentSession implements AgentRun {
     const { connection, workspace, checkpoints, language } = this.opts;
     const s = S[language];
     const signal = this.controller.signal;
-    const system = systemPrompt(language, workspace.root);
+    const system = systemPrompt(language, workspace.root, this.opts.check !== false);
     const maxTurns = this.opts.maxTurns ?? 40;
 
     try {
