@@ -162,6 +162,10 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   const [queue, setQueue] = useState<string[]>([]);
   const [fileToOpen, setFileToOpen] = useState<{ path: string; n: number } | null>(null);
   const pointOfRun = useRef(new Map<number, string>());
+  // Live thinking text (models that stream it), and how much the model has written in this step.
+  const [thinking, setThinking] = useState("");
+  const written = useRef(0);
+  const [writtenShown, setWrittenShown] = useState(0);
   const files = useAttachments(t, setNotice);
 
   const runRef = useRef<AgentRun | null>(null);
@@ -184,6 +188,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
         break;
       case "status":
         setStatus({ phase: e.phase, text: e.text });
+        if (e.phase === "working") { written.current += 300; setThinking(""); }
+        break;
+      case "thinking-delta":
+        written.current += e.text.length;
+        setThinking((prev) => (prev + e.text).slice(-1200));
         break;
       case "plan": {
         const show = (plan: PlanEvent) => setItems((prev) =>
@@ -212,6 +221,8 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
         break;
       }
       case "message-delta":
+        written.current += e.text.length;
+        setThinking("");
         setItems((prev) => {
           const id = `msg-${n}-${e.id}`;
           return prev.some((i) => i.id === id)
@@ -394,7 +405,12 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
   const steps = plan?.steps ?? [];
   const doneCount = steps.filter((st) => st.status === "done").length;
   const active = steps.find((st) => st.status === "active");
-  const fraction = steps.length ? Math.min(0.97, (doneCount + (active ? 0.5 : 0)) / steps.length) : null;
+  // The bar moves with what the model writes (thinking, answers, files): each step fills toward
+  // its end and slows down near it, since nobody knows in advance how long the output will be.
+  const creep = (scale: number) => 1 - Math.exp(-writtenShown / scale);
+  const fraction = !running ? null : steps.length
+    ? Math.min(0.97, (doneCount + 0.92 * creep(1500)) / steps.length)
+    : 0.6 * creep(3000);
   const stepNumber = Math.min(steps.length, doneCount + 1);
   const progressLabel = !running ? "" : steps.length
     ? t.work.progressStep.replace("{n}", String(stepNumber)).replace("{total}", String(steps.length)) + (active ? `: ${active.label}` : "")
@@ -406,6 +422,13 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressKey]);
   useEffect(() => () => { bridge.window?.setProgress(null); }, []);
+  // A new step starts its own fill; the written count is sampled a few times a second.
+  useEffect(() => { written.current = 0; setWrittenShown(0); }, [doneCount, counter.current]);
+  useEffect(() => {
+    if (!running) { setThinking(""); return; }
+    const timer = setInterval(() => setWrittenShown(written.current), 300);
+    return () => clearInterval(timer);
+  }, [running]);
   const timeFormat = new Intl.DateTimeFormat(language, { hour: "numeric", minute: "2-digit" });
   // Rewind points are "how things were before a change", so none of them is "now":
   // a "Now" entry sits on top, and every point below it can be restored.
@@ -561,6 +584,10 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
               <StatusIcon status={status.phase} label={status.text} size={20} />
               <span dir="auto">{status.text}</span>
             </div>
+          )}
+          {status && thinking && (
+            // The model's thinking as it happens: the last few lines, quiet, fading at the top.
+            <div className={s.thinking} dir="auto" aria-live="off">{thinking.split("\n").filter(Boolean).slice(-4).join("\n")}</div>
           )}
         </div>
 

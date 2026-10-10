@@ -70,6 +70,9 @@ export async function* streamChat(conn: ModelConnection, req: ChatRequest, signa
     if (!choice) continue;
     const delta = choice.delta ?? {};
     if (typeof delta.content === "string" && delta.content) yield { type: "text", text: delta.content };
+    // Thinking, under the names different servers use (DeepSeek, GLM, Qwen: reasoning_content; OpenRouter: reasoning).
+    const thought = typeof delta.reasoning_content === "string" ? delta.reasoning_content : typeof delta.reasoning === "string" ? delta.reasoning : "";
+    if (thought) yield { type: "reasoning", text: thought };
     for (const tc of delta.tool_calls ?? []) {
       const index = typeof tc.index === "number" ? tc.index : 0;
       const cur = calls.get(index) ?? { id: "", name: "", arguments: "" };

@@ -98,6 +98,7 @@ export function recorder(task) {
   let chain = mkdir(task.dir, { recursive: true });
   const write = (e) => { chain = chain.then(() => appendFile(file, JSON.stringify(e) + "\n")).catch(() => {}); };
   return (e) => {
+    if (e.type === "thinking-delta") return; // live only
     if (e.type === "status") return;
     if (e.type === "message-delta") { pendingText.set(e.id, (pendingText.get(e.id) ?? "") + e.text); return; }
     if (e.type === "message-done") { write({ type: "message", text: pendingText.get(e.id) ?? "" }); pendingText.delete(e.id); return; }

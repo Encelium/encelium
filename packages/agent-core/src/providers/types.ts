@@ -51,6 +51,8 @@ export interface Usage {
 export type StreamEvent =
   | { type: "text"; text: string }
   | { type: "tool-call"; call: ToolCall }
+  /** The model's visible "thinking", for models that stream it (shown live, not kept). */
+  | { type: "reasoning"; text: string }
   /** A tool call still streaming in: its name and the arguments so far (partial JSON). */
   | { type: "tool-progress"; name: string; partial: string }
   | { type: "done"; stopReason: "end" | "tool-calls" | "max-tokens" | "other"; usage?: Usage };

@@ -156,6 +156,7 @@ export class AgentSession implements AgentRun {
         const calls: ToolCall[] = [];
         for await (const ev of streamChat(connection, { system, messages: this.messages, tools: TOOLS, maxTokens: 8192 }, signal)) {
           if (ev.type === "text") { text += ev.text; this.emit({ type: "message-delta", id, text: ev.text }); }
+          else if (ev.type === "reasoning") this.emit({ type: "thinking-delta", text: ev.text });
           else if (ev.type === "tool-call") calls.push(ev.call);
           else if (ev.type === "tool-progress" && ev.name !== "update_plan") {
             // Long file writes stream for a while: say what's happening instead of "Thinking".
