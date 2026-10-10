@@ -25,5 +25,12 @@ export async function suggestFolderName(connection: ModelConnection, request: st
   } finally {
     clearTimeout(timer);
   }
-  return toFolderName(text.replace(/<think>[\s\S]*?<\/think>/g, ""));
+  const answer = text.replace(/<think>[\s\S]*?<\/think>/g, "").trim().replace(/^["'`]+|["'`]+$/g, "");
+  return looksLikeName(answer) ? toFolderName(answer) : "";
+}
+
+/** A name, not a sentence: one short line, a few words, no sentence punctuation. */
+export function looksLikeName(answer: string): boolean {
+  const line = answer.split("\n")[0]!.trim();
+  return !!line && !answer.includes("\n") && line.split(/[\s-]+/).length <= 5 && !/[.!?,:;'’]/.test(line);
 }

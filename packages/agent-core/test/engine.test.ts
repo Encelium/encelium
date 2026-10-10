@@ -163,3 +163,10 @@ test("going back can be undone", async () => {
   assert.equal(await readFile(file, "utf8"), "two", "the newer work comes back");
   await rm(dir, { recursive: true, force: true });
 });
+
+test("folder names: a short name is used, a sentence is not", async () => {
+  const { looksLikeName, toFolderName } = await import("../src/engine/naming.ts");
+  assert.ok(looksLikeName("sweet-crumb-bakery-site"));
+  assert.ok(!looksLikeName("Sure. I'll make a simple page for your bakery."));
+  assert.equal(toFolderName("Sweet Crumb Bakery"), "sweet-crumb-bakery");
+});
