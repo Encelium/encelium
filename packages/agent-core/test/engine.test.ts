@@ -203,3 +203,10 @@ test("commands that reach outside the task folder are risky", async () => {
   assert.equal(r(`node build.js`), "careful");
   assert.equal(r(`Get-ChildItem`), "safe");
 });
+
+test("question options are read however the model shapes them", async () => {
+  const { optionText } = await import("../src/engine/loop.ts");
+  assert.equal(optionText("A small shop"), "A small shop");
+  assert.equal(optionText({ label: "A portfolio", description: "Show your work" }), "A portfolio");
+  assert.equal(optionText({ foo: 1 }), "");
+});

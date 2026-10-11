@@ -41,6 +41,8 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  // Notices fade on their own after a few seconds (they can still be closed sooner).
+  useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(null), 6000); return () => clearTimeout(timer); }, [notice]);
   const [view, setView] = useState<View>({ kind: "home" });
   // Saved tasks (desktop app) or this session's tasks (browser preview, demo agent).
   const [tasks, setTasks] = useState<{ id: string; title: string; prompt?: string; folder?: string }[]>([]);

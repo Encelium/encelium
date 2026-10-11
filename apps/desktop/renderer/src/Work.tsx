@@ -158,6 +158,7 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
   const [tab, setTab] = useState<"preview" | "files" | "rewind">("files");
   const [notice, setNotice] = useState<string | null>(null);
+  useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(null), 6000); return () => clearTimeout(timer); }, [notice]); // notices fade on their own
   const [page, setPage] = useState<string | null>(null);
   const [pageVersion, setPageVersion] = useState(0);
   const [comparing, setComparing] = useState(false);

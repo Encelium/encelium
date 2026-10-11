@@ -208,7 +208,7 @@ export class AgentSession implements AgentRun {
           // A question for the person: wait for their answer, which becomes the tool's result.
           if (call.name === "ask_user") {
             const q = String(args.question ?? "").trim();
-            const options = (Array.isArray(args.options) ? args.options : []).map((o) => String(o).trim()).filter(Boolean).slice(0, 4);
+            const options = (Array.isArray(args.options) ? args.options : []).map(optionText).filter(Boolean).slice(0, 4);
             if (!q) { this.messages.push({ role: "tool", toolCallId: call.id, content: "Ask a question (the question field was empty).", isError: true }); continue; }
             const answer = await this.question(q, options);
             if (answer === null || signal.aborted) throw new DOMException("stopped", "AbortError");
@@ -250,4 +250,14 @@ export class AgentSession implements AgentRun {
       this.emit({ type: "error", message, suggestion, ...(e instanceof Error && e.message ? { details: e.message } : {}) });
     }
   }
+}
+
+/** An answer option as text, however the model shaped it ("Shop", or { label: "Shop", ... }). */
+export function optionText(o: unknown): string {
+  if (typeof o === "string" || typeof o === "number") return String(o).trim();
+  if (o && typeof o === "object") {
+    const r = o as Record<string, unknown>;
+    for (const k of ["label", "text", "title", "option", "value", "name", "answer"]) if (typeof r[k] === "string" && (r[k] as string).trim()) return (r[k] as string).trim();
+  }
+  return "";
 }
