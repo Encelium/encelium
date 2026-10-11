@@ -19,8 +19,10 @@ export function electronEngine(agent: AgentBridge, taskId: string): AgentEngine 
       const queued: (() => void)[] = [];
       const deliver = (e: AgentEvent) => {
         listeners.forEach((l) => l(e));
-        // The run is over: stop listening, and there's nothing to attach to any more.
-        if (e.type === "done" || e.type === "error") { unsubscribe(); if (live === run) live = null; }
+        // The run is over: nothing to attach to any more. Keep listening a little longer for
+        // what comes after "done" (the "What next?" suggestions), then stop.
+        if (e.type === "done" || e.type === "error") { if (live === run) live = null; setTimeout(unsubscribe, 120_000); }
+        if (e.type === "suggestions") unsubscribe();
       };
 
       // Listen for the whole run (not just while a screen shows it), so it can be re-attached.
