@@ -12,7 +12,6 @@
 /* No centering (that left empty bands at the sides): full width, with answers kept to a readable line length. */
 .chatOnly .list > :not(.userTurn) { max-width: 860px; }
 .chat { position: relative; }
-.showPanel { position: absolute; top: var(--space-3); inset-inline-end: var(--space-4); z-index: 3; box-shadow: var(--shadow-sm); }
 
 /* Chat column */
 .chat {
@@ -233,7 +232,6 @@
 .nextChip:hover:not(:disabled) { border-color: var(--color-accent); background: var(--color-accent-soft); }
 .nextChip:disabled { opacity: .5; cursor: default; }
 .errorDetails .detailsToggle { margin-inline-start: 0; padding-inline: 0; }
-.chatOnly .list { padding-block-start: calc(var(--space-6) + 40px); } /* room for the "show panel" button */
 
 /* "What changed" under a finished request, with Undo. */
 .doneBlock { display: flex; flex-direction: column; gap: var(--space-2); }
@@ -286,3 +284,10 @@
 }
 .userTurn:hover .undoFromHere, .undoFromHere:focus-visible { opacity: 1; }
 .undoFromHere:hover { background: var(--color-surface-muted); color: var(--color-text); }
+
+/* A narrow panel: the preview buttons show icons only (names on hover). */
+.panel { container-type: inline-size; }
+@container (max-width: 560px) {
+  .btnLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .previewPage { max-width: 30cqw; }
+}

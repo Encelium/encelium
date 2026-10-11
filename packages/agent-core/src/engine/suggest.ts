@@ -10,12 +10,12 @@ const SYSTEM = {
 };
 
 /** Up to 3 follow-up requests, or [] if the model can't give clean ones in time. */
-export async function suggestNext(connection: ModelConnection, request: string, answer: string, language: Language, timeoutMs = 12000): Promise<string[]> {
+export async function suggestNext(connection: ModelConnection, request: string, answer: string, language: Language, timeoutMs = 45000): Promise<string[]> {
   const signal = AbortSignal.timeout(timeoutMs);
   let text = "";
   try {
     const content = `Request:\n${request.slice(0, 1500)}\n\nWhat was done:\n${answer.slice(0, 1500)}`;
-    for await (const ev of streamChat(connection, { system: SYSTEM[language], messages: [{ role: "user", content }], maxTokens: 120 }, signal)) {
+    for await (const ev of streamChat(connection, { system: SYSTEM[language], messages: [{ role: "user", content }], maxTokens: 1000 }, signal)) { // room for models that think first
       if (ev.type === "text") text += ev.text;
     }
   } catch {

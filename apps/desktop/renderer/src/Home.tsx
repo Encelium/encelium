@@ -7,7 +7,7 @@ import { MoonHero } from "./hero/MoonHero";
 import { CheckToggle, useCheckResult } from "./CheckToggle";
 import { SmartActions } from "./SmartActions";
 import { Today } from "./Today";
-import { RecipeCard, RecipesDialog } from "./Recipes";
+import { RecipeCard, RecipesDialog, type RecipeStart } from "./Recipes";
 import { RECIPES, type Recipe } from "./recipeList";
 import type { Language } from "./bridge";
 import s from "./Home.module.css";
@@ -20,7 +20,7 @@ function greeting(t: Strings) {
 interface HomeProps {
   t: Strings;
   /** `folder` is set when the person chose one; otherwise a new folder is made. */
-  onSubmit: (text: string, folder?: string, attachments?: Attachment[]) => void;
+  onSubmit: (text: string, folder?: string, attachments?: Attachment[], meta?: RecipeStart) => void;
   onNotice: (message: string) => void;
   theme: "light" | "dark";
   language: Language;
@@ -101,7 +101,7 @@ export function Home({ t, onSubmit, onNotice, theme, language, onOpenTask }: Hom
           open={recipesOpen}
           initial={recipe}
           onClose={() => setRecipesOpen(false)}
-          onStart={(prompt, recipeFolder) => onSubmit(prompt, recipeFolder ?? folder?.path)}
+          onStart={(prompt, recipeFolder, meta) => onSubmit(prompt, recipeFolder ?? folder?.path, undefined, meta)}
           onNotice={onNotice}
         />
 

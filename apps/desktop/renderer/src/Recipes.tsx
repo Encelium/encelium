@@ -26,9 +26,12 @@ interface RecipesDialogProps {
   /** Open straight on one recipe's form (from a card on the home screen). */
   initial?: Recipe | null;
   onClose: () => void;
-  onStart: (prompt: string, folder?: string) => void;
+  onStart: (prompt: string, folder?: string, meta?: RecipeStart) => void;
   onNotice: (message: string) => void;
 }
+
+/** What a recipe adds to a task: its chat title and a folder name. */
+export interface RecipeStart { title: string; folderName: string }
 
 /** All recipes by category, and the short form that turns one into a request. */
 export function RecipesDialog({ t, language, open, initial, onClose, onStart, onNotice }: RecipesDialogProps) {
@@ -54,7 +57,7 @@ export function RecipesDialog({ t, language, open, initial, onClose, onStart, on
           t={t}
           recipe={pickedMine}
           onBack={() => setPickedMine(null)}
-          onStart={(prompt) => { onClose(); onStart(prompt); }}
+          onStart={(prompt) => { onClose(); onStart(prompt, undefined, { title: pickedMine.title, folderName: "" }); }}
           onDelete={async () => { await bridge.recipes?.delete({ id: pickedMine.id }); setMine((m) => m.filter((r) => r.id !== pickedMine.id)); setPickedMine(null); }}
         />
       ) : picked ? (
@@ -64,7 +67,7 @@ export function RecipesDialog({ t, language, open, initial, onClose, onStart, on
           recipe={picked}
           language={language}
           onBack={initial ? undefined : () => setPicked(null)}
-          onStart={(prompt, folder) => { onClose(); onStart(prompt, folder); }}
+          onStart={(prompt, folder, meta) => { onClose(); onStart(prompt, folder, meta); }}
           onNotice={onNotice}
         />
       ) : (
@@ -106,13 +109,22 @@ function RecipeForm({ t, recipe, language, onBack, onStart, onNotice }: {
   recipe: Recipe;
   language: Language;
   onBack?: () => void;
-  onStart: (prompt: string, folder?: string) => void;
+  onStart: (prompt: string, folder?: string, meta?: RecipeStart) => void;
   onNotice: (message: string) => void;
 }) {
   const r = recipeText(recipe, language);
   const [values, setValues] = useState<Record<string, string>>({});
   const [folder, setFolder] = useState<{ path: string; name: string } | null>(null);
   const [showRequest, setShowRequest] = useState(false);
+  // "A website for my business: Sweet Crumb", folder "sweet-crumb-business-site" (English letters
+  // only; if nothing English is left, e.g. an Arabic name, the model names the folder instead).
+  const firstValue = r.fields.length ? (values[r.fields[0]!.key] ?? "").trim() : "";
+  const slug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const namePart = slug(firstValue).split("-").slice(0, 3).join("-");
+  const meta: RecipeStart = {
+    title: firstValue ? `${r.title}: ${firstValue}` : r.title,
+    folderName: namePart ? `${namePart}-${recipe.id}` : "",
+  };
 
   const missing = r.fields.some((f) => !f.optional && !values[f.key]?.trim()) || (recipe.folder === "required" && !folder);
   const prompt = useMemo(() => r.prompt(Object.fromEntries(r.fields.map((f) => [f.key, values[f.key]?.trim() || (f.optional ? "" : f.placeholder)]))), [r, values]);
@@ -125,7 +137,7 @@ function RecipeForm({ t, recipe, language, onBack, onStart, onNotice }: {
   };
 
   return (
-    <form className={s.form} onSubmit={(e) => { e.preventDefault(); if (!missing) onStart(prompt, folder?.path); }}>
+    <form className={s.form} onSubmit={(e) => { e.preventDefault(); if (!missing) onStart(prompt, folder?.path, meta); }}>
       {onBack && (
         <button type="button" className={s.back} onClick={onBack}>
           <Icon name="arrowRight" size={16} />{t.recipes.back}

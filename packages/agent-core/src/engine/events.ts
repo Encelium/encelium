@@ -63,6 +63,8 @@ export interface AgentEngine {
     pointed?: { label: string; context: string };
     /** How much to explain: "full" (default, good for beginners) or "short". */
     detail?: "full" | "short";
+    /** First run only: a folder name to use (e.g. from a recipe), instead of asking the model. */
+    folderName?: string;
   }): AgentRun;
   /** Put the task's files back the way they were at a Rewind point. Absent in the demo. */
   restore?(checkpointId: string): Promise<{ ok: true; /** The new "before going back" point, so going back can be undone. */ checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;

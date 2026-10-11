@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Button, Composer, Icon, IconButton, Markdown, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
+  BidiText, Button, Composer, Icon, IconButton, Markdown, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
   type RewindItem,
 } from "@enceladus/ui";
 import { bridge, type Attachment, type Language, type StoredEvent } from "./bridge";
@@ -42,6 +42,8 @@ export interface WorkProps {
   folder?: string;
   /** New task only: files attached to the first request. */
   attachments?: Attachment[];
+  /** New task only: a folder name to use (from a recipe). */
+  folderName?: string;
   language: Language;
   engine: AgentEngine;
   /** How much the agent explains (from Settings). */
@@ -147,7 +149,7 @@ function CopyButton({ t, text }: { t: Strings; text: string }) {
   );
 }
 
-export function Work({ t, taskId, prompt, folder, attachments, language, engine, detail = "full", panel = { open: true, mode: "docked", onClose: () => {}, onOpen: () => {} } }: WorkProps) {
+export function Work({ t, taskId, prompt, folder, attachments, folderName, language, engine, detail = "full", panel = { open: true, mode: "docked", onClose: () => {}, onOpen: () => {} } }: WorkProps) {
   const [chatWidth, setChatWidth] = useRememberedNumber("enceladus.chatWidth", 480);
   const workRef = useRef<HTMLElement>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -298,11 +300,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     setRunning(true);
     setStatus(null);
     stuck.current = true;
-    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check, retry, pointed: point, detail });
+    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, folderName: firstRun.current ? folderName : undefined, attachments: files, check, retry, pointed: point, detail });
     firstRun.current = false;
     runRef.current = run;
     unsubRef.current = run.onEvent((e) => apply(e, n, true));
-  }, [engine, language, folder, apply, check, detail]);
+  }, [engine, language, folder, folderName, apply, check, detail]);
 
   // New task: start it. Saved task: show what happened, then wait for a follow-up.
   useEffect(() => {
@@ -471,11 +473,6 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
       style={{ "--chat-width": `${chatWidth}px` } as React.CSSProperties}
     >
       <section className={s.chat}>
-        {!panel.open && (
-          <Button variant="secondary" size="sm" icon="sidebarRight" className={s.showPanel} onClick={panel.onOpen}>
-            {page ? t.work.tabPreview : t.work.tabFiles}
-          </Button>
-        )}
         <div ref={listRef} className={s.list} role="log" aria-live="polite" aria-label={t.work.messages} onScroll={onScroll}>
           {items.map((item, index) => {
             switch (item.kind) {
@@ -492,7 +489,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                         </button>
                       ) : null;
                     })()}
-                    {item.text && <Message role="user">{item.text}</Message>}
+                    {item.text && <Message role="user"><p dir="auto"><BidiText text={item.text} /></p></Message>}
                     {item.pointed && <span className={s.pointedSent} dir="auto"><Icon name="search" size={12} />{item.pointed}</span>}
                     {item.attachments?.length ? (
                       <ul className={s.sentFiles} aria-label={t.attachedFiles}>
@@ -713,16 +710,16 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
                   <span className={s.previewActions}>
                     {!comparing && (
                       <Button variant={picking ? "secondary" : "ghost"} size="sm" icon="search" aria-pressed={picking} onClick={() => setPicking((p) => !p)} title={t.work.pointHint}>
-                        {picking ? t.work.pointCancel : t.work.point}
+                        <span className={s.btnLabel}>{picking ? t.work.pointCancel : t.work.point}</span>
                       </Button>
                     )}
                     {/* Before / after: compares with the newest Rewind point (just before the last change). */}
                     {checkpoints.length > 0 && (
-                      <Button variant={comparing ? "secondary" : "ghost"} size="sm" icon="rewind" aria-pressed={comparing} onClick={() => setComparing((c) => !c)}>
-                        {t.work.compare}
+                      <Button variant={comparing ? "secondary" : "ghost"} size="sm" icon="rewind" aria-pressed={comparing} onClick={() => setComparing((c) => !c)} title={t.work.compare}>
+                        <span className={s.btnLabel}>{t.work.compare}</span>
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" iconEnd="arrowRight" onClick={() => bridge.tasks?.openPreview({ taskId, page })}>{t.work.openInBrowser}</Button>
+                    <Button variant="ghost" size="sm" iconEnd="arrowRight" onClick={() => bridge.tasks?.openPreview({ taskId, page })} title={t.work.openInBrowser}><span className={s.btnLabel}>{t.work.openInBrowser}</span></Button>
                   </span>
                 </div>
                 {comparing && checkpoints.length > 0 ? (

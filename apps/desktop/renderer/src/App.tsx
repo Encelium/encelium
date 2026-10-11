@@ -28,7 +28,7 @@ import { Button, Dialog, Toast } from "@enceladus/ui";
 import type { Attachment } from "./bridge";
 
 /** prompt/folder are set for a brand-new task; a saved task re-opens without them. */
-type View = { kind: "home" } | { kind: "task"; id: string; prompt?: string; folder?: string; attachments?: Attachment[] };
+type View = { kind: "home" } | { kind: "task"; id: string; prompt?: string; folder?: string; attachments?: Attachment[]; folderName?: string };
 type Notice = { message: string; tone: "safe" | "neutral" };
 
 function taskTitle(prompt: string) {
@@ -110,10 +110,12 @@ export function App() {
   const t = strings[settings.language];
   const update = (patch: Partial<Pick<Settings, "theme" | "language" | "welcomed" | "detail">>) => bridge.setSettings(patch).then(setSettings);
 
-  const startTask = (prompt: string, folder?: string, attachments?: Attachment[]) => {
+  const startTask = (prompt: string, folder?: string, attachments?: Attachment[], meta?: { title: string; folderName: string }) => {
     const id = `task-${Date.now()}`;
-    setTasks((prev) => [{ id, title: taskTitle(prompt || attachments?.[0]?.name || ""), prompt }, ...prev]);
-    setView({ kind: "task", id, prompt, folder, attachments });
+    setTasks((prev) => [{ id, title: taskTitle(meta?.title || prompt || attachments?.[0]?.name || ""), prompt }, ...prev]);
+    setView({ kind: "task", id, prompt, folder, attachments, folderName: meta?.folderName });
+    // A recipe's chat is named after the recipe, not its long request.
+    if (meta?.title) setTimeout(() => bridge.tasks?.rename({ taskId: id, title: meta.title }), 1200);
     // The folder is only known once the task starts; refresh the list to get it.
     setTimeout(() => bridge.tasks?.list().then((saved) => setTasks((prev) => prev.map((x) => ({ ...x, folder: saved.find((s) => s.id === x.id)?.folder ?? x.folder })))), 1500);
   };
@@ -199,6 +201,7 @@ export function App() {
             prompt={view.prompt}
             folder={view.folder}
             attachments={view.attachments}
+            folderName={view.folderName}
             language={settings.language}
             engine={engineFor(view.id)}
             detail={settings.detail}

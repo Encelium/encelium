@@ -19,7 +19,7 @@ export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limite
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
 export interface AgentBridge {
-  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean; pointed?: { label: string; context: string }; detail?: "full" | "short" }): Promise<{ runId: string; folder?: string }>;
+  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean; pointed?: { label: string; context: string }; detail?: "full" | "short"; folderName?: string }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean; remember?: boolean }): Promise<void>;
   answer(input: { runId: string; requestId: string; text: string }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;

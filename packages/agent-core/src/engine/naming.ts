@@ -12,12 +12,12 @@ export function toFolderName(text: string): string {
 }
 
 /** Asks the model for a name. Returns "" if it fails or takes too long; the caller has a fallback. */
-export async function suggestFolderName(connection: ModelConnection, request: string, timeoutMs = 8000): Promise<string> {
+export async function suggestFolderName(connection: ModelConnection, request: string, timeoutMs = 20000): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let text = "";
   try {
-    for await (const ev of streamChat(connection, { system: SYSTEM, messages: [{ role: "user", content: request.slice(0, 2000) }], maxTokens: 40 }, controller.signal)) {
+    for await (const ev of streamChat(connection, { system: SYSTEM, messages: [{ role: "user", content: request.slice(0, 2000) }], maxTokens: 600 }, controller.signal)) { // room for models that think first
       if (ev.type === "text") text += ev.text;
     }
   } catch {
