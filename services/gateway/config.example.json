@@ -1,0 +1,20 @@
+{
+  "port": 8787,
+  "host": "0.0.0.0",
+  "upstream": {
+    "baseUrl": "https://integrate.api.nvidia.com/v1",
+    "timeoutMs": 600000
+  },
+  "models": [
+    { "id": "enceladus", "upstreamModel": "z-ai/glm-5.3-flash" }
+  ],
+  "limits": {
+    "perMinute": 30,
+    "perDay": 500,
+    "maxTokens": 8192,
+    "maxBodyBytes": 12582912
+  },
+  "promptsDir": "prompts",
+  "keysFile": "data/keys.json",
+  "usageFile": "data/usage.json"
+}
