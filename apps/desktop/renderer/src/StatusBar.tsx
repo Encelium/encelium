@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Icon } from "@enceladus/ui";
+import { useCallback, useEffect, useState } from "react";
+import { Button, Dialog, Icon, type IconName } from "@enceladus/ui";
 import { bridge, type StatusInfo } from "./bridge";
 import type { Strings } from "./i18n";
 import s from "./StatusBar.module.css";
@@ -12,41 +12,87 @@ function duration(ms: number, t: Strings) {
   return min < 60 ? `${min} ${t.status.min}` : `${Math.floor(min / 60)} ${t.status.hr} ${min % 60} ${t.status.min}`;
 }
 
-/** A slim bar under a task: model, Git, tokens, time waiting for the model, time worked, memory. */
-export function StatusBar({ t, taskId }: { t: Strings; taskId: string }) {
-  const [info, setInfo] = useState<StatusInfo | null>(null);
+/** One status item: plain text, or a small button when there's something to do with it. */
+function Item({ icon, title, onClick, tone, children }: { icon?: IconName; title: string; onClick?: () => void; tone?: "warn"; children: React.ReactNode }) {
+  const content = <>{icon && <Icon name={icon} size={13} />}{children}</>;
+  const cls = [s.item, onClick ? s.button : "", tone === "warn" ? s.warn : ""].filter(Boolean).join(" ");
+  return onClick
+    ? <button type="button" className={cls} title={title} onClick={onClick}>{content}</button>
+    : <span className={cls} title={title}>{content}</span>;
+}
 
+/** A slim bar under a task: model, folder, Git, tokens, time waiting for the model, time worked, memory. */
+export function StatusBar({ t, taskId, onOpenModel, onNotice }: { t: Strings; taskId: string; onOpenModel: () => void; onNotice: (message: string) => void }) {
+  const [info, setInfo] = useState<StatusInfo | null>(null);
+  const [confirm, setConfirm] = useState<"start" | "save" | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => bridge.status?.({ taskId }).then(setInfo), [taskId]);
   useEffect(() => {
     if (!bridge.status) return;
     let live = true;
-    const load = () => bridge.status?.({ taskId }).then((i) => { if (live) setInfo(i); });
-    load();
-    const timer = setInterval(() => { if (!document.hidden) load(); }, 2000);
+    const refresh = () => bridge.status?.({ taskId }).then((i) => { if (live) setInfo(i); });
+    refresh();
+    const timer = setInterval(() => { if (!document.hidden) refresh(); }, 2000);
     return () => { live = false; clearInterval(timer); };
   }, [taskId]);
+
+  const runGit = async () => {
+    if (!bridge.git || !confirm) return;
+    setBusy(true);
+    const stamp = new Date().toLocaleString();
+    const result = confirm === "start"
+      ? await bridge.git.start({ taskId, message: t.status.firstVersion })
+      : await bridge.git.save({ taskId, message: `${t.status.savedVersion} (${stamp})` });
+    setBusy(false);
+    setConfirm(null);
+    onNotice(result.ok ? (confirm === "start" ? t.status.started : t.status.saved) : result.reason === "not-installed" ? t.status.gitMissing : t.status.gitFailed);
+    load();
+  };
 
   if (!info) return null;
   const st = info.stats;
   const tokens = st ? st.tokensIn + st.tokensOut : 0;
+  const git = info.git;
+  const heavy = info.ramMB >= 1200; // well above what the app normally needs
+
   return (
     <footer className={s.bar} aria-label={t.status.label}>
-      <span className={s.item} title={t.status.modelHint}><Icon name="plug" size={13} /><span dir="ltr">{info.model}</span></span>
-      <span className={s.item} title={info.git ? t.status.gitHint : t.status.noGitHint}>
-        <Icon name="repeat" size={13} />
-        {info.git ? <><span dir="ltr">{info.git.branch}</span>{info.git.changes > 0 && <span className={s.dim}>· {info.git.changes} {t.status.changes}</span>}</> : <span className={s.dim}>{t.status.noGit}</span>}
-      </span>
+      <Item icon="plug" title={t.status.modelHint} onClick={onOpenModel}><span dir="ltr">{info.model}</span></Item>
+      <Item icon="folder" title={t.status.folderHint} onClick={() => bridge.tasks?.openFolder({ taskId })}>{t.status.folder}</Item>
+      {git && !git.installed && <Item icon="repeat" title={t.status.gitMissingHint}><span className={s.dim}>{t.status.noGit}</span></Item>}
+      {git?.installed && !git.branch && <Item icon="repeat" title={t.status.startHint} onClick={() => setConfirm("start")}>{t.status.start}</Item>}
+      {git?.installed && git.branch && (
+        <Item icon="repeat" title={git.changes ? t.status.saveHint : t.status.cleanHint} onClick={git.changes ? () => setConfirm("save") : undefined}>
+          <span dir="ltr">{git.branch}</span>
+          <span className={s.dim}>· {git.changes ? `${git.changes} ${t.status.unsaved}` : t.status.allSaved}</span>
+        </Item>
+      )}
       {st && (
-        <span className={s.item} title={st.estimated ? t.status.tokensEstimatedHint : t.status.tokensHint}>
-          <Icon name="file" size={13} />
+        <Item icon="file" title={st.estimated ? t.status.tokensEstimatedHint : t.status.tokensHint}>
           {st.estimated ? "~" : ""}{compact(tokens)} {t.status.tokens}
           <span className={s.dim}>({compact(st.tokensIn)} {t.status.in} · {compact(st.tokensOut)} {t.status.out})</span>
-        </span>
+        </Item>
       )}
-      {st && <span className={s.item} title={t.status.waitHint}><Icon name="info" size={13} />{t.status.wait} {duration(st.apiMs, t)}</span>}
-      {st && <span className={s.item} title={t.status.workHint}><Icon name="check" size={13} />{t.status.worked} {duration(st.workMs, t)}</span>}
+      {st && <Item icon="info" title={t.status.waitHint}>{t.status.wait} {duration(st.apiMs, t)}</Item>}
+      {st && <Item icon="check" title={t.status.workHint}>{t.status.worked} {duration(st.workMs, t)}</Item>}
       <span className={s.spacer} />
-      <span className={s.item} title={t.status.ramHint}>{info.ramMB} MB</span>
+      <Item title={heavy ? t.status.ramHighHint : t.status.ramHint} tone={heavy ? "warn" : undefined}>{t.status.memory} {info.ramMB} MB</Item>
       {info.running && <span className={s.live} aria-label={t.status.working} />}
+
+      <Dialog
+        open={!!confirm}
+        onClose={() => setConfirm(null)}
+        title={confirm === "start" ? t.status.startTitle : t.status.saveTitle}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setConfirm(null)}>{t.deleteCancel}</Button>
+            <Button variant="primary" onClick={runGit} disabled={busy}>{confirm === "start" ? t.status.start : t.status.save}</Button>
+          </>
+        }
+      >
+        <p className="app-dialog-text">{confirm === "start" ? t.status.startBody : t.status.saveBody}</p>
+      </Dialog>
     </footer>
   );
 }

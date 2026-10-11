@@ -247,6 +247,17 @@ export async function initTasks() {
   ipcMain.handle("tasks:list", () => index.map(({ id, title, folder, updatedAt }) => ({ id, title, folder, updatedAt })));
   ipcMain.handle("tasks:events", (_e, { taskId }) => readEvents(taskId));
   ipcMain.handle("tasks:delete", (_e, { taskId }) => deleteTask(taskId));
+  // "Today" on the home screen: the chats worked on today, with how many requests and file changes.
+  ipcMain.handle("tasks:today", async () => {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const out = [];
+    for (const meta of index.filter((m) => m.updatedAt >= start.getTime()).slice(0, 8)) {
+      const events = await readEvents(meta.id).catch(() => []);
+      const files = new Set(events.filter((e) => e.type === "activity" && e.file).map((e) => e.file.to ?? e.file.path));
+      out.push({ id: meta.id, title: meta.title, requests: events.filter((e) => e.type === "user").length, files: files.size, workMs: meta.stats?.workMs ?? 0 });
+    }
+    return out;
+  });
   ipcMain.handle("tasks:rename", async (_e, { taskId, title }) => {
     const meta = index.find((t) => t.id === safeId(taskId));
     const clean = String(title ?? "").trim().replace(/\s+/g, " ").slice(0, 120);

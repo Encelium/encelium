@@ -30,6 +30,7 @@ const defaults = () => ({
   theme: "light", // light is the default; "dark" and "system" are options
   language: app.getLocale().toLowerCase().startsWith("ar") ? "ar" : "en",
   welcomed: false, // the first-run welcome has been seen
+  detail: "full", // how the agent explains: "full" (beginners) or "short"
 });
 let settings = defaults();
 
@@ -53,6 +54,7 @@ function pick(patch) {
   if (["light", "dark", "system"].includes(patch?.theme)) out.theme = patch.theme;
   if (["en", "ar"].includes(patch?.language)) out.language = patch.language;
   if (typeof patch?.welcomed === "boolean") out.welcomed = patch.welcomed;
+  if (["full", "short"].includes(patch?.detail)) out.detail = patch.detail;
   return out;
 }
 

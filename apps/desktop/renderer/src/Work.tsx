@@ -44,6 +44,8 @@ export interface WorkProps {
   attachments?: Attachment[];
   language: Language;
   engine: AgentEngine;
+  /** How much the agent explains (from Settings). */
+  detail?: "full" | "short";
   /** The right panel: docked beside the chat, or slid over it in small windows. */
   panel?: { open: boolean; mode: "docked" | "overlay"; onClose: () => void; onOpen: () => void };
 }
@@ -145,7 +147,7 @@ function CopyButton({ t, text }: { t: Strings; text: string }) {
   );
 }
 
-export function Work({ t, taskId, prompt, folder, attachments, language, engine, panel = { open: true, mode: "docked", onClose: () => {}, onOpen: () => {} } }: WorkProps) {
+export function Work({ t, taskId, prompt, folder, attachments, language, engine, detail = "full", panel = { open: true, mode: "docked", onClose: () => {}, onOpen: () => {} } }: WorkProps) {
   const [chatWidth, setChatWidth] = useRememberedNumber("enceladus.chatWidth", 480);
   const workRef = useRef<HTMLElement>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -296,11 +298,11 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     setRunning(true);
     setStatus(null);
     stuck.current = true;
-    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check, retry, pointed: point });
+    const run = engine.start(text, { language, folder: firstRun.current ? folder : undefined, attachments: files, check, retry, pointed: point, detail });
     firstRun.current = false;
     runRef.current = run;
     unsubRef.current = run.onEvent((e) => apply(e, n, true));
-  }, [engine, language, folder, apply, check]);
+  }, [engine, language, folder, apply, check, detail]);
 
   // New task: start it. Saved task: show what happened, then wait for a follow-up.
   useEffect(() => {
@@ -480,6 +482,16 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
               case "user":
                 return (
                   <div key={item.id} className={s.userTurn}>
+                    {(() => {
+                      // "Undo from here": files back to how they were before this request (Rewind keeps a way back).
+                      const n = Number(item.id.slice(5));
+                      const point = pointOfRun.current.get(n);
+                      return point && !running && checkpoints.some((c) => c.id === point) ? (
+                        <button type="button" className={s.undoFromHere} onClick={() => restoreTo(point)} title={t.work.undoFromHereHint}>
+                          <Icon name="rewind" size={12} />{t.work.undoFromHere}
+                        </button>
+                      ) : null;
+                    })()}
                     {item.text && <Message role="user">{item.text}</Message>}
                     {item.pointed && <span className={s.pointedSent} dir="auto"><Icon name="search" size={12} />{item.pointed}</span>}
                     {item.attachments?.length ? (

@@ -61,6 +61,8 @@ export interface AgentEngine {
     retry?: boolean;
     /** "Point at it": the part of the preview the person clicked (a short label to show, and details for the model). */
     pointed?: { label: string; context: string };
+    /** How much to explain: "full" (default, good for beginners) or "short". */
+    detail?: "full" | "short";
   }): AgentRun;
   /** Put the task's files back the way they were at a Rewind point. Absent in the demo. */
   restore?(checkpointId: string): Promise<{ ok: true; /** The new "before going back" point, so going back can be undone. */ checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;

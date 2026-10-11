@@ -8,7 +8,7 @@ interface Props {
   t: Strings;
   open: boolean;
   settings: Settings;
-  onChange: (patch: Partial<Pick<Settings, "theme" | "language">>) => void;
+  onChange: (patch: Partial<Pick<Settings, "theme" | "language" | "detail">>) => void;
   onOpenModel: () => void;
   onClose: () => void;
 }
@@ -49,6 +49,15 @@ export function SettingsDialog({ t, open, settings, onChange, onOpenModel, onClo
             value={settings.language}
             onChange={(language) => onChange({ language })}
             options={[{ value: "en", label: "English" }, { value: "ar", label: "العربية" }]}
+          />
+        </div>
+        <div className={s.row}>
+          <span className={s.label}>{d.detail}</span>
+          <Segmented<"full" | "short">
+            ariaLabel={d.detail}
+            value={settings.detail}
+            onChange={(detail) => onChange({ detail })}
+            options={[{ value: "full", label: d.detailFull }, { value: "short", label: d.detailShort }]}
           />
         </div>
 

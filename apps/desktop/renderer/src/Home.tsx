@@ -6,6 +6,7 @@ import { useAttachments } from "./useAttachments";
 import { MoonHero } from "./hero/MoonHero";
 import { CheckToggle, useCheckResult } from "./CheckToggle";
 import { SmartActions } from "./SmartActions";
+import { Today } from "./Today";
 import { RecipeCard, RecipesDialog } from "./Recipes";
 import { RECIPES, type Recipe } from "./recipeList";
 import type { Language } from "./bridge";
@@ -23,9 +24,10 @@ interface HomeProps {
   onNotice: (message: string) => void;
   theme: "light" | "dark";
   language: Language;
+  onOpenTask?: (id: string) => void;
 }
 
-export function Home({ t, onSubmit, onNotice, theme, language }: HomeProps) {
+export function Home({ t, onSubmit, onNotice, theme, language, onOpenTask }: HomeProps) {
   const [recipesOpen, setRecipesOpen] = useState(false);
   const [check, setCheck] = useCheckResult();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -103,6 +105,7 @@ export function Home({ t, onSubmit, onNotice, theme, language }: HomeProps) {
           onNotice={onNotice}
         />
 
+        {onOpenTask && bridge.tasks && <Today t={t} onOpenTask={onOpenTask} />}
         <p className={s.privacy}>
           <Icon name="lock" size={14} />
           {t.privacy}

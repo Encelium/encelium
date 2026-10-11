@@ -108,7 +108,7 @@ export function App() {
   if (!settings) return null; // settings arrive within a frame; avoid a flash of the wrong theme/language
 
   const t = strings[settings.language];
-  const update = (patch: Partial<Pick<Settings, "theme" | "language" | "welcomed">>) => bridge.setSettings(patch).then(setSettings);
+  const update = (patch: Partial<Pick<Settings, "theme" | "language" | "welcomed" | "detail">>) => bridge.setSettings(patch).then(setSettings);
 
   const startTask = (prompt: string, folder?: string, attachments?: Attachment[]) => {
     const id = `task-${Date.now()}`;
@@ -190,7 +190,7 @@ export function App() {
           <Splitter className="app-sidebar-handle" label={t.layout.resize} width={sidebarWidth} onChange={setSidebarWidth} containerRef={bodyRef} min={200} max={420} minAfter={480} initial={256} />
         )}</div>}
         {view.kind === "home" ? (
-          <Home t={t} theme={settings.effectiveTheme} language={settings.language} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
+          <Home t={t} theme={settings.effectiveTheme} language={settings.language} onOpenTask={openTask} onSubmit={startTask} onNotice={(message) => setNotice({ message, tone: "neutral" })} />
         ) : (
           <Work
             key={`${view.id}-${openCount}`}
@@ -201,6 +201,7 @@ export function App() {
             attachments={view.attachments}
             language={settings.language}
             engine={engineFor(view.id)}
+            detail={settings.detail}
             panel={{
               open: panelOpen,
               mode: panelMode,
@@ -237,7 +238,7 @@ export function App() {
           </p>
         )}
       </Dialog>
-      {view.kind === "task" && !compact && <StatusBar t={t} taskId={view.id} />}
+      {view.kind === "task" && !compact && <StatusBar t={t} taskId={view.id} onOpenModel={() => setModelOpen(true)} onNotice={(message) => setNotice({ message, tone: "neutral" })} />}
       <SaveRecipeDialog t={t} task={savingRecipe} onClose={() => setSavingRecipe(null)} onSaved={(message) => setNotice({ message, tone: "safe" })} />
       <Welcome
         t={t}

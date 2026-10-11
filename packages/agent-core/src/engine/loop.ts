@@ -13,6 +13,8 @@ export interface SessionOptions {
   preApproved?: (tool: string) => boolean;
   /** "Check the result" (default true). */
   check?: boolean;
+  /** How much to explain (default "full"). */
+  detail?: "full" | "short";
   connection: ModelConnection;
   workspace: Workspace;
   checkpoints: Checkpoints;
@@ -62,7 +64,7 @@ const S = {
 /** Told to the model (not the person) when the person declines an action. */
 const DENIED = "The person said no to this. Don't try it again; continue without it, or explain what you need and why.";
 
-function systemPrompt(lang: Language, root: string, check: boolean) {
+function systemPrompt(lang: Language, root: string, check: boolean, detail: "full" | "short") {
   return [
     "You are Enceladus, a friendly agent that does real work on the person's Windows computer, inside one task folder:",
     root,
@@ -82,6 +84,9 @@ function systemPrompt(lang: Language, root: string, check: boolean) {
     "- Before asking to run a command, make sure it's needed. Give a plain reason the person will understand.",
     "- The app shows web pages from the task folder in a live preview next to the chat, and refreshes it when files change. Don't open browsers or start web servers to show a page; just say it's in the preview.",
     "- Every request needs model calls, so be efficient: group related small edits, and don't re-check work that already passed.",
+    detail === "short"
+      ? "- The person asked for short answers: reply in one or two sentences plus, if files changed, a very short list of them. Explain more only if they ask."
+      : "- Explain what you did in a way a beginner understands: what you made, where it is, and how to use or open it.",
     "- When you're finished, write a short summary: what you made or changed, and where it is. Formatting: short paragraphs, simple lists, **bold** for key words. No headings, no tables.",
     "",
     `Today is ${new Date().toDateString()}. Commands run in Windows PowerShell.`,
@@ -140,7 +145,7 @@ export class AgentSession implements AgentRun {
     const { connection, workspace, checkpoints, language } = this.opts;
     const s = S[language];
     const signal = this.controller.signal;
-    const system = systemPrompt(language, workspace.root, this.opts.check !== false);
+    const system = systemPrompt(language, workspace.root, this.opts.check !== false, this.opts.detail === "short" ? "short" : "full");
     const maxTurns = this.opts.maxTurns ?? 40;
 
     try {

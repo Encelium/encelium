@@ -134,9 +134,9 @@
   --font-sans: var(--font-arabic);
   --tracking-tight: 0;               /* never tighten Arabic letter spacing */
   /* Arabic strokes read thinner than Latin at the same weight: one step heavier throughout. */
-  --weight-regular: 470;
-  --weight-medium: 580;
-  --weight-semibold: 700;
+  --weight-regular: 560;
+  --weight-medium: 660;
+  --weight-semibold: 760;
 }
 
 /* ── Reduced motion ───────────────────────────────────────────── */

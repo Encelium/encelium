@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld("enceladus", {
     list: () => ipcRenderer.invoke("tasks:list"),
     events: (input) => ipcRenderer.invoke("tasks:events", input),
     delete: (input) => ipcRenderer.invoke("tasks:delete", input),
+    today: () => ipcRenderer.invoke("tasks:today"),
     rename: (input) => ipcRenderer.invoke("tasks:rename", input),
     /** A notification was clicked: open that task. */
     onOpenRequest: (callback) => {
@@ -64,6 +65,10 @@ contextBridge.exposeInMainWorld("enceladus", {
   },
   copyText: (text) => ipcRenderer.invoke("clipboard:write", text),
   status: (input) => ipcRenderer.invoke("status:get", input),
+  git: {
+    start: (input) => ipcRenderer.invoke("git:start", input),
+    save: (input) => ipcRenderer.invoke("git:save", input),
+  },
   recipes: {
     list: () => ipcRenderer.invoke("recipes:list"),
     save: (input) => ipcRenderer.invoke("recipes:save", input),

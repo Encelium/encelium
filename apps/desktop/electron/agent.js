@@ -5,7 +5,7 @@ import path from "node:path";
 import { AgentSession, ENCELADUS_PRESET, suggestFolderName, suggestNext } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
 import { getTask, hasTask, recorder, saveIndexSoon, saveMessages, setTaskStopper } from "./tasks.js";
-import { gitStatus } from "./status.js";
+import { gitSave, gitStart, gitStatus } from "./status.js";
 import { prepareAttachments } from "./attachments.js";
 
 /** runId → { session, record } */
@@ -78,7 +78,7 @@ export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
 
-  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments, check, retry, pointed }) => {
+  ipcMain.handle("agent:start", async (event, { taskId, prompt, language, folder, attachments, check, retry, pointed, detail }) => {
     const lang = language === "ar" ? "ar" : "en";
     const text = String(prompt);
     const runId = `run-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -120,7 +120,7 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     }
 
     const allowed = await allowedFor(task);
-    const session = new AgentSession(ask, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history, preApproved: (tool) => allowed.has(tool), check: check !== false });
+    const session = new AgentSession(ask, { connection: conn, workspace: task.workspace, checkpoints: task.checkpoints, language: lang, history, preApproved: (tool) => allowed.has(tool), check: check !== false, detail: detail === "short" ? "short" : "full" });
     /** requestId → tool, so "Allow for this task" knows what to remember. */
     const asked = new Map();
     session.onEvent((e) => { if (e.type === "permission" && e.tool) asked.set(e.requestId, e.tool); });
@@ -162,6 +162,15 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     if (!answer) return;
     run.record({ type: "answer", requestId: String(requestId), text: answer });
     run.session.answer(String(requestId), answer);
+  });
+  // Status bar Git actions, in the task folder only.
+  ipcMain.handle("git:start", async (_e, { taskId, message }) => {
+    const task = await getTask(taskId);
+    return task ? gitStart(task.meta.folder, String(message || "First version")) : { ok: false, reason: "failed" };
+  });
+  ipcMain.handle("git:save", async (_e, { taskId, message }) => {
+    const task = await getTask(taskId);
+    return task ? gitSave(task.meta.folder, String(message || "Saved version")) : { ok: false, reason: "failed" };
   });
   ipcMain.handle("status:get", async (_e, { taskId }) => {
     const task = taskId ? await getTask(taskId) : null;

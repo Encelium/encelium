@@ -12,3 +12,8 @@
 @keyframes pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .live { animation: none; } }
 @media (max-width: 760px) { .bar .item:nth-child(n+4) { display: none; } }
+
+.button { padding: 0 var(--space-2); margin-inline: calc(-1 * var(--space-2)); height: 22px; border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.button:hover { background: var(--color-surface-muted); color: var(--color-text); }
+.button:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 0; }
+.warn { color: var(--color-careful-text); }

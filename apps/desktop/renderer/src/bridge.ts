@@ -8,6 +8,8 @@ export interface Settings {
   effectiveTheme: EffectiveTheme;
   /** The first-run welcome has been seen. */
   welcomed: boolean;
+  /** How the agent explains: "full" (good for beginners) or "short". */
+  detail: "full" | "short";
 }
 
 export interface ProviderOption { id: string; name: string; needsKey: boolean; keyUrl: string | null; local: boolean }
@@ -17,7 +19,7 @@ export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limite
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
 
 export interface AgentBridge {
-  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean; pointed?: { label: string; context: string } }): Promise<{ runId: string; folder?: string }>;
+  start(input: { taskId: string; prompt: string; language: Language; folder?: string; attachments?: Attachment[]; check?: boolean; retry?: boolean; pointed?: { label: string; context: string }; detail?: "full" | "short" }): Promise<{ runId: string; folder?: string }>;
   respond(input: { runId: string; requestId: string; allowed: boolean; remember?: boolean }): Promise<void>;
   answer(input: { runId: string; requestId: string; text: string }): Promise<void>;
   stop(input: { runId: string }): Promise<void>;
@@ -36,7 +38,7 @@ export interface AttachmentsBridge {
 
 export interface StatusInfo {
   model: string;
-  git: { branch: string; changes: number } | null;
+  git: { installed: boolean; branch: string | null; changes: number } | null;
   stats: { tokensIn: number; tokensOut: number; estimated: boolean; apiMs: number; workMs: number } | null;
   running: boolean;
   ramMB: number;
@@ -65,6 +67,7 @@ export interface TasksBridge {
   list(): Promise<TaskSummary[]>;
   events(input: { taskId: string }): Promise<StoredEvent[]>;
   delete(input: { taskId: string }): Promise<void>;
+  today(): Promise<{ id: string; title: string; requests: number; files: number; workMs: number }[]>;
   rename(input: { taskId: string; title: string }): Promise<boolean>;
   onOpenRequest(callback: (taskId: string) => void): () => void;
   openFolder(input: { taskId: string }): Promise<void>;
@@ -88,6 +91,10 @@ export interface Bridge {
   copyText?(text: string): Promise<void>;
   /** Facts for the status bar (desktop app only). */
   status?(input: { taskId?: string }): Promise<StatusInfo>;
+  git?: {
+    start(input: { taskId: string; message: string }): Promise<{ ok: true } | { ok: false; reason: "not-installed" | "failed"; detail?: string }>;
+    save(input: { taskId: string; message: string }): Promise<{ ok: true } | { ok: false; reason: "not-installed" | "failed"; detail?: string }>;
+  };
   /** The person's own recipes (desktop app only). */
   recipes?: {
     list(): Promise<MyRecipe[]>;
@@ -95,7 +102,7 @@ export interface Bridge {
     delete(input: { id: string }): Promise<void>;
   };
   getSettings(): Promise<Settings>;
-  setSettings(patch: Partial<Pick<Settings, "theme" | "language" | "welcomed">>): Promise<Settings>;
+  setSettings(patch: Partial<Pick<Settings, "theme" | "language" | "welcomed" | "detail">>): Promise<Settings>;
   onEffectiveTheme(callback: (theme: EffectiveTheme) => void): () => void;
   models: {
     presets(): Promise<ProviderOption[]>;
@@ -118,9 +125,9 @@ function browserFallback(): Bridge {
   const read = (): Omit<Settings, "effectiveTheme"> => {
     try {
       const s = JSON.parse(localStorage.getItem("enceladus.settings") ?? "{}");
-      return { theme: s.theme ?? "light", language: s.language ?? (navigator.language.startsWith("ar") ? "ar" : "en"), welcomed: !!s.welcomed };
+      return { theme: s.theme ?? "light", language: s.language ?? (navigator.language.startsWith("ar") ? "ar" : "en"), welcomed: !!s.welcomed, detail: s.detail === "short" ? "short" : "full" };
     } catch {
-      return { theme: "light", language: "en", welcomed: false };
+      return { theme: "light", language: "en", welcomed: false, detail: "full" };
     }
   };
   return {
