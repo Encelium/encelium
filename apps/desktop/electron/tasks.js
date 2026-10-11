@@ -82,6 +82,13 @@ function titleOf(prompt) {
   return text.length > 60 ? `${text.slice(0, 60).trimEnd()}…` : text;
 }
 
+let indexTimer = null;
+/** Save the task list soon (coalesces many small updates, e.g. status-bar totals). */
+export function saveIndexSoon() {
+  clearTimeout(indexTimer);
+  indexTimer = setTimeout(() => { saveIndex().catch(() => {}); }, 1000);
+}
+
 export async function saveMessages(task, messages) {
   task.messages = messages;
   await mkdir(task.dir, { recursive: true });

@@ -1,10 +1,11 @@
 // Runs agent tasks for the window. Tasks, folders and history live in tasks.js.
-import { BrowserWindow, Notification, ipcMain } from "electron";
+import { app, BrowserWindow, Notification, ipcMain } from "electron";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { AgentSession, ENCELADUS_PRESET, suggestFolderName, suggestNext } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
-import { getTask, hasTask, recorder, saveMessages, setTaskStopper } from "./tasks.js";
+import { getTask, hasTask, recorder, saveIndexSoon, saveMessages, setTaskStopper } from "./tasks.js";
+import { gitStatus } from "./status.js";
 import { prepareAttachments } from "./attachments.js";
 
 /** runId → { session, record } */
@@ -61,6 +62,18 @@ async function allowedFor(task) {
   return task.allowed;
 }
 
+// ── Status bar: per-task totals (kept in the task's index entry) ──
+function stats(task) {
+  task.meta.stats ??= { tokensIn: 0, tokensOut: 0, estimated: false, apiMs: 0, workMs: 0 };
+  return task.meta.stats;
+}
+function addUsage(task, e) {
+  const st = stats(task);
+  st.tokensIn += e.inputTokens; st.tokensOut += e.outputTokens; st.apiMs += e.ms;
+  if (e.estimated) st.estimated = true;
+}
+function addWorkTime(task, ms) { stats(task).workMs += ms; saveIndexSoon(); }
+
 export function initAgent() {
   // Deleting a task stops its run first.
   setTaskStopper((taskId) => { for (const run of runs.values()) if (run.taskId === taskId) run.session.stop(); });
@@ -76,6 +89,7 @@ export function initAgent() {
     const task = await getTask(taskId, { prompt: text, folder: chosen, folderName });
     const record = recorder(task);
     const send = (e) => {
+      if (e.type === "usage") { addUsage(task, e); return; } // totals for the status bar; not part of the chat
       record(e);
       if (!event.sender.isDestroyed()) event.sender.send("agent:event", runId, e);
       if (e.type === "done" || e.type === "error" || e.type === "permission" || e.type === "question") notifyIfAway(event.sender, task, e, lang);
@@ -112,6 +126,8 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     session.onEvent((e) => { if (e.type === "permission" && e.tool) asked.set(e.requestId, e.tool); });
     runs.set(runId, { session, record, task, asked, taskId: task.meta.id });
     session.onEvent(send);
+    const runStarted = Date.now();
+    session.finished.then(() => addWorkTime(task, Date.now() - runStarted));
     let finishedWell = false;
     session.onEvent((e) => { if (e.type === "done") finishedWell = true; });
     session.finished.then(async () => {
@@ -146,6 +162,19 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     if (!answer) return;
     run.record({ type: "answer", requestId: String(requestId), text: answer });
     run.session.answer(String(requestId), answer);
+  });
+  ipcMain.handle("status:get", async (_e, { taskId }) => {
+    const task = taskId ? await getTask(taskId) : null;
+    const own = currentConnection();
+    const metrics = app.getAppMetrics();
+    const ramMB = Math.round(metrics.reduce((sum, m) => sum + (m.memory?.workingSetSize ?? 0), 0) / 1024);
+    return {
+      model: own ? own.model : "Enceladus",
+      git: task ? await gitStatus(task.meta.folder) : null,
+      stats: task ? stats(task) : null,
+      running: task ? [...runs.values()].some((r) => r.taskId === task.meta.id) : false,
+      ramMB,
+    };
   });
   ipcMain.handle("agent:stop", (_e, { runId }) => runs.get(runId)?.session.stop());
 

@@ -1,0 +1,9 @@
+.row { display: flex; flex-wrap: wrap; gap: var(--space-2); animation: rise var(--duration-base) var(--ease-out); }
+.chip {
+  padding: var(--space-1) var(--space-3); border: 1px dashed var(--color-accent); border-radius: var(--radius-full);
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-sm); cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.chip:hover { background: var(--color-accent-soft); border-style: solid; }
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.row { position: relative; z-index: 1; } /* above the moon on the home screen */

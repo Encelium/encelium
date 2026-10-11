@@ -63,6 +63,7 @@ contextBridge.exposeInMainWorld("enceladus", {
     setProgress: (state) => ipcRenderer.invoke("window:progress", state),
   },
   copyText: (text) => ipcRenderer.invoke("clipboard:write", text),
+  status: (input) => ipcRenderer.invoke("status:get", input),
   recipes: {
     list: () => ipcRenderer.invoke("recipes:list"),
     save: (input) => ipcRenderer.invoke("recipes:save", input),

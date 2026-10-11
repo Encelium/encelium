@@ -22,6 +22,7 @@ import { Work } from "./Work";
 import { SettingsDialog } from "./SettingsDialog";
 import { Welcome } from "./Welcome";
 import { SaveRecipeDialog } from "./SaveRecipe";
+import { StatusBar } from "./StatusBar";
 import { ModelDialog } from "./ModelDialog";
 import { Button, Dialog, Toast } from "@enceladus/ui";
 import type { Attachment } from "./bridge";
@@ -236,6 +237,7 @@ export function App() {
           </p>
         )}
       </Dialog>
+      {view.kind === "task" && !compact && <StatusBar t={t} taskId={view.id} />}
       <SaveRecipeDialog t={t} task={savingRecipe} onClose={() => setSavingRecipe(null)} onSaved={(message) => setNotice({ message, tone: "safe" })} />
       <Welcome
         t={t}

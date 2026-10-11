@@ -5,6 +5,7 @@ import { bridge, type Attachment } from "./bridge";
 import { useAttachments } from "./useAttachments";
 import { MoonHero } from "./hero/MoonHero";
 import { CheckToggle, useCheckResult } from "./CheckToggle";
+import { SmartActions } from "./SmartActions";
 import { RecipeCard, RecipesDialog } from "./Recipes";
 import { RECIPES, type Recipe } from "./recipeList";
 import type { Language } from "./bridge";
@@ -52,6 +53,7 @@ export function Home({ t, onSubmit, onNotice, theme, language }: HomeProps) {
           <MoonHero className={s.moon} theme={theme} active={draft.trim().length > 0} />
         </div>
 
+        {!draft.trim() && <SmartActions t={t} files={files.files} onPick={(text) => { setDraft(text); setFocusRequest((n) => n + 1); }} />}
         <Composer
           className={s.composer}
           placeholder={t.composerPlaceholder}

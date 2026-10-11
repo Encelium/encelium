@@ -34,6 +34,14 @@ export interface AttachmentsBridge {
   thumbnail(input: { path: string }): Promise<string | null>;
 }
 
+export interface StatusInfo {
+  model: string;
+  git: { branch: string; changes: number } | null;
+  stats: { tokensIn: number; tokensOut: number; estimated: boolean; apiMs: number; workMs: number } | null;
+  running: boolean;
+  ramMB: number;
+}
+
 export interface MyRecipe { id: string; title: string; prompt: string; createdAt: number }
 
 export interface TaskSummary { id: string; title: string; folder: string; updatedAt: number }
@@ -78,6 +86,8 @@ export interface Bridge {
   /** Desktop app only. */
   window?: { setCompact(on: boolean): Promise<void>; setOnTop(on: boolean): Promise<void>; setProgress(state: { value?: number; label: string } | null): Promise<void> };
   copyText?(text: string): Promise<void>;
+  /** Facts for the status bar (desktop app only). */
+  status?(input: { taskId?: string }): Promise<StatusInfo>;
   /** The person's own recipes (desktop app only). */
   recipes?: {
     list(): Promise<MyRecipe[]>;

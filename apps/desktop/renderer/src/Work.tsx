@@ -11,6 +11,7 @@ import { Splitter } from "./Splitter";
 import { Compare } from "./Compare";
 import { CheckToggle, useCheckResult } from "./CheckToggle";
 import { QuestionCard } from "./QuestionCard";
+import { SmartActions } from "./SmartActions";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import type { FileChange } from "@enceladus/agent-core/events";
@@ -433,7 +434,8 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
     ? Math.min(0.97, (doneCount + 0.92 * creep(1500)) / steps.length)
     : 0.6 * creep(3000);
   const stepNumber = Math.min(steps.length, doneCount + 1);
-  const progressLabel = !running ? "" : steps.length
+  const waiting = items.some((i) => (i.kind === "question" && i.answer === undefined) || (i.kind === "permission" && i.answer === undefined));
+  const progressLabel = !running ? "" : waiting ? t.work.progressWaiting : steps.length
     ? t.work.progressStep.replace("{n}", String(stepNumber)).replace("{total}", String(steps.length)) + (active ? `: ${active.label}` : "")
     : t.work.progressStarting;
   const progressKey = running ? `${fraction ?? "x"}|${progressLabel}` : "";
@@ -625,6 +627,7 @@ export function Work({ t, taskId, prompt, folder, attachments, language, engine,
               <Button variant="secondary" size="sm" icon="close" onClick={() => runRef.current?.stop()}>{t.work.stop}</Button>
             </div>
           )}
+          {!draft.trim() && <SmartActions t={t} files={files.files} onPick={(text) => { setDraft(text); setFocusRequest((x) => x + 1); }} />}
           {pointed && (
             <div className={s.queued}>
               <span className={s.pointChip}>

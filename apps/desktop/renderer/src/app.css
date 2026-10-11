@@ -5,7 +5,7 @@ body { overflow: hidden; }
 .app {
   height: 100%;
   display: grid;
-  grid-template-rows: 40px minmax(0, 1fr);
+  grid-template-rows: 40px minmax(0, 1fr) auto; /* title bar, content, status bar (on a task) */
   background: var(--color-bg);
 }
 .app-toast {

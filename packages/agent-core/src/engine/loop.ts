@@ -153,10 +153,14 @@ export class AgentSession implements AgentRun {
         const id = `msg-${Date.now().toString(36)}-${turn}`;
         let text = "";
         let lastStatus = "";
+        let thought = 0;
+        let usage: { inputTokens?: number; outputTokens?: number } | undefined;
+        const started = Date.now();
         const calls: ToolCall[] = [];
         for await (const ev of streamChat(connection, { system, messages: this.messages, tools: TOOLS, maxTokens: 8192 }, signal)) {
           if (ev.type === "text") { text += ev.text; this.emit({ type: "message-delta", id, text: ev.text }); }
-          else if (ev.type === "reasoning") this.emit({ type: "thinking-delta", text: ev.text });
+          else if (ev.type === "reasoning") { thought += ev.text.length; this.emit({ type: "thinking-delta", text: ev.text }); }
+          else if (ev.type === "done") usage = ev.usage;
           else if (ev.type === "tool-call") calls.push(ev.call);
           else if (ev.type === "tool-progress" && ev.name !== "update_plan") {
             // Long file writes stream for a while: say what's happening instead of "Thinking".
@@ -166,6 +170,11 @@ export class AgentSession implements AgentRun {
           }
         }
         if (text) this.emit({ type: "message-done", id });
+        // About 4 characters per token when the server doesn't report usage.
+        const estimated = !usage?.inputTokens;
+        const inputTokens = usage?.inputTokens ?? Math.round((system.length + JSON.stringify(this.messages).length) / 4);
+        const outputTokens = usage?.outputTokens ?? Math.round((text.length + thought + calls.reduce((n, c) => n + c.arguments.length, 0)) / 4);
+        this.emit({ type: "usage", inputTokens, outputTokens, estimated, ms: Date.now() - started });
         this.messages.push({ role: "assistant", content: text, ...(calls.length ? { toolCalls: calls } : {}) });
 
         if (!calls.length) {

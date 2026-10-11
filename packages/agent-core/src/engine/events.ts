@@ -14,6 +14,8 @@ export type AgentEvent =
   | { type: "message-delta"; id: string; text: string }
   /** The assistant message is complete. */
   | { type: "message-done"; id: string }
+  /** One model call: tokens used (estimated from text length if the server doesn't say) and the time it took. */
+  | { type: "usage"; inputTokens: number; outputTokens: number; estimated: boolean; ms: number }
   /** The model's visible thinking, streamed live (only some models send it; not saved). */
   | { type: "thinking-delta"; text: string }
   /** The agent asks the person a short question, with clickable answers. Answer with answer(requestId, text). */
