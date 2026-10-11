@@ -33,3 +33,11 @@ export function cleanSuggestions(text: string): string[] {
     .filter((l) => l.length >= 3 && l.length <= 70 && l.split(/\s+/).length <= 10 && !/:$/.test(l))
     .slice(0, 3);
 }
+
+/** The NEXT: line the agent ends its summary with: the suggestions, and the text without that line. */
+export function splitNextLine(text: string): { text: string; next: string[] } {
+  const m = text.match(/(?:^|\n)[ \t>*_]*NEXT\s*[:：]\s*(.+?)\s*$/);
+  if (!m) return { text, next: [] };
+  const next = m[1]!.split(/\s*[|｜]\s*/).map((s) => s.replace(/^["“«*_ ]+|["”»*_. ]+$/g, "").trim()).filter((s) => s.length >= 3 && s.length <= 70).slice(0, 3);
+  return { text: text.slice(0, m.index).trimEnd(), next };
+}

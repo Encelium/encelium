@@ -102,3 +102,10 @@
   cursor: pointer;
 }
 .link:hover { background: var(--color-surface-muted); color: var(--color-text); }
+
+/* A chat whose task is still working (even when it's not on screen). */
+.task { display: flex; align-items: center; gap: var(--space-2); }
+.taskTitle { flex: 1; min-width: 0; }
+.workingDot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); animation: pulse 1.6s var(--ease-in-out) infinite; }
+@keyframes pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .workingDot { animation: none; } }

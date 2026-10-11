@@ -12,7 +12,7 @@ export function toFolderName(text: string): string {
 }
 
 /** Asks the model for a name. Returns "" if it fails or takes too long; the caller has a fallback. */
-export async function suggestFolderName(connection: ModelConnection, request: string, timeoutMs = 20000): Promise<string> {
+export async function suggestFolderName(connection: ModelConnection, request: string, timeoutMs = 7000): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let text = "";

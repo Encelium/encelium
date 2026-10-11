@@ -66,6 +66,8 @@ export interface AgentEngine {
     /** First run only: a folder name to use (e.g. from a recipe), instead of asking the model. */
     folderName?: string;
   }): AgentRun;
+  /** The run still going in this task (its chat was left while it worked), to attach to. */
+  active?(): AgentRun | null;
   /** Put the task's files back the way they were at a Rewind point. Absent in the demo. */
   restore?(checkpointId: string): Promise<{ ok: true; /** The new "before going back" point, so going back can be undone. */ checkpoint?: { id: string; label: string; at: number } | null } | { ok: false; message: string }>;
 }

@@ -210,3 +210,11 @@ test("question options are read however the model shapes them", async () => {
   assert.equal(optionText({ label: "A portfolio", description: "Show your work" }), "A portfolio");
   assert.equal(optionText({ foo: 1 }), "");
 });
+
+test("the agent's NEXT: line becomes suggestions and is hidden from the text", async () => {
+  const { splitNextLine } = await import("../src/engine/suggest.ts");
+  const r = splitNextLine("Done! Your page is ready.\n\nNEXT: Add a contact form | Make an Arabic version | Add photos");
+  assert.deepEqual(r.next, ["Add a contact form", "Make an Arabic version", "Add photos"]);
+  assert.equal(r.text, "Done! Your page is ready.");
+  assert.deepEqual(splitNextLine("No suggestions here.").next, []);
+});

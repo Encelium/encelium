@@ -88,6 +88,7 @@ function systemPrompt(lang: Language, root: string, check: boolean, detail: "ful
       ? "- The person asked for short answers: reply in one or two sentences plus, if files changed, a very short list of them. Explain more only if they ask."
       : "- Explain what you did in a way a beginner understands: what you made, where it is, and how to use or open it.",
     "- When you're finished, write a short summary: what you made or changed, and where it is. Formatting: short paragraphs, simple lists, **bold** for key words. No headings, no tables.",
+    `- End your final summary with one last line: "NEXT: " followed by 3 short follow-up requests the person might want, separated by " | ", in ${lang === "ar" ? "Arabic" : "English"}, at most 7 words each, written as the person would type them. The app turns this line into buttons and hides it.`,
     "",
     `Today is ${new Date().toDateString()}. Commands run in Windows PowerShell.`,
   ].join("\n");

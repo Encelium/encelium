@@ -3,7 +3,7 @@ import { Button, EnergyBar, Icon, IconButton, Menu } from "@enceladus/ui";
 import type { Strings } from "./i18n";
 import s from "./Sidebar.module.css";
 
-export interface SidebarTask { id: string; title: string }
+export interface SidebarTask { id: string; title: string; working?: boolean }
 
 interface SidebarProps {
   t: Strings;
@@ -83,6 +83,7 @@ export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDele
                       onKeyDown={(e) => { if (e.key === "F2" && onRenameTask) { e.preventDefault(); setRenaming(task.id); } }}
                     >
                       <span className={s.taskTitle} dir="auto">{task.title}</span>
+                      {task.working && <span className={s.workingDot} title={t.status.working} aria-label={t.status.working} />}
                     </button>
                     {(onRenameTask || onDeleteTask) && (
                       <Menu

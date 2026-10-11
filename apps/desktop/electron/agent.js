@@ -2,7 +2,7 @@
 import { app, BrowserWindow, Notification, ipcMain } from "electron";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { AgentSession, ENCELADUS_PRESET, suggestFolderName, suggestNext, toFolderName } from "@enceladus/agent-core";
+import { AgentSession, ENCELADUS_PRESET, splitNextLine, suggestFolderName, suggestNext, toFolderName } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
 import { getTask, hasTask, recorder, saveIndexSoon, saveMessages, setTaskStopper } from "./tasks.js";
 import { gitSave, gitStart, gitStatus } from "./status.js";
@@ -136,8 +136,10 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
       await saveMessages(task, session.messages); // follow-ups (even after a restart) continue the conversation
       // "What next?": three short follow-ups, only after a task that finished well.
       if (!finishedWell) return;
-      const answer = [...session.messages].reverse().find((m) => m.role === "assistant" && m.content)?.content ?? "";
-      const items = await suggestNext(conn, text, String(answer), lang);
+      const answer = String([...session.messages].reverse().find((m) => m.role === "assistant" && m.content)?.content ?? "");
+      // Usually the agent wrote them on its last NEXT: line; otherwise ask once (a backup).
+      const written = splitNextLine(answer).next;
+      const items = written.length ? written : await suggestNext(conn, text, answer, lang);
       if (items.length) send({ type: "suggestions", items });
     });
     return { runId, folder: task.meta.folder };

@@ -48,6 +48,15 @@ export function App() {
   const [tasks, setTasks] = useState<{ id: string; title: string; prompt?: string; folder?: string }[]>([]);
   const [deleting, setDeleting] = useState<{ id: string; title: string; folder?: string } | null>(null);
   const [savingRecipe, setSavingRecipe] = useState<{ id: string; title: string } | null>(null);
+  // Chats with a task still working (also ones not on screen), for the sidebar's dot.
+  const [workingIds, setWorkingIds] = useState<string[]>([]);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const ids = [...engineCache.entries()].filter(([, e]) => e.active?.()).map(([id]) => id);
+      setWorkingIds((prev) => (prev.join() === ids.join() ? prev : ids));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
   // Bumped when a task is re-opened, so the screen starts fresh.
   const [openCount, setOpenCount] = useState(0);
 
@@ -181,7 +190,7 @@ export function App() {
         {sidebarMode === "overlay" && sidebarOpen && <div className="app-scrim" onClick={() => setSidebarOver(false)} />}
         {sidebarOpen && <div className={sidebarMode === "overlay" ? "app-sidebar-over" : "app-sidebar"}><Sidebar
           t={t}
-          tasks={tasks.map((x) => ({ id: x.id, title: x.title }))}
+          tasks={tasks.map((x) => ({ id: x.id, title: x.title, working: workingIds.includes(x.id) }))}
           currentTaskId={view.kind === "task" ? view.id : null}
           onNewTask={newTask}
           onOpenTask={openTask}

@@ -315,9 +315,9 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
       pendingLeave.current = setTimeout(() => {
         pendingLeave.current = null;
         alive.current = false;
+        // The task keeps working with nobody watching; this screen just stops listening.
         unsubRef.current?.();
         unsubRef.current = null;
-        runRef.current?.stop(); // quiet: no "stopped" message if the screen goes away
         runRef.current = null;
       }, 0);
     };
@@ -339,6 +339,15 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
         for (const e of events) {
           if (e.type === "user") counter.current++;
           apply(e, Math.max(counter.current, 1));
+        }
+        // Still working (the chat was left while it ran)? Attach to it and carry on live.
+        const live = engine.active?.();
+        if (live) {
+          runRef.current = live;
+          unsubRef.current = live.onEvent((e) => apply(e, Math.max(counter.current, 1), true));
+          setRunning(true);
+          setStatus({ phase: "thinking", text: t.work.stillWorking });
+          return;
         }
         // A question left unanswered when the app closed can't be answered any more.
         setItems((prev) => prev.map((i) => (i.kind === "permission" && i.answer === undefined ? { ...i, answer: false } : i.kind === "question" && i.answer === undefined ? { ...i, answer: "—" } : i)));
@@ -507,11 +516,13 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
                 // A note made while working (more work follows) is quiet; the final answer is full size.
                 const next = items[index + 1];
                 const note = !!next && (next.kind === "plan" || next.kind === "permission" || (next.kind === "activity" && !next.id.startsWith("done-")));
-                if (note) return <Message key={item.id} role="assistant" className={s.note}><Markdown text={item.text} /></Message>;
+                // The agent's last "NEXT: a | b | c" line becomes the "What next?" buttons; it isn't shown as text.
+                const shown = item.text.replace(/(?:^|\n)[ \t>*_]*NEXT\s*[:：][^\n]*\s*$/, "").trimEnd();
+                if (note) return <Message key={item.id} role="assistant" className={s.note}><Markdown text={shown} /></Message>;
                 return (
                   <div key={item.id} className={s.answer}>
-                    <Message role="assistant"><Markdown text={item.text} /></Message>
-                    {(next || !running) && <div className={s.answerActions}><CopyButton t={t} text={item.text} /></div>}
+                    <Message role="assistant"><Markdown text={shown} /></Message>
+                    {(next || !running) && <div className={s.answerActions}><CopyButton t={t} text={shown} /></div>}
                   </div>
                 );
               }
