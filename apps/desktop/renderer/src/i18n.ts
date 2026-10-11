@@ -43,7 +43,7 @@ const en = {
     undo: { title: "Changed your mind? Rewind", body: "Every change to your files can be undone with one click." },
     start: "Let’s start",
   },
-  today: { title: "Today", sum: "{chats} chats · {requests} requests · {files} files changed" },
+  today: { title: "Today", sum: "Chats: {chats} · Requests: {requests} · Files changed: {files}" },
   status: {
     label: "Status", working: "Working",
     modelHint: "The AI model in use. Change it in Settings → Advanced.",
@@ -246,7 +246,7 @@ const ar: Strings = {
     undo: { title: "غيّرت رأيك؟ تراجع", body: "كل تغيير في الملفات يمكن التراجع عنه بنقرة واحدة." },
     start: "لنبدأ",
   },
-  today: { title: "اليوم", sum: "{chats} محادثات · {requests} طلبات · {files} ملفات تغيّرت" },
+  today: { title: "اليوم", sum: "المحادثات: {chats} · الطلبات: {requests} · الملفات المتغيّرة: {files}" },
   status: {
     label: "الحالة", working: "يعمل",
     modelHint: "نموذج الذكاء الاصطناعي المستخدم. غيّره من الإعدادات ← متقدّم.",
