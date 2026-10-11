@@ -110,6 +110,13 @@
 | Resizable sidebar; slim bar when folded; ⋯ menu on chats | ✅ Done |
 | Picture previews (composer and sent messages) | ✅ Done |
 | Rewindable move/rename tool (move_file) | ✅ Done |
+| Questions with clickable answers for vague requests (ask_user) | ✅ Done |
+| "What changed" card + one-click Undo; request queue | ✅ Done |
+| Point at a part of the preview | ✅ Done |
+| Smart actions for attached files | ✅ Done |
+| Live thinking; progress bar that moves with the output; taskbar progress | ✅ Done |
+| Status bar (model, Git, tokens, model time, work time, memory) | ✅ Done |
+| "What next?" suggestions; Save as recipe; "Check the result" switch | ✅ Done |
 | Installer, auto-update, crash reports | Phase 5 |
 
 ### Later (not v1)
