@@ -10,21 +10,23 @@
     "dev": "node scripts/dev.js",
     "build": "vite build",
     "start": "electron .",
-    "typecheck": "tsc --noEmit -p ."
-  },
-  "dependencies": {
-    "@enceladus/agent-core": "0.1.0",
-    "@enceladus/ui": "0.1.0"
+    "typecheck": "tsc --noEmit -p .",
+    "bundle": "node scripts/bundle-main.mjs",
+    "dist": "vite build && node scripts/bundle-main.mjs && electron-builder --win --x64"
   },
   "devDependencies": {
+    "@enceladus/agent-core": "0.1.0",
+    "@enceladus/ui": "0.1.0",
     "@types/node": "24.19.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "electron": "44.4.5",
+    "electron-builder": "26.0.12",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "typescript": "5.9.3",
     "vite": "8.3.1"
-  }
+  },
+  "author": "The Enceladus Authors"
 }

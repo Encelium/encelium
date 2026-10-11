@@ -11,3 +11,7 @@ Thumbs.db
 
 # Local shortcuts with the app icon (they contain this PC's paths)
 *.lnk
+
+# Build output
+apps/desktop/out/
+apps/desktop/release/

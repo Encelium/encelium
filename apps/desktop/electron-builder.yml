@@ -1,0 +1,47 @@
+# Windows installer for Enceladus (electron-builder). Build with: npm run dist -w @enceladus/desktop
+appId: app.enceladus.desktop # also the Windows app id (taskbar icon, notifications); matches main.js
+productName: Enceladus
+copyright: Copyright © 2026 The Enceladus Authors
+
+directories:
+  output: release
+  buildResources: build
+
+# Only what the installed app needs: the built screen, the bundled main process, the icon.
+# Everything else (the engine, the design system) is already inside those bundles.
+files:
+  - dist/**
+  - out/**
+  - build/icon.ico
+  - build/icon.png
+  - package.json
+extraMetadata:
+  main: out/main.js
+asar: true
+npmRebuild: false
+# Reuse the Electron already in node_modules instead of downloading it again.
+electronDist: ../../node_modules/electron/dist
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  executableName: Enceladus
+
+nsis:
+  # One click, for this user only: no admin password, nothing to choose.
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Enceladus
+  runAfterFinish: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  # Uninstalling keeps the person's chats and settings (and never touches their project folders).
+  deleteAppDataOnUninstall: false
+  artifactName: Enceladus-Setup-${version}.exe
+
+# Publishing (auto-update from GitHub Releases) comes with the GitHub step.
+publish: null
