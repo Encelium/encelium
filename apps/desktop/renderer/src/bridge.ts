@@ -95,6 +95,13 @@ export interface Bridge {
     start(input: { taskId: string; message: string }): Promise<{ ok: true } | { ok: false; reason: "not-installed" | "failed"; detail?: string }>;
     save(input: { taskId: string; message: string }): Promise<{ ok: true } | { ok: false; reason: "not-installed" | "failed"; detail?: string }>;
   };
+  /** Access to the Enceladus model through the gateway (desktop app only). */
+  access?: {
+    get(): Promise<{ connected: boolean; gatewayUrl: string; builtInAddress: boolean }>;
+    connect(input: { gatewayUrl: string; code: string }): Promise<{ ok: true } | { ok: false; reason: ModelFailure }>;
+    disconnect(): Promise<{ ok: boolean }>;
+    usage(): Promise<{ requestsToday: number; requestLimit: number; tokensToday: number; resetsAt: string } | null>;
+  };
   /** The person's own recipes (desktop app only). */
   recipes?: {
     list(): Promise<MyRecipe[]>;

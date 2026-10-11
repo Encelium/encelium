@@ -2,8 +2,9 @@
 import { app, BrowserWindow, Notification, ipcMain } from "electron";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { AgentSession, ENCELADUS_PRESET, splitNextLine, suggestFolderName, suggestNext, toFolderName } from "@enceladus/agent-core";
+import { AgentSession, splitNextLine, suggestFolderName, suggestNext, toFolderName } from "@enceladus/agent-core";
 import { currentConnection } from "./models.js";
+import { enceladusConnection } from "./access.js";
 import { getTask, hasTask, recorder, saveIndexSoon, saveMessages, setTaskStopper } from "./tasks.js";
 import { gitSave, gitStart, gitStatus } from "./status.js";
 import { prepareAttachments } from "./attachments.js";
@@ -12,16 +13,14 @@ import { prepareAttachments } from "./attachments.js";
 const runs = new Map();
 
 const notConnected = {
-  en: { message: "Enceladus’s own model isn’t connected yet.", suggestion: "Until it is, you can use your own model: Settings → Advanced." },
-  ar: { message: "نموذج إنسيلادوس الخاص غير متصل بعد.", suggestion: "إلى أن يتصل، يمكنك استخدام نموذجك الخاص: الإعدادات ← متقدّم." },
+  en: { message: "Enceladus isn’t connected yet.", suggestion: "Enter your invite code in Settings. Or use your own model: Settings → Advanced." },
+  ar: { message: "إنسيلادوس غير متصل بعد.", suggestion: "أدخل رمز الدعوة في الإعدادات، أو استخدم نموذجك الخاص: الإعدادات ← متقدّم." },
 };
 
 /** The model to use: the person's own, if they set one; otherwise ours. */
 function connection() {
-  const own = currentConnection();
-  if (own) return own;
-  if (!ENCELADUS_PRESET.baseUrl) return null; // waiting for the model team (docs/model-integration.md)
-  return { protocol: ENCELADUS_PRESET.protocol, baseUrl: ENCELADUS_PRESET.baseUrl, model: "enceladus", usageInStream: true };
+  // The person's own model if they set one; otherwise ours, through the gateway, with their invite code.
+  return currentConnection() ?? enceladusConnection();
 }
 
 // After a Rewind the files changed behind the model's back. The next request carries a

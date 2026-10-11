@@ -116,6 +116,10 @@
 | Smart actions for attached files | ✅ Done |
 | Live thinking; progress bar that moves with the output; taskbar progress | ✅ Done |
 | Status bar (model, Git, tokens, model time, work time, memory) | ✅ Done |
+| Tasks keep running when you switch chats (dot in the sidebar, re-attach) | ✅ Done |
+| Windows installer (one click, per user, unsigned until SignPath) | ✅ Done |
+| Gateway: invite keys, limits, server prompts, usage (services/gateway) | ✅ Done |
+| App: invite code in Settings, real "Today’s energy" from the gateway | ✅ Done |
 | "What next?" suggestions; Save as recipe; "Check the result" switch | ✅ Done |
 | Installer, auto-update, crash reports | Phase 5 |
 

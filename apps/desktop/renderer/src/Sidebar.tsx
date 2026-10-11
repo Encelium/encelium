@@ -20,9 +20,11 @@ interface SidebarProps {
   onOpenSettings: () => void;
   /** Bumped by Ctrl+K: move the keyboard into the search box. */
   searchRequest?: number;
+  /** What's left of today's Enceladus requests (0-100), or null to hide the bar. */
+  energy?: number | null;
 }
 
-export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDeleteTask, onRenameTask, onSaveRecipe, onOpenSettings, searchRequest }: SidebarProps) {
+export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDeleteTask, onRenameTask, onSaveRecipe, onOpenSettings, searchRequest, energy = null }: SidebarProps) {
   const [query, setQuery] = useState("");
   const [renaming, setRenaming] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
@@ -106,8 +108,7 @@ export function Sidebar({ t, tasks, currentTaskId, onNewTask, onOpenTask, onDele
       </nav>
 
       <div className={s.footer}>
-        {/* Placeholder value until the server reports real usage. */}
-        <EnergyBar value={100} label={t.energy} caption={t.energyCaption} />
+        {energy !== null && <EnergyBar value={energy} label={t.energy} caption={t.energyCaption} />}
         <div className={s.links}>
           <button type="button" className={s.link}>
             <Icon name="plug" size={16} />

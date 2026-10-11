@@ -22,6 +22,7 @@ import { Work } from "./Work";
 import { SettingsDialog } from "./SettingsDialog";
 import { Welcome } from "./Welcome";
 import { SaveRecipeDialog } from "./SaveRecipe";
+import { InviteDialog } from "./InviteDialog";
 import { StatusBar } from "./StatusBar";
 import { ModelDialog } from "./ModelDialog";
 import { Button, Dialog, Toast } from "@enceladus/ui";
@@ -40,6 +41,22 @@ export function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
+  const [accessOpen, setAccessOpen] = useState(false);
+  // "Today's energy": what's left of today's requests on the Enceladus model (hidden with your own model).
+  const [energy, setEnergy] = useState<number | null>(null);
+  const [energyVersion, setEnergyVersion] = useState(0);
+  useEffect(() => {
+    if (!bridge.access) return;
+    let live = true;
+    const load = async () => {
+      const own = (await bridge.models.get()).mode === "own";
+      const usage = own ? null : await bridge.access!.usage();
+      if (live) setEnergy(usage ? Math.max(0, Math.round(100 * (1 - usage.requestsToday / Math.max(1, usage.requestLimit)))) : null);
+    };
+    load();
+    const timer = setInterval(load, 60_000);
+    return () => { live = false; clearInterval(timer); };
+  }, [energyVersion]);
   const [notice, setNotice] = useState<Notice | null>(null);
   // Notices fade on their own after a few seconds (they can still be closed sooner).
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(null), 6000); return () => clearTimeout(timer); }, [notice]);
@@ -199,6 +216,7 @@ export function App() {
           onSaveRecipe={bridge.recipes ? (id) => { const task = tasks.find((x) => x.id === id); if (task) setSavingRecipe({ id, title: task.title }); } : undefined}
           onOpenSettings={() => setSettingsOpen(true)}
           searchRequest={searchRequest}
+          energy={energy}
         />{sidebarMode === "docked" && (
           <Splitter className="app-sidebar-handle" label={t.layout.resize} width={sidebarWidth} onChange={setSidebarWidth} containerRef={bodyRef} min={200} max={420} minAfter={480} initial={256} />
         )}</div>}
@@ -231,6 +249,7 @@ export function App() {
         settings={settings}
         onChange={update}
         onOpenModel={() => { setSettingsOpen(false); setModelOpen(true); }}
+        onOpenAccess={() => { setSettingsOpen(false); setAccessOpen(true); }}
         onClose={() => setSettingsOpen(false)}
       />
       <Dialog
@@ -261,6 +280,7 @@ export function App() {
         onLanguage={(language) => update({ language })}
         onDone={() => update({ welcomed: true })}
       />
+      <InviteDialog t={t} open={accessOpen} onClose={() => setAccessOpen(false)} onDone={(message) => { setNotice({ message, tone: "safe" }); setEnergyVersion((v) => v + 1); }} />
       <ModelDialog t={t} open={modelOpen} onClose={() => setModelOpen(false)} onSaved={(message) => setNotice({ message, tone: "safe" })} />
       {notice && (
         <div className="app-toast">

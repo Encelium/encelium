@@ -9,6 +9,7 @@ import { initAgent } from "./agent.js";
 import { initTasks } from "./tasks.js";
 import { initAttachments } from "./attachments.js";
 import { initRecipes } from "./recipes.js";
+import { initAccess } from "./access.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 app.setName("Enceladus"); // user data lives in %APPDATA%\Enceladus, not under the package name
@@ -185,6 +186,7 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(async () => {
     await loadSettings();
     await initModels();
+    await initAccess();
     await initTasks();
     initAgent();
     initAttachments();

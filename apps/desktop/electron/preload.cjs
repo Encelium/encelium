@@ -69,6 +69,12 @@ contextBridge.exposeInMainWorld("enceladus", {
     start: (input) => ipcRenderer.invoke("git:start", input),
     save: (input) => ipcRenderer.invoke("git:save", input),
   },
+  access: {
+    get: () => ipcRenderer.invoke("access:get"),
+    connect: (input) => ipcRenderer.invoke("access:connect", input),
+    disconnect: () => ipcRenderer.invoke("access:disconnect"),
+    usage: () => ipcRenderer.invoke("access:usage"),
+  },
   recipes: {
     list: () => ipcRenderer.invoke("recipes:list"),
     save: (input) => ipcRenderer.invoke("recipes:save", input),

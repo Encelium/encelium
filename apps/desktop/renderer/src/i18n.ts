@@ -43,6 +43,14 @@ const en = {
     undo: { title: "Changed your mind? Rewind", body: "Every change to your files can be undone with one click." },
     start: "Let’s start",
   },
+  access: {
+    row: "Enceladus", rowConnected: "Connected with your invite code", rowNotConnected: "Not connected yet",
+    enter: "Enter invite code", change: "Change",
+    title: "Connect to Enceladus", intro: "Enceladus is free during the beta. Enter the invite code you received.",
+    code: "Invite code", address: "Server address", addressHint: "Included with your invite code.",
+    connect: "Connect", checking: "Checking…", connected: "Connected. Enceladus is ready.",
+    errors: { "bad-key": "That invite code didn’t work. Check it and try again.", "no-network": "The server didn’t answer. Check the address and your internet.", "not-found": "Nothing answered at that address. Check it.", "bad-address": "The address should start with https://", other: "That didn’t work. Try again." },
+  },
   today: { title: "Today", sum: "Chats: {chats} · Requests: {requests} · Files changed: {files}" },
   status: {
     label: "Status", working: "Working",
@@ -245,6 +253,14 @@ const ar: Strings = {
     watch: { title: "شاهده وهو يعمل", body: "ترى كل خطوة. وقبل أي شيء قد يضر، يسألك أولًا." },
     undo: { title: "غيّرت رأيك؟ تراجع", body: "كل تغيير في الملفات يمكن التراجع عنه بنقرة واحدة." },
     start: "لنبدأ",
+  },
+  access: {
+    row: "إنسيلادوس", rowConnected: "متصل برمز دعوتك", rowNotConnected: "غير متصل بعد",
+    enter: "أدخل رمز الدعوة", change: "تغيير",
+    title: "الاتصال بإنسيلادوس", intro: "إنسيلادوس مجاني خلال الفترة التجريبية. أدخل رمز الدعوة الذي وصلك.",
+    code: "رمز الدعوة", address: "عنوان الخادم", addressHint: "يصلك مع رمز الدعوة.",
+    connect: "اتصل", checking: "جارٍ التحقق…", connected: "تم الاتصال. إنسيلادوس جاهز.",
+    errors: { "bad-key": "رمز الدعوة هذا لم يعمل. تحقّق منه وحاول مرة أخرى.", "no-network": "لم يستجب الخادم. تحقّق من العنوان ومن اتصالك بالإنترنت.", "not-found": "لا شيء يستجيب على هذا العنوان. تحقّق منه.", "bad-address": "يجب أن يبدأ العنوان بـ https://", other: "لم ينجح ذلك. حاول مرة أخرى." },
   },
   today: { title: "اليوم", sum: "المحادثات: {chats} · الطلبات: {requests} · الملفات المتغيّرة: {files}" },
   status: {

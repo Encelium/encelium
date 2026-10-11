@@ -10,16 +10,20 @@ interface Props {
   settings: Settings;
   onChange: (patch: Partial<Pick<Settings, "theme" | "language" | "detail">>) => void;
   onOpenModel: () => void;
+  /** Open the invite-code dialog (connect to the Enceladus model). */
+  onOpenAccess: () => void;
   onClose: () => void;
 }
 
-export function SettingsDialog({ t, open, settings, onChange, onOpenModel, onClose }: Props) {
+export function SettingsDialog({ t, open, settings, onChange, onOpenModel, onOpenAccess, onClose }: Props) {
   const d = t.settingsDialog;
   const [model, setModel] = useState<ModelState>({ mode: "enceladus" });
   const [providerName, setProviderName] = useState("");
+  const [access, setAccess] = useState<{ connected: boolean } | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    bridge.access?.get().then(setAccess);
     Promise.all([bridge.models.get(), bridge.models.presets()]).then(([state, presets]) => {
       setModel(state);
       if (state.mode === "own") setProviderName(presets.find((p) => p.id === state.presetId)?.name ?? state.baseUrl ?? "");
@@ -60,6 +64,16 @@ export function SettingsDialog({ t, open, settings, onChange, onOpenModel, onClo
             options={[{ value: "full", label: d.detailFull }, { value: "short", label: d.detailShort }]}
           />
         </div>
+
+        {access && (
+          <div className={s.modelRow}>
+            <div className={s.modelText}>
+              <span className={s.label}>{t.access.row}</span>
+              <span className={s.value}>{access.connected ? t.access.rowConnected : t.access.rowNotConnected}</span>
+            </div>
+            <Button variant={access.connected ? "secondary" : "primary"} size="sm" onClick={onOpenAccess}>{access.connected ? t.access.change : t.access.enter}</Button>
+          </div>
+        )}
 
         <section className={s.advanced} aria-labelledby="settings-advanced">
           <h3 id="settings-advanced" className={s.sectionTitle}>{d.advanced}</h3>
