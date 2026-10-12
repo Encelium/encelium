@@ -141,8 +141,7 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [fileToOpen, setFileToOpen] = useState<{ path: string; n: number } | null>(null);
   const pointOfRun = useRef(new Map<number, string>());
-  // Live thinking text (models that stream it), and how much the model has written in this step.
-  const [thinking, setThinking] = useState("");
+  // How much the model has written in this step (thinking included): it moves the progress bar.
   const written = useRef(0);
   const [writtenShown, setWrittenShown] = useState(0);
   const files = useAttachments(t, setNotice);
@@ -167,11 +166,10 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
         break;
       case "status":
         setStatus({ phase: e.phase, text: e.text });
-        if (e.phase === "working") { written.current += 300; setThinking(""); }
+        if (e.phase === "working") written.current += 300;
         break;
       case "thinking-delta":
         written.current += e.text.length;
-        setThinking((prev) => (prev + e.text).slice(-1200));
         break;
       case "plan": {
         const show = (plan: PlanEvent) => setItems((prev) =>
@@ -201,7 +199,6 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
       }
       case "message-delta":
         written.current += e.text.length;
-        setThinking("");
         setItems((prev) => {
           const id = `msg-${n}-${e.id}`;
           return prev.some((i) => i.id === id)
@@ -431,7 +428,7 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
   // A new step starts its own fill; the written count is sampled a few times a second.
   useEffect(() => { written.current = 0; setWrittenShown(0); }, [doneCount, counter.current]);
   useEffect(() => {
-    if (!running) { setThinking(""); return; }
+    if (!running) return;
     const timer = setInterval(() => setWrittenShown(written.current), 300);
     return () => clearInterval(timer);
   }, [running]);
@@ -578,10 +575,6 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
               <StatusIcon status={status.phase} label={status.text} size={20} />
               <span dir="auto">{status.text}</span>
             </div>
-          )}
-          {status && thinking && (
-            // The model's thinking as it happens: the last few lines, quiet, fading at the top.
-            <div className={s.thinking} dir="auto" aria-live="off">{thinking.split("\n").filter(Boolean).slice(-4).join("\n")}</div>
           )}
         </div>
 
