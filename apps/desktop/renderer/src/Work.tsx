@@ -102,37 +102,6 @@ function ErrorDetails({ t, details }: { t: Strings; details: string }) {
   );
 }
 
-const CHANGE_ICON: Record<FileChange["change"], "plus" | "pencil" | "trash" | "arrowRight"> = { created: "plus", changed: "pencil", deleted: "trash", moved: "arrowRight" };
-
-/** "What changed": the files one request created, changed, moved or deleted. */
-function ChangesCard({ t, changes, onOpen, onUndo }: { t: Strings; changes: FileChange[]; onOpen: (path: string) => void; onUndo?: () => void }) {
-  // One line per file (its last change wins), in the order they first changed.
-  const byPath = new Map<string, FileChange>();
-  for (const c of changes) byPath.set(c.change === "moved" && c.to ? c.to : c.path, c);
-  const list = [...byPath.entries()];
-  const counts = (["created", "changed", "moved", "deleted"] as const).map((k) => [k, list.filter(([, c]) => c.change === k).length] as const).filter(([, n]) => n > 0);
-  return (
-    <div className={s.changes}>
-      <div className={s.changesHead}>
-        <span className={s.changesTitle}>{t.work.whatChanged}</span>
-        <span className={s.changesCounts}>{counts.map(([k, n]) => `${n} ${t.work.changeWords[k]}`).join(" · ")}</span>
-        {onUndo && <Button variant="ghost" size="sm" icon="rewind" className={s.undo} onClick={onUndo}>{t.work.undo}</Button>}
-      </div>
-      <ul className={s.changesList}>
-        {list.slice(0, 8).map(([path, c]) => (
-          <li key={path}>
-            <button type="button" className={s.changeRow} disabled={c.change === "deleted"} onClick={() => onOpen(path)}>
-              <Icon name={CHANGE_ICON[c.change]} size={14} />
-              <span className={s.changePath} dir="ltr">{c.change === "moved" ? `${c.path} → ${c.to}` : path}</span>
-            </button>
-          </li>
-        ))}
-        {list.length > 8 && <li className={s.changeMore}>+{list.length - 8}</li>}
-      </ul>
-    </div>
-  );
-}
-
 function CopyButton({ t, text }: { t: Strings; text: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
@@ -528,28 +497,8 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
               }
               case "plan":
                 return <PlanCard key={item.id} title={item.plan.title} steps={item.plan.steps} statusLabels={t.work.planStatus} />;
-              case "activity": {
-                const line = <ActivityLine key={item.id} t={t} text={item.text} details={item.details} />;
-                if (!item.id.startsWith("done-")) return line;
-                // After "Finished": what this request changed, and one-click Undo for the latest one.
-                const n = Number(item.id.slice(5));
-                const changes = items.flatMap((i) => (i.kind === "activity" && i.file && i.id.startsWith(`act-${n}-`) ? [i.file] : []));
-                const point = pointOfRun.current.get(n);
-                const canUndo = !!point && checkpoints.length > 0 && checkpoints[checkpoints.length - 1]!.id === point && !running;
-                return (
-                  <div key={item.id} className={s.doneBlock}>
-                    {line}
-                    {changes.length > 0 && (
-                      <ChangesCard
-                        t={t}
-                        changes={changes}
-                        onOpen={(path) => { setTab("files"); setFileToOpen({ path, n: Date.now() }); panel.onOpen(); }}
-                        onUndo={canUndo ? () => restoreTo(point!) : undefined}
-                      />
-                    )}
-                  </div>
-                );
-              }
+              case "activity":
+                return <ActivityLine key={item.id} t={t} text={item.text} details={item.details} />;
               case "permission": {
                 const ev = item.event;
                 return (

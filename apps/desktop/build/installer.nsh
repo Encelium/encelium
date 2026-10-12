@@ -27,7 +27,7 @@
       ${If} $0 != ""
         StrCpy $INSTDIR $0
       ${Else}
-        StrCpy $INSTDIR "$PROGRAMFILES64\${APP_FILENAME}"
+        StrCpy $INSTDIR "$PROGRAMFILES64\${PRODUCT_FILENAME}"
       ${EndIf}
 
       # An older "just for me" copy would leave a second Enceladus behind: remove it quietly
@@ -41,6 +41,13 @@
         RMDir /r "$1"
         DeleteRegKey HKCU "${UNINSTALL_REGISTRY_KEY}"
         DeleteRegKey HKCU "${INSTALL_REGISTRY_KEY}"
+      ${EndIf}
+    ${Else}
+      # Just for this user: a folder named "Enceladus", not the package name "@enceladusdesktop"
+      # (an existing install keeps its folder).
+      ReadRegStr $0 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
+      ${If} $0 == ""
+        StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${PRODUCT_FILENAME}"
       ${EndIf}
     ${EndIf}
   !macroend
