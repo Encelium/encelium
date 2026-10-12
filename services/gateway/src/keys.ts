@@ -1,7 +1,7 @@
 // Invite keys. Only a hash of each key is stored, so the keys file is safe to back up:
 // a leaked copy can't be used. A key is shown once, when it's made.
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 export interface InviteKey {
@@ -24,11 +24,20 @@ export const newKey = () => `enc_${randomBytes(32).toString("base64url")}`;
 export class KeyStore {
   private keys: InviteKey[] = [];
   private readonly file: string;
+  private mtime = -1;
   constructor(file: string) { this.file = file; this.reload(); }
 
   reload() {
     try { this.keys = JSON.parse(readFileSync(this.file, "utf8")); } catch { this.keys = []; }
     if (!Array.isArray(this.keys)) this.keys = [];
+    try { this.mtime = statSync(this.file).mtimeMs; } catch { this.mtime = -1; }
+  }
+
+  /** Keys added or disabled with the admin command (another process) count right away, without a restart. */
+  private refresh() {
+    let mtime = -1;
+    try { mtime = statSync(this.file).mtimeMs; } catch { /* no keys file yet */ }
+    if (mtime !== this.mtime) this.reload();
   }
 
   private save() {
@@ -41,6 +50,7 @@ export class KeyStore {
   /** The key's record, if the key is real and not disabled. Compares in constant time. */
   find(key: string): InviteKey | null {
     if (!key) return null;
+    this.refresh();
     const h = Buffer.from(hashKey(key), "hex");
     for (const k of this.keys) {
       const kh = Buffer.from(k.hash, "hex");
@@ -50,6 +60,7 @@ export class KeyStore {
   }
 
   add(name: string, limits: { perMinute?: number; perDay?: number } = {}): string {
+    this.refresh();
     const key = newKey();
     this.keys.push({ hash: hashKey(key), name, createdAt: new Date().toISOString(), ...limits });
     this.save();
@@ -57,6 +68,7 @@ export class KeyStore {
   }
 
   setDisabled(name: string, disabled: boolean): boolean {
+    this.refresh();
     const k = this.keys.find((x) => x.name === name);
     if (!k) return false;
     k.disabled = disabled;

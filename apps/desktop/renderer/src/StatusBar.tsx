@@ -86,7 +86,7 @@ export function StatusBar({ t, taskId, onOpenModel, onNotice }: { t: Strings; ta
         title={confirm === "start" ? t.status.startTitle : t.status.saveTitle}
         actions={
           <>
-            <Button variant="secondary" onClick={() => setConfirm(null)}>{t.deleteCancel}</Button>
+            <Button variant="secondary" onClick={() => setConfirm(null)}>{t.cancel}</Button>
             <Button variant="primary" onClick={runGit} disabled={busy}>{confirm === "start" ? t.status.start : t.status.save}</Button>
           </>
         }

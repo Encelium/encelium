@@ -34,7 +34,7 @@ export function InviteDialog({ t, open, onClose, onDone }: { t: Strings; open: b
       title={a.title}
       actions={
         <>
-          <Button variant="secondary" onClick={onClose}>{t.deleteCancel}</Button>
+          <Button variant="secondary" onClick={onClose}>{t.cancel}</Button>
           <Button variant="primary" onClick={connect} disabled={busy || !code.trim() || (!builtIn && !address.trim())}>{busy ? a.checking : a.connect}</Button>
         </>
       }

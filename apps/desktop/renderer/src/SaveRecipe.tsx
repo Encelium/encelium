@@ -41,7 +41,7 @@ export function SaveRecipeDialog({ t, task, onClose, onSaved }: {
       size="lg"
       actions={
         <>
-          <Button variant="secondary" onClick={onClose}>{t.deleteCancel}</Button>
+          <Button variant="secondary" onClick={onClose}>{t.cancel}</Button>
           <Button variant="primary" onClick={save} disabled={saving || !title.trim() || !prompt.trim()}>{t.recipes.save}</Button>
         </>
       }

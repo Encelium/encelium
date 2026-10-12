@@ -106,3 +106,15 @@ test("a disabled key stops working", async () => {
     assert.equal((await chat(t.url, t.key, {})).status, 401);
   } finally { t.close(); }
 });
+
+test("a key added by the admin command while the gateway runs works right away", async () => {
+  const t = await setup();
+  try {
+    // The admin command is another process: it writes the keys file on its own.
+    const { KeyStore } = await import("../src/keys.ts");
+    const other = new KeyStore((t.gw.keys as unknown as { file: string }).file);
+    await new Promise((r) => setTimeout(r, 20)); // a different file time than the first write
+    const late = other.add("Late tester");
+    assert.equal((await fetch(`${t.url}/v1/models`, { headers: { authorization: `Bearer ${late}` } })).status, 200);
+  } finally { t.close(); }
+});
