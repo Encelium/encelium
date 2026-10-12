@@ -18,6 +18,11 @@ files:
 extraMetadata:
   main: out/main.js
 asar: true
+# The icon also as a plain file next to the app: Windows can't read it from inside app.asar,
+# and the taskbar then falls back to Electron's icon.
+extraResources:
+  - from: build/icon.ico
+    to: icon.ico
 npmRebuild: false
 # Reuse the Electron already in node_modules instead of downloading it again.
 electronDist: ../../node_modules/electron/dist
@@ -30,9 +35,11 @@ win:
   executableName: Enceladus
 
 nsis:
-  # One click, for this user only: no admin password, nothing to choose.
+  # One click. Asks Windows for permission and installs for everyone (Program Files);
+  # if that's refused, installs just for this user instead. See build/installer.nsh.
   oneClick: true
   perMachine: false
+  include: build/installer.nsh
   createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: Enceladus

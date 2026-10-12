@@ -65,7 +65,8 @@ const effectiveTheme = () => (nativeTheme.shouldUseDarkColors ? "dark" : "light"
 let win = null;
 /** The Windows app identity: the installed app's (matches appId in electron-builder.yml), or a separate one in development. */
 const APP_ID = app.isPackaged ? "app.enceladus.desktop" : "app.enceladus.desktop.dev";
-const ICON = path.join(here, "../build/icon.ico");
+// Installed: the plain copy next to app.asar (Windows can't read icons from inside the archive).
+const ICON = app.isPackaged ? path.join(process.resourcesPath, "icon.ico") : path.join(here, "../build/icon.ico");
 const NORMAL_MIN = { width: 720, height: 520 };
 const COMPACT = { width: 460, height: 760, minWidth: 380, minHeight: 480 };
 /** Where the window was before compact mode, to go back to it. */
@@ -101,8 +102,8 @@ function createWindow() {
     },
   });
 
-  // Tell the taskbar exactly which icon to use (the exe's own when installed).
-  if (process.platform === "win32") win.setAppDetails({ appId: APP_ID, appIconPath: app.isPackaged ? process.execPath : ICON, appIconIndex: 0 });
+  // Tell the taskbar exactly which icon to use.
+  if (process.platform === "win32") win.setAppDetails({ appId: APP_ID, appIconPath: ICON, appIconIndex: 0 });
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => { win = null; });
 
