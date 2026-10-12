@@ -1,6 +1,6 @@
 // Enceladus — Electron main process.
 // Owns the window, the native title bar buttons, and the user's settings file.
-import { app, BrowserWindow, clipboard, ipcMain, nativeImage, nativeTheme, screen, shell } from "electron";
+import { app, BrowserWindow, clipboard, ipcMain, nativeTheme, screen, shell } from "electron";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -63,6 +63,9 @@ const effectiveTheme = () => (nativeTheme.shouldUseDarkColors ? "dark" : "light"
 
 // ── Window ──────────────────────────────────────────────────────────
 let win = null;
+/** The Windows app identity: the installed app's (matches appId in electron-builder.yml), or a separate one in development. */
+const APP_ID = app.isPackaged ? "app.enceladus.desktop" : "app.enceladus.desktop.dev";
+const ICON = path.join(here, "../build/icon.ico");
 const NORMAL_MIN = { width: 720, height: 520 };
 const COMPACT = { width: 460, height: 760, minWidth: 380, minHeight: 480 };
 /** Where the window was before compact mode, to go back to it. */
@@ -85,7 +88,7 @@ function createWindow() {
     minHeight: NORMAL_MIN.height,
     show: false,
     title: "Enceladus",
-    icon: path.join(here, "../build/icon.ico"),
+    icon: ICON,
     backgroundColor: c.bg,
     titleBarStyle: "hidden",
     titleBarOverlay: { color: c.bar, symbolColor: c.symbol, height: TITLE_BAR_HEIGHT },
@@ -98,6 +101,8 @@ function createWindow() {
     },
   });
 
+  // Tell the taskbar exactly which icon to use (the exe's own when installed).
+  if (process.platform === "win32") win.setAppDetails({ appId: APP_ID, appIconPath: app.isPackaged ? process.execPath : ICON, appIconIndex: 0 });
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => { win = null; });
 
@@ -145,30 +150,12 @@ ipcMain.handle("window:compact", (_event, on) => {
 ipcMain.handle("window:on-top", (_event, on) => win?.setAlwaysOnTop(!!on));
 
 // Taskbar: a progress bar under the icon while a task runs (a fraction when there's a plan,
-// a moving bar when there isn't), and a small dot on the icon. Cleared when the task ends.
-let workingDot = null;
-function dotImage() {
-  if (workingDot) return workingDot;
-  const size = 16, buf = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-    const d = Math.hypot(x + 0.5 - 8, y + 0.5 - 8), i = (y * size + x) * 4;
-    const ring = d <= 7.5, core = d <= 5.5;
-    const [b, g, r] = core ? [0xe0, 0xb8, 0x2f] : [0xff, 0xff, 0xff]; // BGRA: accent core, white ring
-    buf[i] = b; buf[i + 1] = g; buf[i + 2] = r;
-    buf[i + 3] = ring ? Math.round(255 * Math.min(1, 7.5 - d + 0.5)) : 0;
-  }
-  return (workingDot = nativeImage.createFromBitmap(buf, { width: size, height: size }));
-}
+// a moving bar when there isn't). Cleared when the task ends.
 ipcMain.handle("window:progress", (_event, state) => {
   if (!win) return;
-  if (!state) {
-    win.setProgressBar(-1);
-    win.setOverlayIcon(null, "");
-    return;
-  }
+  if (!state) { win.setProgressBar(-1); return; }
   const value = typeof state.value === "number" ? Math.max(0, Math.min(1, state.value)) : null;
   win.setProgressBar(value ?? 2, { mode: value === null ? "indeterminate" : "normal" });
-  win.setOverlayIcon(dotImage(), String(state.label ?? "Working"));
 });
 ipcMain.handle("clipboard:write", (_event, text) => clipboard.writeText(String(text ?? "")));
 
@@ -182,7 +169,7 @@ if (!app.requestSingleInstanceLock()) {
     win.focus();
   });
 
-  app.setAppUserModelId("app.enceladus.desktop"); // lets Windows show our notifications
+  app.setAppUserModelId(APP_ID); // taskbar grouping and icon, and notifications
   app.whenReady().then(async () => {
     await loadSettings();
     await initModels();
