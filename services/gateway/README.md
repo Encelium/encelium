@@ -19,15 +19,16 @@ app ──(invite key)──▶ gateway ──(server key)──▶ model server
 # 1. Get the folder onto the VM (later: git clone), then:
 cd services/gateway
 cp config.example.json config.json        # set the upstream address and model here
-mkdir -p data && sudo chown 1000:1000 data  # the container runs as user 1000
+chmod 644 config.json && chmod -R a+rX prompts   # the container (user 1000) must be able to read them
+mkdir -p data && sudo chown 1000:1000 data       # ...and write here
 
 # 2. Build and start (the model server's key stays in the environment, not in a file)
 docker build -t enceladus-gateway .
 docker run -d --name enceladus-gateway --restart unless-stopped -p 8787:8787 \
   -e GATEWAY_UPSTREAM_KEY='paste-the-model-server-key-here' \
-  -v "$PWD/config.json:/app/config.json:ro" \
-  -v "$PWD/prompts:/app/prompts:ro" \
-  -v "$PWD/data:/app/data" \
+  -v "$PWD/config.json:/app/config.json:ro,z" \
+  -v "$PWD/prompts:/app/prompts:ro,z" \
+  -v "$PWD/data:/app/data:Z" \
   enceladus-gateway
 
 # 3. Make an invite key (it's shown once)
@@ -37,6 +38,8 @@ docker exec enceladus-gateway node src/admin.ts add "Me"
 curl http://localhost:8787/health
 curl -H "Authorization: Bearer enc_..." http://localhost:8787/v1/models
 ```
+
+The `z`/`Z` flags let SELinux (Fedora, Rocky, CentOS) allow the container to use these files; elsewhere Docker ignores them. Without them (or with files only you can read), the gateway stops with "config.json can't be read: EACCES".
 
 Logs: `docker logs -f enceladus-gateway`. Keys: `docker exec enceladus-gateway node src/admin.ts list | disable "Name" | enable "Name"`.
 
