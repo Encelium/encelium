@@ -1,4 +1,4 @@
-# Enceladus — Master Plan
+# Encelium — Master Plan
 
 > Status: planning (no code yet) · Last updated: 2026-10-08
 > This file is the single source of truth. If something is not here, it is not decided.
@@ -7,13 +7,13 @@
 
 ## 1. What we are building
 
-**Enceladus** is a free AI agent for chat and coding, running on our own model.
+**Encelium** is a free AI agent for chat and coding, running on our own model.
 
 - **Product 1 — Desktop app (Windows first).** Chat + coding + working with files on the computer. Built first.
 - **Product 2 — Launch website.** Introduces the product and gets people to download. No chat on the web. Built second.
 - **Later:** Mac version, CLI version.
 
-**One sentence:** *Enceladus is the simplest way to get real work done with an AI agent — no jargon, nothing to study first, and it's free.*
+**One sentence:** *Encelium is the simplest way to get real work done with an AI agent — no jargon, nothing to study first, and it's free.*
 
 **Who it is for:** people who want an agent to build things or handle files, but are scared off by terminals, settings and words like "tokens", "effort", "skills", "MCP". Power users are welcome, but beginners come first.
 
@@ -28,7 +28,7 @@
 | Access | Invite-only beta at launch. |
 | Privacy | We do **not** train on user data. Say this loudly on the website and in the app. |
 | Source code | The desktop app is **open source** under the **MIT license**. The model stays private on our servers. |
-| Git identity | Local placeholder author "Enceladus" until the GitHub org exists; rewrite to the GitHub noreply address **before the first push**. |
+| Git identity | Local placeholder author "Encelium" until the GitHub org exists; rewrite to the GitHub noreply address **before the first push**. |
 | Code signing | **SignPath Foundation** (free for open source). Apply early. |
 | Languages | Right-to-left supported from day one — UI **and** model output. **Arabic is the main RTL target**; Persian and Hebrew follow the same system. |
 | Funding | Handled separately. Not part of this plan. |
@@ -47,7 +47,7 @@
 
 ### Jargon translation table
 
-| Industry word | What Enceladus shows |
+| Industry word | What Encelium shows |
 |---|---|
 | Model / provider | Hidden. (Advanced → "Use your own model") |
 | Tokens / context / limits | **Energy bar** ("Today's energy: 70%") |
@@ -182,7 +182,7 @@ Target: under 2 minutes. "Skip" always visible.
 ## 7. Design plan
 
 ### Concept: Surface & Ocean
-Enceladus (Saturn's moon) has the brightest icy surface in the solar system and a hidden liquid ocean underneath; water jets ("plumes") erupt from four cracks at its south pole ("tiger stripes").
+Encelium (Saturn's moon) has the brightest icy surface in the solar system and a hidden liquid ocean underneath; water jets ("plumes") erupt from four cracks at its south pole ("tiger stripes").
 **Our product = simple surface, deep power underneath.**
 
 - **Surface theme (light):** icy whites, cool greys, a single cold-blue accent.
@@ -216,7 +216,7 @@ Enceladus (Saturn's moon) has the brightest icy surface in the solar system and 
 **A · Cracked Epsilon**: the moon disc with the Greek Ε (Ἐγκέλαδος) cut into it like the tiger-stripe cracks. Still to do: test at 16 px in the Windows taskbar.
 
 ### Motion
-- Signature visual = **the cracks**: [design/enceladus-scene.js](design/enceladus-scene.js). A real 3D-shaded moon whose whole surface is cracked into large plates like dried desert mud (one crack system only — no tiger-stripe grooves, no fine cracks, nothing competing); light from the ocean glows through every crack in two slow out-of-phase waves (strongest on the night side); while working, thin vapor curtains rise from vents on the cracks near the top. **Status: closed (2026-10-09).** Startup cost ~0.5 s (rendered once); per frame it is only a few image draws plus vapor. Two states: **Resting** (soft glow, no vapor) and **Working** (brighter cracks, vapor erupts) via `setActive()`; in the app, Working = the agent is busy. Minimal, premium, light on resources (moon drawn once; each frame = 4 glow images + ~60 beams + a few hundred particles; pauses off screen). Dark version for the website hero and launch; light version for welcome and empty states.
+- Signature visual = **the cracks**: [design/encelium-scene.js](design/encelium-scene.js). A real 3D-shaded moon whose whole surface is cracked into large plates like dried desert mud (one crack system only — no tiger-stripe grooves, no fine cracks, nothing competing); light from the ocean glows through every crack in two slow out-of-phase waves (strongest on the night side); while working, thin vapor curtains rise from vents on the cracks near the top. **Status: closed (2026-10-09).** Startup cost ~0.5 s (rendered once); per frame it is only a few image draws plus vapor. Two states: **Resting** (soft glow, no vapor) and **Working** (brighter cracks, vapor erupts) via `setActive()`; in the app, Working = the agent is busy. Minimal, premium, light on resources (moon drawn once; each frame = 4 glow images + ~60 beams + a few hundred particles; pauses off screen). Dark version for the website hero and launch; light version for welcome and empty states.
 - In-app "working" indicator: small CSS jets (approved).
 - No logo splash animation (sideways spray read as speed lines — rejected).
 - States: Thinking (mist breathes) → Working (jets) → Done (jets stop, result appears).
@@ -278,7 +278,7 @@ Design board: https://claude.ai/artifact/F2LUhXGzDe1ZFK8ohYy2rw
 
 ### Repo layout (monorepo)
 ```
-enceladus/
+encelium/
   packages/
     agent-core/     # brain: model calls, tools, safety net, rewind
     ui/             # design system: tokens, components (shared app + website)
@@ -302,7 +302,7 @@ Purpose: launch, explain, download. No chat.
 
 Sections:
 1. Hero — one sentence, moon visual, **Request invite / Download**
-2. "No jargon" — before/after (other agents vs Enceladus)
+2. "No jargon" — before/after (other agents vs Encelium)
 3. Feature stories — Set it up for you · Rewind · Live preview · Your language
 4. Real recorded agent runs (proof without installing)
 5. Privacy — "We never train on your data." · Open source
@@ -318,8 +318,8 @@ Also LTR + RTL, light + dark.
 | Phase | Goal | Done when |
 |---|---|---|
 | 0 — Foundations | Design board, repo, SignPath application | User approves design direction |
-| 1 — Design system + app shell | Tokens, components, window, themes, RTL | Empty app looks premium in all 4 modes — **in progress**: npm-workspaces monorepo, `packages/ui` (tokens, base, 15 components: Button, IconButton, Tag, StatusIcon, TextField, Switch, Segmented, Composer, Message, PlanCard, PermissionPrompt, RewindTimeline, EnergyBar, Dialog, Toast) + gallery (`npm run gallery`). **Done:** Electron 44 shell (`apps/desktop`, `npm run app`): native Windows title bar buttons, secure window (sandbox, context isolation, CSP in builds), settings saved to %APPDATA%\Enceladus (theme light/dark/system, language en/ar), real Home screen, settings dialog. |
-| 2 — Agent core | Model calls, files, terminal, Connections | Agent completes basic coding tasks — **in progress**: Work view + demo agent on the event contract (`apps/desktop/renderer/src/agent/types.ts`); `packages/agent-core` provider layer (OpenAI-compatible + Anthropic, streaming, tool calls, tested); "Use your own model" with DPAPI-encrypted keys. Waiting on the model team for URL/key/tool-calling (see `docs/model-integration.md`). **Done:** agent loop, file/terminal tools, risk levels, Rewind (no Git needed), folder protection, task folders in Documents\Enceladus — tested with 11 unit tests and end-to-end in the real app against a scripted local model. **Not yet tested with a real model** (no key available). **Done:** live preview (sandboxed, auto-reload), choosing a folder (with too-broad-folder protection), tasks persist across restarts (history + conversation). Next: Connections (MCP). Packaging note: main process imports .ts via Node type stripping, which does not work inside node_modules — bundle the main process when packaging. |
+| 1 — Design system + app shell | Tokens, components, window, themes, RTL | Empty app looks premium in all 4 modes — **in progress**: npm-workspaces monorepo, `packages/ui` (tokens, base, 15 components: Button, IconButton, Tag, StatusIcon, TextField, Switch, Segmented, Composer, Message, PlanCard, PermissionPrompt, RewindTimeline, EnergyBar, Dialog, Toast) + gallery (`npm run gallery`). **Done:** Electron 44 shell (`apps/desktop`, `npm run app`): native Windows title bar buttons, secure window (sandbox, context isolation, CSP in builds), settings saved to %APPDATA%\Encelium (theme light/dark/system, language en/ar), real Home screen, settings dialog. |
+| 2 — Agent core | Model calls, files, terminal, Connections | Agent completes basic coding tasks — **in progress**: Work view + demo agent on the event contract (`apps/desktop/renderer/src/agent/types.ts`); `packages/agent-core` provider layer (OpenAI-compatible + Anthropic, streaming, tool calls, tested); "Use your own model" with DPAPI-encrypted keys. Waiting on the model team for URL/key/tool-calling (see `docs/model-integration.md`). **Done:** agent loop, file/terminal tools, risk levels, Rewind (no Git needed), folder protection, task folders in Documents\Encelium — tested with 11 unit tests and end-to-end in the real app against a scripted local model. **Not yet tested with a real model** (no key available). **Done:** live preview (sandboxed, auto-reload), choosing a folder (with too-broad-folder protection), tasks persist across restarts (history + conversation). Next: Connections (MCP). Packaging note: main process imports .ts via Node type stripping, which does not work inside node_modules — bundle the main process when packaging. |
 | 3 — Safety net | Plan, self-check, permissions, Rewind | Beginner can't lose work |
 | 4 — Beginner features | Home, onboarding, set-it-up, preview, Fix it, project note | First task < 2 min |
 | 5 — Beta polish | Errors, updates, signing, crash reports, RTL test | Invite-only beta ships |
@@ -346,7 +346,7 @@ Also LTR + RTL, light + dark.
 | Antivirus flags the app | Sign every build from the start, not at the end |
 | SignPath rejects or delays | Apply in phase 0; backup: Azure Trusted Signing (~$10/month) |
 | RTL promised but weak | 50-task test before promoting it |
-| "Enceladus" name/trademark conflict | Check before the website launch |
+| "Encelium" name/trademark conflict | Check before the website launch |
 | User PCs missing the Microsoft Visual C++ runtime (seen on our own dev PC) | Installer must bundle or check for the VC++ Redistributable before launch |
 | Some networks can't reach Microsoft download servers (seen on our dev PC) | Never depend on Microsoft-hosted downloads at install time; ship what we need inside the installer |
 | Server team not ready | Build against a fake/BYOK model first; switch later |

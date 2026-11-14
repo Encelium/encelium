@@ -2,9 +2,9 @@
 import { app, BrowserWindow, Notification, ipcMain } from "electron";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { AgentSession, splitNextLine, suggestFolderName, suggestNext, toFolderName } from "@enceladus/agent-core";
+import { AgentSession, splitNextLine, suggestFolderName, suggestNext, toFolderName } from "@encelium/agent-core";
 import { currentConnection } from "./models.js";
-import { enceladusConnection } from "./access.js";
+import { enceliumConnection } from "./access.js";
 import { getTask, hasTask, recorder, saveIndexSoon, saveMessages, setTaskStopper } from "./tasks.js";
 import { gitSave, gitStart, gitStatus } from "./status.js";
 import { prepareAttachments } from "./attachments.js";
@@ -13,14 +13,14 @@ import { prepareAttachments } from "./attachments.js";
 const runs = new Map();
 
 const notConnected = {
-  en: { message: "Enceladus isn’t connected yet.", suggestion: "Enter your invite code in Settings. Or use your own model: Settings → Advanced." },
-  ar: { message: "إنسيلادوس غير متصل بعد.", suggestion: "أدخل رمز الدعوة في الإعدادات، أو استخدم نموذجك الخاص: الإعدادات ← متقدّم." },
+  en: { message: "Encelium isn’t connected yet.", suggestion: "Enter your invite code in Settings. Or use your own model: Settings → Advanced." },
+  ar: { message: "إنسيليوم غير متصل بعد.", suggestion: "أدخل رمز الدعوة في الإعدادات، أو استخدم نموذجك الخاص: الإعدادات ← متقدّم." },
 };
 
 /** The model to use: the person's own, if they set one; otherwise ours. */
 function connection() {
   // The person's own model if they set one; otherwise ours, through the gateway, with their invite code.
-  return currentConnection() ?? enceladusConnection();
+  return currentConnection() ?? enceliumConnection();
 }
 
 // After a Rewind the files changed behind the model's back. The next request carries a
@@ -180,7 +180,7 @@ ${prepared}` : [{ type: "text", text: note }, ...prepared];
     const metrics = app.getAppMetrics();
     const ramMB = Math.round(metrics.reduce((sum, m) => sum + (m.memory?.workingSetSize ?? 0), 0) / 1024);
     return {
-      model: own ? own.model : "Enceladus",
+      model: own ? own.model : "Encelium",
       git: task ? await gitStatus(task.meta.folder) : null,
       stats: task ? stats(task) : null,
       running: task ? [...runs.values()].some((r) => r.taskId === task.meta.id) : false,

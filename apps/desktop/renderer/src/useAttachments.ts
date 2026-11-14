@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ComposerAttachment } from "@enceladus/ui";
+import type { ComposerAttachment } from "@encelium/ui";
 import { bridge, type Attachment } from "./bridge";
 import type { Strings } from "./i18n";
 

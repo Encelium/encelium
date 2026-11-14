@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Dialog, Segmented } from "@enceladus/ui";
+import { Button, Dialog, Segmented } from "@encelium/ui";
 import { bridge, type Language, type ModelState, type Settings, type ThemeSetting } from "./bridge";
 import type { Strings } from "./i18n";
 import s from "./SettingsDialog.module.css";
@@ -10,14 +10,14 @@ interface Props {
   settings: Settings;
   onChange: (patch: Partial<Pick<Settings, "theme" | "language" | "detail">>) => void;
   onOpenModel: () => void;
-  /** Open the invite-code dialog (connect to the Enceladus model). */
+  /** Open the invite-code dialog (connect to the Encelium model). */
   onOpenAccess: () => void;
   onClose: () => void;
 }
 
 export function SettingsDialog({ t, open, settings, onChange, onOpenModel, onOpenAccess, onClose }: Props) {
   const d = t.settingsDialog;
-  const [model, setModel] = useState<ModelState>({ mode: "enceladus" });
+  const [model, setModel] = useState<ModelState>({ mode: "encelium" });
   const [providerName, setProviderName] = useState("");
   const [access, setAccess] = useState<{ connected: boolean } | null>(null);
 
@@ -32,7 +32,7 @@ export function SettingsDialog({ t, open, settings, onChange, onOpenModel, onOpe
 
   const modelLabel = model.mode === "own"
     ? d.usingOwn.replace("{provider}", providerName).replace("{model}", model.model)
-    : d.usingEnceladus;
+    : d.usingEncelium;
 
   return (
     <Dialog open={open} onClose={onClose} title={d.title} actions={<Button variant="primary" onClick={onClose}>{d.done}</Button>}>

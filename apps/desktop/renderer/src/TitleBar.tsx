@@ -1,4 +1,4 @@
-import { Icon, Logo, type IconName } from "@enceladus/ui";
+import { Icon, Logo, type IconName } from "@encelium/ui";
 import type { Strings } from "./i18n";
 import s from "./TitleBar.module.css";
 

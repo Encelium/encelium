@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Dialog, Icon, Segmented, TextField } from "@enceladus/ui";
+import { Button, Dialog, Icon, Segmented, TextField } from "@encelium/ui";
 import { bridge, type Language, type MyRecipe } from "./bridge";
 import type { Strings } from "./i18n";
 import { RECIPES, recipeText, type Recipe, type RecipeCategory } from "./recipeList";

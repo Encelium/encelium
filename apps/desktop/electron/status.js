@@ -8,7 +8,7 @@ function git(args, cwd, timeout = 15000) {
 }
 
 // A name and email for commits made from the app, only if the person hasn't set their own.
-const IDENTITY = ["-c", "user.name=Enceladus", "-c", "user.email=enceladus@localhost"];
+const IDENTITY = ["-c", "user.name=Encelium", "-c", "user.email=encelium@localhost"];
 
 let installed = null;
 async function gitInstalled() {

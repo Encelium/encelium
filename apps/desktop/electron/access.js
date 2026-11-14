@@ -1,15 +1,15 @@
-// Access to the Enceladus model: the gateway's address and the person's invite code.
+// Access to the Encelium model: the gateway's address and the person's invite code.
 // The code is encrypted with Windows DPAPI (safeStorage) and never sent to the window.
 import { app, ipcMain, safeStorage } from "electron";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { testConnection } from "@enceladus/agent-core";
+import { testConnection } from "@encelium/agent-core";
 
 /** The gateway address the app ships with, once there is one (until then the person enters it). */
 export const DEFAULT_GATEWAY_URL = "";
 
 const file = () => path.join(app.getPath("userData"), "access.json");
-let state = {}; // { gatewayUrl, code: base64 (encrypted) }
+let state = {}; // { gatewayUrl, code: base64 (encrypted), model? }
 
 const encrypt = (text) => (safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(text).toString("base64") : null);
 const decrypt = (b64) => { try { return safeStorage.decryptString(Buffer.from(b64, "base64")); } catch { return undefined; } };
@@ -24,19 +24,29 @@ async function save(next) {
   return true;
 }
 
-/** The connection to the Enceladus model, or null if there's no invite code yet. */
-export function enceladusConnection() {
+/** Pick the model to ask the gateway for: ours by name, else whatever it serves. */
+const pickModel = (models) => models.find((id) => /encelium/i.test(id)) ?? models[0] ?? "encelium";
+
+/** The connection to the Encelium model, or null if there's no invite code yet. */
+export function enceliumConnection() {
   const url = state.gatewayUrl || DEFAULT_GATEWAY_URL;
   const code = state.code ? decrypt(state.code) : undefined;
   if (!url || !code) return null;
-  return { protocol: "openai", baseUrl: url, apiKey: code, model: "enceladus", usageInStream: true };
+  return { protocol: "openai", baseUrl: url, apiKey: code, model: state.model || "encelium", usageInStream: true };
 }
 
 export async function initAccess() {
   try { state = JSON.parse(await readFile(file(), "utf8")); } catch { state = {}; }
 
+  // Saved before the model name was stored: ask the gateway once what it serves, so an
+  // older gateway (which lists a different model id) keeps working without any re-setup.
+  if (state.code && !state.model && state.gatewayUrl) {
+    const test = await testConnection({ protocol: "openai", baseUrl: state.gatewayUrl, apiKey: decrypt(state.code) });
+    if (test.ok) await save({ ...state, model: pickModel(test.models) });
+  }
+
   ipcMain.handle("access:get", () => ({
-    connected: !!enceladusConnection(),
+    connected: !!enceliumConnection(),
     gatewayUrl: state.gatewayUrl || DEFAULT_GATEWAY_URL,
     builtInAddress: !!DEFAULT_GATEWAY_URL,
   }));
@@ -51,14 +61,14 @@ export async function initAccess() {
     if (!test.ok) return { ok: false, reason: test.reason };
     const enc = encrypt(key);
     if (!enc) return { ok: false, reason: "no-encryption" };
-    return (await save({ gatewayUrl: url, code: enc })) ? { ok: true } : { ok: false, reason: "not-saved" };
+    return (await save({ gatewayUrl: url, code: enc, model: pickModel(test.models) })) ? { ok: true } : { ok: false, reason: "not-saved" };
   });
 
   ipcMain.handle("access:disconnect", async () => ((await save({ gatewayUrl: state.gatewayUrl })) ? { ok: true } : { ok: false, reason: "not-saved" }));
 
   // Today's use, for the "energy" bar: { requestsToday, requestLimit, resetsAt } or null.
   ipcMain.handle("access:usage", async () => {
-    const conn = enceladusConnection();
+    const conn = enceliumConnection();
     if (!conn) return null;
     try {
       const res = await fetch(`${conn.baseUrl}/usage`, { headers: { authorization: `Bearer ${conn.apiKey}` }, signal: AbortSignal.timeout(8000) });

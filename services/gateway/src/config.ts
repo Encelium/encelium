@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 export interface ModelRoute {
-  /** The name clients ask for, e.g. "enceladus". */
+  /** The name clients ask for, e.g. "encelium". */
   id: string;
   /** The real model at the upstream server. */
   upstreamModel: string;
@@ -30,7 +30,7 @@ const DEFAULTS: GatewayConfig = {
   port: 8787,
   host: "0.0.0.0",
   upstream: { baseUrl: "", apiKey: "", timeoutMs: 600_000 },
-  models: [{ id: "enceladus", upstreamModel: "" }],
+  models: [{ id: "encelium", upstreamModel: "" }],
   limits: { perMinute: 30, perDay: 500, maxTokens: 8192, maxBodyBytes: 12 * 1024 * 1024 },
   promptsDir: "prompts",
   keysFile: "data/keys.json",

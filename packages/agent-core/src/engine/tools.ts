@@ -200,7 +200,7 @@ export interface ToolResult {
 const MAX_READ = 200 * 1024;
 const MAX_OUTPUT = 20 * 1024;
 const COMMAND_TIMEOUT_MS = 120_000;
-const SKIP = new Set(["node_modules", ".git", ".enceladus"]);
+const SKIP = new Set(["node_modules", ".git", ".encelium"]);
 
 export async function runTool(name: string, args: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> {
   const missing = missingFields(name, args);

@@ -1,5 +1,5 @@
 /*
- * Enceladus design tokens.
+ * Encelium design tokens.
  * Single source of truth for color, type, spacing, shape, depth and motion.
  * Light ("Surface") is the default; dark ("Ocean") applies with [data-theme="dark"].
  * Use logical properties (margin-inline-start, inset-inline-end...) so RTL works for free.

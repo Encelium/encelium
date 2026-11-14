@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BidiText, Button, Composer, Icon, IconButton, Markdown, Message, PermissionPrompt, PlanCard, RewindTimeline, Segmented, StatusIcon, Toast,
   type RewindItem,
-} from "@enceladus/ui";
+} from "@encelium/ui";
 import { bridge, type Attachment, type Language, type StoredEvent } from "./bridge";
 import { useAttachments } from "./useAttachments";
 import { FilesPanel } from "./FilesPanel";
@@ -14,7 +14,7 @@ import { QuestionCard } from "./QuestionCard";
 import { SmartActions } from "./SmartActions";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
-import type { FileChange } from "@enceladus/agent-core/events";
+import type { FileChange } from "@encelium/agent-core/events";
 import s from "./Work.module.css";
 
 type PermissionEvent = Extract<AgentEvent, { type: "permission" }>;
@@ -82,7 +82,7 @@ function SentPicture({ taskId, name }: { taskId: string; name: string }) {
     <li className={s.sentPicture}>
       <img
         key={attempt}
-        src={`enceladus-preview://${taskId}/attachments/${encodeURIComponent(name)}${attempt ? `?retry=${attempt}` : ""}`}
+        src={`encelium-preview://${taskId}/attachments/${encodeURIComponent(name)}${attempt ? `?retry=${attempt}` : ""}`}
         alt={name}
         title={name}
         onError={() => setTimeout(() => setAttempt((n) => n + 1), attempt ? 0 : 1500)}
@@ -119,7 +119,7 @@ function CopyButton({ t, text }: { t: Strings; text: string }) {
 }
 
 export function Work({ t, taskId, prompt, folder, attachments, folderName, language, engine, detail = "full", panel = { open: true, mode: "docked", onClose: () => {}, onOpen: () => {} } }: WorkProps) {
-  const [chatWidth, setChatWidth] = useRememberedNumber("enceladus.chatWidth", 480);
+  const [chatWidth, setChatWidth] = useRememberedNumber("encelium.chatWidth", 480);
   const workRef = useRef<HTMLElement>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [status, setStatus] = useState<Status | null>(null);
@@ -363,11 +363,11 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
     const onMessage = (e: MessageEvent) => {
       if (e.source !== frameRef.current?.contentWindow) return; // only our preview
       const data = e.data as { type?: string; tag?: string; text?: string; path?: string };
-      if (data?.type === "enceladus-pick" && data.tag) {
+      if (data?.type === "encelium-pick" && data.tag) {
         setPointed({ tag: data.tag, text: String(data.text ?? ""), path: String(data.path ?? "") });
         setPicking(false);
         setFocusRequest((x) => x + 1);
-      } else if (data?.type === "enceladus-pick-cancel") setPicking(false);
+      } else if (data?.type === "encelium-pick-cancel") setPicking(false);
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -691,7 +691,7 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
                   key={`${pageVersion}-${picking}`}
                   className={[s.frame, picking ? s.framePicking : ""].filter(Boolean).join(" ")}
                   title={t.work.previewTitle}
-                  src={`enceladus-preview://${taskId}/${page}${picking ? "?enceladus-pick=1" : ""}`}
+                  src={`encelium-preview://${taskId}/${page}${picking ? "?encelium-pick=1" : ""}`}
                   sandbox="allow-scripts allow-forms allow-modals"
                 />
                 )}

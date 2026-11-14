@@ -39,13 +39,13 @@ export function Compare({ taskId, page, pointId, version, labels }: {
   return (
     // Always left = before, right = after (like a photo slider), in both languages.
     <div ref={boxRef} className={s.box} dir="ltr">
-      <iframe key={`after-${version}`} className={s.frame} title={labels.after} src={`enceladus-preview://${taskId}/${encoded}`} sandbox="allow-scripts allow-forms allow-modals" />
+      <iframe key={`after-${version}`} className={s.frame} title={labels.after} src={`encelium-preview://${taskId}/${encoded}`} sandbox="allow-scripts allow-forms allow-modals" />
       <iframe
         key={`before-${pointId}-${version}`}
         className={`${s.frame} ${s.before}`}
         style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
         title={labels.before}
-        src={`enceladus-preview://${taskId}/@before/${pointId}/${encoded}`}
+        src={`encelium-preview://${taskId}/@before/${pointId}/${encoded}`}
         sandbox="allow-scripts allow-forms allow-modals"
       />
       <span className={`${s.tag} ${s.tagBefore}`} style={{ opacity: split > 8 ? 1 : 0 }}>{labels.before}</span>

@@ -17,9 +17,9 @@ export interface ProviderPreset {
   suggestedModel?: string;
 }
 
-export const ENCELADUS_PRESET: ProviderPreset = {
-  id: "enceladus",
-  name: "Enceladus",
+export const ENCELIUM_PRESET: ProviderPreset = {
+  id: "encelium",
+  name: "Encelium",
   protocol: "openai",
   baseUrl: "", // filled in when the model team gives us the URL (docs/model-integration.md)
   needsKey: true,

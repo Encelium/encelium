@@ -5,11 +5,11 @@ import react from "@vitejs/plugin-react";
 // Strict Content Security Policy for the shipped app. Not used in development,
 // where Vite needs inline scripts and a websocket for live reload.
 const csp: Plugin = {
-  name: "enceladus-csp",
+  name: "encelium-csp",
   apply: "build",
   transformIndexHtml: () => [{
     tag: "meta",
-    attrs: { "http-equiv": "Content-Security-Policy", content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: enceladus-preview:; font-src 'self' data:; connect-src 'self'; frame-src enceladus-preview:" },
+    attrs: { "http-equiv": "Content-Security-Policy", content: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: encelium-preview:; font-src 'self' data:; connect-src 'self'; frame-src encelium-preview:" },
     injectTo: "head-prepend",
   }],
 };

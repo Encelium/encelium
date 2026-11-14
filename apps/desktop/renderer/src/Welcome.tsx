@@ -1,4 +1,4 @@
-import { Button, Dialog, Icon, Segmented, type IconName } from "@enceladus/ui";
+import { Button, Dialog, Icon, Segmented, type IconName } from "@encelium/ui";
 import type { Language } from "./bridge";
 import type { Strings } from "./i18n";
 import s from "./Welcome.module.css";
@@ -9,7 +9,7 @@ const points: { icon: IconName; key: "say" | "watch" | "undo" }[] = [
   { icon: "rewind", key: "undo" },
 ];
 
-/** Shown once, on the very first start: what Enceladus does, in three lines, and the language. */
+/** Shown once, on the very first start: what Encelium does, in three lines, and the language. */
 export function Welcome({ t, open, language, onLanguage, onDone }: {
   t: Strings;
   open: boolean;

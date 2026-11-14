@@ -1,7 +1,7 @@
-# Windows installer for Enceladus (electron-builder). Build with: npm run dist -w @enceladus/desktop
-appId: app.enceladus.desktop # also the Windows app id (taskbar icon, notifications); matches main.js
-productName: Enceladus
-copyright: Copyright © 2026 The Enceladus Authors
+# Windows installer for Encelium (electron-builder). Build with: npm run dist -w @encelium/desktop
+appId: app.encelium.desktop # also the Windows app id (taskbar icon, notifications); matches main.js
+productName: Encelium
+copyright: Copyright © 2026 The Encelium Authors
 
 directories:
   output: release
@@ -32,7 +32,7 @@ win:
     - target: nsis
       arch: [x64]
   icon: build/icon.ico
-  executableName: Enceladus
+  executableName: Encelium
 
 nsis:
   # One click. Asks Windows for permission and installs for everyone (Program Files);
@@ -42,13 +42,13 @@ nsis:
   include: build/installer.nsh
   createDesktopShortcut: always
   createStartMenuShortcut: true
-  shortcutName: Enceladus
+  shortcutName: Encelium
   runAfterFinish: true
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
   # Uninstalling keeps the person's chats and settings (and never touches their project folders).
   deleteAppDataOnUninstall: false
-  artifactName: Enceladus-Setup-${version}.exe
+  artifactName: Encelium-Setup-${version}.exe
 
 # Publishing (auto-update from GitHub Releases) comes with the GitHub step.
 publish: null

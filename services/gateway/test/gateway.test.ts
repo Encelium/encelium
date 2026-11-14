@@ -29,13 +29,13 @@ function fakeUpstream(status = 200) {
 async function setup(upstreamStatus = 200, limits: Partial<GatewayConfig["limits"]> = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "gw-"));
   mkdirSync(path.join(dir, "prompts"));
-  writeFileSync(path.join(dir, "prompts", "system-prefix.md"), "You are Enceladus. Keep words simple.");
+  writeFileSync(path.join(dir, "prompts", "system-prefix.md"), "You are Encelium. Keep words simple.");
   const up = fakeUpstream(upstreamStatus);
   const upUrl = await listen(up.server);
   const config: GatewayConfig = {
     port: 0, host: "127.0.0.1",
     upstream: { baseUrl: `${upUrl}/v1`, apiKey: "server-secret", timeoutMs: 10_000 },
-    models: [{ id: "enceladus", upstreamModel: "secret-upstream-model" }],
+    models: [{ id: "encelium", upstreamModel: "secret-upstream-model" }],
     limits: { perMinute: 30, perDay: 500, maxTokens: 1000, maxBodyBytes: 1_000_000, ...limits },
     promptsDir: path.join(dir, "prompts"), keysFile: path.join(dir, "keys.json"), usageFile: path.join(dir, "usage.json"),
   };
@@ -48,7 +48,7 @@ async function setup(upstreamStatus = 200, limits: Partial<GatewayConfig["limits
 
 const chat = (url: string, key: string, body: object) => fetch(`${url}/v1/chat/completions`, {
   method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-  body: JSON.stringify({ model: "enceladus", stream: true, messages: [{ role: "system", content: "App rules." }, { role: "user", content: "hi" }], ...body }),
+  body: JSON.stringify({ model: "encelium", stream: true, messages: [{ role: "system", content: "App rules." }, { role: "user", content: "hi" }], ...body }),
 });
 
 test("health is open; everything else needs a valid invite key", async () => {
@@ -58,7 +58,7 @@ test("health is open; everything else needs a valid invite key", async () => {
     assert.equal((await fetch(`${t.url}/v1/models`)).status, 401);
     assert.equal((await fetch(`${t.url}/v1/models`, { headers: { authorization: "Bearer enc_wrong" } })).status, 401);
     const models = await (await fetch(`${t.url}/v1/models`, { headers: { authorization: `Bearer ${t.key}` } })).json() as { data: { id: string }[] };
-    assert.deepEqual(models.data.map((m) => m.id), ["enceladus"]);
+    assert.deepEqual(models.data.map((m) => m.id), ["encelium"]);
   } finally { t.close(); }
 });
 
@@ -74,7 +74,7 @@ test("a chat streams through with the server's prompt added, our model name, and
     assert.equal(sent.auth, "Bearer server-secret", "the server key is used upstream, not the invite key");
     assert.equal(sent.body.model, "secret-upstream-model");
     assert.equal(sent.body.max_tokens, 1000);
-    assert.equal(sent.body.messages[0].content, "You are Enceladus. Keep words simple.\n\nApp rules.");
+    assert.equal(sent.body.messages[0].content, "You are Encelium. Keep words simple.\n\nApp rules.");
     assert.equal(sent.body.messages[1].content, "hi", "the person's words are untouched");
     const usage = await (await fetch(`${t.url}/v1/usage`, { headers: { authorization: `Bearer ${t.key}` } })).json() as { requestsToday: number; tokensToday: number };
     assert.equal(usage.requestsToday, 1);
@@ -97,6 +97,16 @@ test("an unknown model is 404; a bad upstream key is the server's problem (502),
   try { assert.equal((await chat(a.url, a.key, { model: "gpt-9" })).status, 404); } finally { a.close(); }
   const b = await setup(401);
   try { assert.equal((await chat(b.url, b.key, {})).status, 502); } finally { b.close(); }
+});
+
+test("the pre-rename model name still routes to the same upstream", async () => {
+  const t = await setup();
+  try {
+    const res = await chat(t.url, t.key, { model: "enceladus" });
+    assert.equal(res.status, 200);
+    const sent = t.up.seen.at(-1);
+    assert.ok(sent && sent.body.model === "secret-upstream-model");
+  } finally { t.close(); }
 });
 
 test("a disabled key stops working", async () => {

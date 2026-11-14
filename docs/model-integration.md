@@ -1,6 +1,6 @@
-# Connecting the Enceladus model to the desktop app
+# Connecting the Encelium model to the desktop app
 
-**For:** the person running the Enceladus model servers.
+**For:** the person running the Encelium model servers.
 **From:** the desktop app team.
 **Goal:** the app talks to our model out of the box, and users can switch to another model (their own key) with almost no setup.
 
@@ -31,7 +31,7 @@ If the format must differ, tell us early. It changes our work a lot.
   - Which one, and who builds the sign-in part?
 
 ### 2. Model details
-- [ ] **Model ID(s)** to send in requests, e.g. `enceladus-1`
+- [ ] **Model ID(s)** to send in requests, e.g. `encelium-1`
 - [ ] **Context window** (maximum tokens in + out per request)
 - [ ] **Maximum output tokens** per response
 - [ ] **Languages it handles well.** We especially need **Arabic** results.

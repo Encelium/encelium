@@ -1,11 +1,11 @@
-import { Icon } from "@enceladus/ui";
+import { Icon } from "@encelium/ui";
 import type { Strings } from "./i18n";
 import { useRemembered } from "./useLayout";
 import s from "./CheckToggle.module.css";
 
 /** "Check the result": whether the agent tests its own work. Remembered on this computer. */
 export function useCheckResult() {
-  return useRemembered("enceladus.checkResult", true);
+  return useRemembered("encelium.checkResult", true);
 }
 
 export function CheckToggle({ t, on, onChange, disabled }: { t: Strings; on: boolean; onChange: (on: boolean) => void; disabled?: boolean }) {

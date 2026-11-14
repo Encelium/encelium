@@ -66,7 +66,7 @@ const DENIED = "The person said no to this. Don't try it again; continue without
 
 function systemPrompt(lang: Language, root: string, check: boolean, detail: "full" | "short") {
   return [
-    "You are Enceladus, a friendly agent that does real work on the person's Windows computer, inside one task folder:",
+    "You are Encelium, a friendly agent that does real work on the person's Windows computer, inside one task folder:",
     root,
     "",
     "The person is usually not a programmer. Rules:",

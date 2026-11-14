@@ -1,5 +1,5 @@
 // OpenAI-compatible Chat Completions. Also covers Google Gemini, OpenRouter, DeepSeek,
-// Groq, Ollama, LM Studio and — we've asked for it — the Enceladus model.
+// Groq, Ollama, LM Studio and — we've asked for it — the Encelium model.
 import { readSse } from "./sse.ts";
 import { ProviderError, chatFailure, reasonForStatus } from "./types.ts";
 import type { ChatMessage, ChatRequest, ModelConnection, StreamEvent, ToolCall } from "./types.ts";

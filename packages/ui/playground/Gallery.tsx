@@ -9,7 +9,7 @@ type Theme = "light" | "dark";
 
 const t = {
   en: {
-    title: "Enceladus UI", subtitle: "Design system · foundations and first components",
+    title: "Encelium UI", subtitle: "Design system · foundations and first components",
     light: "Light", dark: "Dark", theme: "Theme", language: "Language",
     colors: "Colors", type: "Type", buttons: "Buttons", iconButtons: "Icon buttons", tags: "Tags", status: "Agent status",
     sample: "What do you want to make?", body: "Describe it in your own words. You can also drop files, folders or a screenshot here.",
@@ -45,7 +45,7 @@ const t = {
     undo: "Undo", tryAgain: "Try again", dismiss: "Close notification", showToasts: "Show again",
   },
   ar: {
-    title: "واجهة إنسيلادوس", subtitle: "نظام التصميم · الأساسيات وأول المكوّنات",
+    title: "واجهة إنسيليوم", subtitle: "نظام التصميم · الأساسيات وأول المكوّنات",
     light: "فاتح", dark: "داكن", theme: "المظهر", language: "اللغة",
     colors: "الألوان", type: "الخطوط", buttons: "الأزرار", iconButtons: "أزرار الأيقونات", tags: "الوسوم", status: "حالة الوكيل",
     sample: "ماذا تريد أن تصنع؟", body: "صِفه بكلماتك. يمكنك أيضًا إفلات ملفات أو مجلدات أو لقطة شاشة هنا.",

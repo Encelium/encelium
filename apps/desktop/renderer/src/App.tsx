@@ -25,7 +25,7 @@ import { SaveRecipeDialog } from "./SaveRecipe";
 import { InviteDialog } from "./InviteDialog";
 import { StatusBar } from "./StatusBar";
 import { ModelDialog } from "./ModelDialog";
-import { Button, Dialog, Toast } from "@enceladus/ui";
+import { Button, Dialog, Toast } from "@encelium/ui";
 import type { Attachment } from "./bridge";
 
 /** prompt/folder are set for a brand-new task; a saved task re-opens without them. */
@@ -42,7 +42,7 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
-  // "Today's energy": what's left of today's requests on the Enceladus model (hidden with your own model).
+  // "Today's energy": what's left of today's requests on the Encelium model (hidden with your own model).
   const [energy, setEnergy] = useState<number | null>(null);
   const [energyVersion, setEnergyVersion] = useState(0);
   useEffect(() => {
@@ -79,14 +79,14 @@ export function App() {
 
   // Layout. Wide windows dock the sidebar and the right panel; smaller ones slide them over the
   // chat instead, closed until asked for. Compact mode is a small chat-only window.
-  const [sidebarDocked, setSidebarDocked] = useRemembered("enceladus.sidebar", true);
-  const [panelDocked, setPanelDocked] = useRemembered("enceladus.panel", true);
+  const [sidebarDocked, setSidebarDocked] = useRemembered("encelium.sidebar", true);
+  const [panelDocked, setPanelDocked] = useRemembered("encelium.panel", true);
   const [sidebarOver, setSidebarOver] = useState(false);
   const [panelOver, setPanelOver] = useState(false);
   const [compact, setCompact] = useState(false);
   const [onTop, setOnTop] = useState(false);
   const [searchRequest, setSearchRequest] = useState(0);
-  const [sidebarWidth, setSidebarWidth] = useRememberedNumber("enceladus.sidebarWidth", 256);
+  const [sidebarWidth, setSidebarWidth] = useRememberedNumber("encelium.sidebarWidth", 256);
   const bodyRef = useRef<HTMLDivElement>(null);
   const narrow = useMediaQuery("(max-width: 900px)");
   const roomy = useMediaQuery("(min-width: 1100px)");

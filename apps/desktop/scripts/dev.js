@@ -13,10 +13,10 @@ const url = server.resolvedUrls?.local[0];
 console.log(`Renderer: ${url}`);
 
 const electron = createRequire(import.meta.url)("electron"); // path to the Electron binary
-// Test mode (Start Enceladus (test mode).cmd): open a DevTools port on 127.0.0.1 so an
+// Test mode (Start Encelium (test mode).cmd): open a DevTools port on 127.0.0.1 so an
 // automated test can drive this window. Never set in normal use.
-const args = process.env.ENCELADUS_TEST_PORT ? [".", `--remote-debugging-port=${process.env.ENCELADUS_TEST_PORT}`] : ["."];
-const child = spawn(electron, args, { cwd: root, stdio: "inherit", env: { ...process.env, ENCELADUS_DEV_URL: url } });
+const args = process.env.ENCELIUM_TEST_PORT ? [".", `--remote-debugging-port=${process.env.ENCELIUM_TEST_PORT}`] : ["."];
+const child = spawn(electron, args, { cwd: root, stdio: "inherit", env: { ...process.env, ENCELIUM_DEV_URL: url } });
 child.on("exit", async (code) => {
   await server.close();
   process.exit(code ?? 0);

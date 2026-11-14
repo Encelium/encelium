@@ -1,7 +1,7 @@
 import { useId } from "react";
 
 /**
- * The Enceladus mark: the moon with the Greek Ε (Epsilon) cut into it like its cracks.
+ * The Encelium mark: the moon with the Greek Ε (Epsilon) cut into it like its cracks.
  * Uses currentColor, so it follows the surrounding text color in both themes.
  */
 export function Logo({ size = 20, title }: { size?: number; title?: string }) {

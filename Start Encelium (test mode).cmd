@@ -1,7 +1,7 @@
 @echo off
-rem Double-click to start Enceladus in test mode: like the dev launcher, but an
+rem Double-click to start Encelium in test mode: like the dev launcher, but an
 rem automated test on this computer can drive the window (port 9229, local only).
-set ENCELADUS_TEST_PORT=9229
+set ENCELIUM_TEST_PORT=9229
 rem Uses npm.cmd, so it works even when PowerShell blocks scripts, and finds
 rem Node.js even in windows opened before Node.js was installed.
 cd /d "%~dp0"

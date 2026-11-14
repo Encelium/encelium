@@ -1,7 +1,7 @@
 // Recipes: tested starting points. Each one asks for a single, clear result in a way a smaller
 // model handles well (one file where possible, no frameworks, check your work, never delete).
 // The person only fills in a few blanks.
-import type { IconName } from "@enceladus/ui";
+import type { IconName } from "@encelium/ui";
 import type { Language } from "./bridge";
 
 export type RecipeCategory = "web" | "files" | "tools" | "help";

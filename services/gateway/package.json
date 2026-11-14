@@ -1,8 +1,8 @@
 {
-  "name": "@enceladus/gateway",
+  "name": "@encelium/gateway",
   "version": "0.1.0",
   "private": true,
-  "description": "Enceladus gateway: invite keys, fair-use limits and server-side prompts in front of the model.",
+  "description": "Encelium gateway: invite keys, fair-use limits and server-side prompts in front of the model.",
   "license": "MIT",
   "type": "module",
   "engines": { "node": ">=24" },

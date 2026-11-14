@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Button, Dialog, TextField } from "@enceladus/ui";
+import { Button, Dialog, TextField } from "@encelium/ui";
 import { bridge, type ModelFailure } from "./bridge";
 import type { Strings } from "./i18n";
 
-/** Connect to the Enceladus model: the invite code (and, until it's built in, the server address). */
+/** Connect to the Encelium model: the invite code (and, until it's built in, the server address). */
 export function InviteDialog({ t, open, onClose, onDone }: { t: Strings; open: boolean; onClose: () => void; onDone: (message: string) => void }) {
   const a = t.access;
   const [address, setAddress] = useState("");

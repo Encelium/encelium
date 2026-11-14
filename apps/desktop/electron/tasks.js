@@ -5,10 +5,10 @@ import { existsSync, watch } from "node:fs";
 import { appendFile, mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { Checkpoints, Workspace, fallbackFolderName } from "@enceladus/agent-core";
+import { Checkpoints, Workspace, fallbackFolderName } from "@encelium/agent-core";
 import { writeZip } from "./zip.js";
 
-export const PREVIEW_SCHEME = "enceladus-preview";
+export const PREVIEW_SCHEME = "encelium-preview";
 
 // Must run before the app is ready.
 protocol.registerSchemesAsPrivileged([{ scheme: PREVIEW_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -28,11 +28,11 @@ async function saveIndex() {
 
 // ── Folders ─────────────────────────────────────────────────────────
 /**
- * A new task's folder in Documents\Enceladus: the model's suggested English name, or English
+ * A new task's folder in Documents\Encelium: the model's suggested English name, or English
  * words from the request, or "new-project". A number is added only if the name is taken.
  */
 function newFolder(prompt, suggested) {
-  const parent = path.join(app.getPath("documents"), "Enceladus");
+  const parent = path.join(app.getPath("documents"), "Encelium");
   const name = suggested || fallbackFolderName(prompt) || "new-project"; // English words only
   let folder = path.join(parent, name);
   for (let n = 2; existsSync(folder); n++) folder = path.join(parent, `${name}-${n}`);
@@ -180,9 +180,9 @@ const PICKER = String.raw`<script>(function () {
     e.preventDefault(); e.stopPropagation();
     var el = cur || e.target;
     var text = (el.innerText || el.getAttribute("alt") || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim().slice(0, 120);
-    parent.postMessage({ type: "enceladus-pick", tag: el.tagName.toLowerCase(), text: text, path: cssPath(el) }, "*");
+    parent.postMessage({ type: "encelium-pick", tag: el.tagName.toLowerCase(), text: text, path: cssPath(el) }, "*");
   }, true);
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") parent.postMessage({ type: "enceladus-pick-cancel" }, "*"); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") parent.postMessage({ type: "encelium-pick-cancel" }, "*"); });
 })();</script>`;
 
 function registerPreview() {
@@ -210,7 +210,7 @@ function registerPreview() {
         if (saved?.movedTo) source = saved.movedTo;
       }
       // "Point at it": the page gets a small picker (highlight on hover, report the clicked part).
-      if (url.searchParams.has("enceladus-pick") && /^text\/html/.test(type)) {
+      if (url.searchParams.has("encelium-pick") && /^text\/html/.test(type)) {
         const page = await readFile(source, "utf8");
         const withPicker = /<\/body>/i.test(page) ? page.replace(/<\/body>(?![\s\S]*<\/body>)/i, `${PICKER}</body>`) : page + PICKER;
         return new Response(withPicker, { headers });

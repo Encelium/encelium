@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { EnceladusScene } from "./enceladus-scene.js";
+import { EnceliumScene } from "./encelium-scene.js";
 import s from "./MoonHero.module.css";
 
 // Room above the moon for the vapor to rise into.
@@ -12,12 +12,12 @@ const SIZE = { w: 300, h: 330, R: 100 };
  */
 export function MoonHero({ theme, active, className }: { theme: "light" | "dark"; active: boolean; className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sceneRef = useRef<EnceladusScene | null>(null);
+  const sceneRef = useRef<EnceliumScene | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const scene = new EnceladusScene(canvas, {
+    const scene = new EnceliumScene(canvas, {
       ...SIZE, theme, cx: SIZE.w / 2, cy: SIZE.h - SIZE.R - 8,
       plates: 100, jets: 8, speed: 80, rate: 2.4, active, seed: 7, transparent: true,
     });

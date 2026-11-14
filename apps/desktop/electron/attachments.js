@@ -64,7 +64,7 @@ export function initAttachments() {
     const ext = { "image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp" }[type];
     const buf = Buffer.from(String(data ?? ""), "base64");
     if (!ext || !buf.length || buf.length > MAX_FILE) return null;
-    const dir = path.join(app.getPath("temp"), "enceladus-pasted");
+    const dir = path.join(app.getPath("temp"), "encelium-pasted");
     await mkdir(dir, { recursive: true });
     const d = new Date(), two = (n) => String(n).padStart(2, "0");
     const name = `pasted-${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}-${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}${ext}`;

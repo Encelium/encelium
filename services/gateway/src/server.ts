@@ -1,4 +1,4 @@
-// Enceladus gateway: sits between the app and the model server.
+// Encelium gateway: sits between the app and the model server.
 //
 //   app ──(invite key)──▶ gateway ──(server key)──▶ model (OpenAI-compatible)
 //
@@ -52,7 +52,9 @@ export function createGateway(config: GatewayConfig) {
     let body: Json;
     try { body = JSON.parse(raw); } catch { return sendError(res, 400, "invalid_request", "The request isn't valid JSON."); }
 
-    const route = config.models.find((m) => m.id === body.model);
+    // "enceladus" is the pre-rename name: older apps still ask for it, older configs still list it.
+    const alias = (asked: unknown, id: string) => (asked === "encelium" && id === "enceladus") || (asked === "enceladus" && id === "encelium");
+    const route = config.models.find((m) => m.id === body.model) ?? config.models.find((m) => alias(body.model, m.id));
     if (!route) return sendError(res, 404, "model_not_found", `There's no model called "${String(body.model)}" here.`);
 
     const limit = limiter.take(key.name, perMinute(key), perDay(key));
@@ -143,7 +145,7 @@ export function createGateway(config: GatewayConfig) {
       const key = keys.find(bearer(req));
       if (!key) return sendError(res, 401, "invalid_api_key", "This invite key isn't valid.");
 
-      if (req.method === "GET" && url.pathname === "/v1/models") return sendJson(res, 200, { object: "list", data: config.models.map((m) => ({ id: m.id, object: "model", owned_by: "enceladus" })) });
+      if (req.method === "GET" && url.pathname === "/v1/models") return sendJson(res, 200, { object: "list", data: config.models.map((m) => ({ id: m.id, object: "model", owned_by: "encelium" })) });
       if (req.method === "GET" && url.pathname === "/v1/usage") return sendJson(res, 200, limiter.usage(key.name, perDay(key)));
       if (req.method === "POST" && url.pathname === "/v1/chat/completions") return await chat(req, res, key);
       return sendError(res, 404, "not_found", "There's nothing here.");

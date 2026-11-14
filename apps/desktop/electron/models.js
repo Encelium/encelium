@@ -3,15 +3,17 @@
 import { app, ipcMain, safeStorage } from "electron";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { PRESETS, CUSTOM_PRESET_ID, checkModel, testConnection } from "@enceladus/agent-core";
+import { PRESETS, CUSTOM_PRESET_ID, checkModel, testConnection } from "@encelium/agent-core";
 
 const file = () => path.join(app.getPath("userData"), "model.json");
 
-/** { mode: "enceladus" } or { mode: "own", presetId, baseUrl, protocol, model, key?: base64 } */
-let state = { mode: "enceladus" };
+/** { mode: "encelium" } or { mode: "own", presetId, baseUrl, protocol, model, key?: base64 } */
+let state = { mode: "encelium" };
 
 async function load() {
-  try { state = JSON.parse(await readFile(file(), "utf8")); } catch { state = { mode: "enceladus" }; }
+  try { state = JSON.parse(await readFile(file(), "utf8")); } catch { state = { mode: "encelium" }; }
+  // Saved before the rename: any mode that isn't "own" means our model.
+  if (state?.mode !== "own" && state?.mode !== "encelium") state = { mode: "encelium" };
 }
 /** Write to disk first; only then make it the live setting, so the two never disagree. */
 async function save(next) {
@@ -43,7 +45,7 @@ function resolve({ presetId, baseUrl, apiKey }) {
 // Reuse the saved key when the user re-tests the same provider without pasting it again.
 const savedKeyFor = (presetId) => (state.mode === "own" && state.presetId === presetId && state.key ? decrypt(state.key) : undefined);
 
-/** The connection the agent engine should use, or null for the Enceladus model. */
+/** The connection the agent engine should use, or null for the Encelium model. */
 export function currentConnection() {
   if (state.mode !== "own") return null;
   return { protocol: state.protocol, baseUrl: state.baseUrl, apiKey: state.key ? decrypt(state.key) : undefined, model: state.model, usageInStream: state.usageInStream };
@@ -56,7 +58,7 @@ export async function initModels() {
 
   ipcMain.handle("model:get", () => (state.mode === "own"
     ? { mode: "own", presetId: state.presetId, baseUrl: state.presetId === CUSTOM_PRESET_ID ? state.baseUrl : null, model: state.model, hasKey: !!state.key }
-    : { mode: "enceladus" }));
+    : { mode: "encelium" }));
 
   ipcMain.handle("model:test", async (_e, input) => {
     const conn = resolve(input ?? {});
@@ -85,6 +87,6 @@ export async function initModels() {
   });
 
   ipcMain.handle("model:reset", async () => {
-    return (await save({ mode: "enceladus" })) ? { ok: true } : { ok: false, reason: "not-saved" }; // forgets the key too
+    return (await save({ mode: "encelium" })) ? { ok: true } : { ok: false, reason: "not-saved" }; // forgets the key too
   });
 }

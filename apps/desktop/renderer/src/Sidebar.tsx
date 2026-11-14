@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, EnergyBar, Icon, IconButton, Menu } from "@enceladus/ui";
+import { Button, EnergyBar, Icon, IconButton, Menu } from "@encelium/ui";
 import type { Strings } from "./i18n";
 import s from "./Sidebar.module.css";
 
@@ -20,7 +20,7 @@ interface SidebarProps {
   onOpenSettings: () => void;
   /** Bumped by Ctrl+K: move the keyboard into the search box. */
   searchRequest?: number;
-  /** What's left of today's Enceladus requests (0-100), or null to hide the bar. */
+  /** What's left of today's Encelium requests (0-100), or null to hide the bar. */
   energy?: number | null;
 }
 

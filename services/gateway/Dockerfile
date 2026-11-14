@@ -1,4 +1,4 @@
-# Enceladus gateway. No dependencies: just Node 24 running the TypeScript sources directly.
+# Encelium gateway. No dependencies: just Node 24 running the TypeScript sources directly.
 FROM node:24-alpine
 WORKDIR /app
 COPY package.json ./

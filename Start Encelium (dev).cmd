@@ -1,5 +1,5 @@
 @echo off
-rem Double-click to start Enceladus in development mode.
+rem Double-click to start Encelium in development mode.
 rem Uses npm.cmd, so it works even when PowerShell blocks scripts, and finds
 rem Node.js even in windows opened before Node.js was installed.
 cd /d "%~dp0"

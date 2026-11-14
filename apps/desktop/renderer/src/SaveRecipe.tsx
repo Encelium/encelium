@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Dialog, TextField } from "@enceladus/ui";
+import { Button, Dialog, TextField } from "@encelium/ui";
 import { bridge } from "./bridge";
 import type { Strings } from "./i18n";
 import s from "./Recipes.module.css";

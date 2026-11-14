@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Dialog, Icon, TextField } from "@enceladus/ui";
+import { Button, Dialog, Icon, TextField } from "@encelium/ui";
 import { bridge, type ModelFailure, type ModelState, type ProviderOption } from "./bridge";
 import type { Strings } from "./i18n";
 import s from "./ModelDialog.module.css";
@@ -23,7 +23,7 @@ interface Props {
 export function ModelDialog({ t, open, onClose, onSaved }: Props) {
   const m = t.model;
   const [presets, setPresets] = useState<ProviderOption[]>([]);
-  const [current, setCurrent] = useState<ModelState>({ mode: "enceladus" });
+  const [current, setCurrent] = useState<ModelState>({ mode: "encelium" });
   const [presetId, setPresetId] = useState("");
   const [address, setAddress] = useState("");
   const [key, setKey] = useState("");
@@ -89,7 +89,7 @@ export function ModelDialog({ t, open, onClose, onSaved }: Props) {
     else setTest({ state: "failed", reason: result.reason });
   };
 
-  const backToEnceladus = async () => {
+  const backToEncelium = async () => {
     const result = await bridge.models.reset();
     if (!result.ok) { setTest({ state: "failed", reason: result.reason }); return; }
     onSaved(fmt(m.saved, { model: t.appName }));
@@ -107,7 +107,7 @@ export function ModelDialog({ t, open, onClose, onSaved }: Props) {
       size="lg"
       actions={
         <div className={s.actions}>
-          {current.mode === "own" && <Button variant="ghost" onClick={backToEnceladus}>{m.useEnceladus}</Button>}
+          {current.mode === "own" && <Button variant="ghost" onClick={backToEncelium}>{m.useEncelium}</Button>}
           <span className={s.spacer} />
           <Button variant="secondary" onClick={onClose}>{m.cancel}</Button>
           <Button variant="primary" onClick={save} disabled={!canSave}>{saving ? m.checking : m.save}</Button>

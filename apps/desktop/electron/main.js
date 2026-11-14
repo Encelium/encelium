@@ -1,7 +1,8 @@
-// Enceladus — Electron main process.
+// Encelium — Electron main process.
 // Owns the window, the native title bar buttons, and the user's settings file.
 import { app, BrowserWindow, clipboard, ipcMain, nativeTheme, screen, shell } from "electron";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { existsSync, renameSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { initModels } from "./models.js";
@@ -12,11 +13,20 @@ import { initRecipes } from "./recipes.js";
 import { initAccess } from "./access.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-app.setName("Enceladus"); // user data lives in %APPDATA%\Enceladus, not under the package name
+app.setName("Encelium"); // user data lives in %APPDATA%\Encelium, not under the package name
+// The app was renamed from Enceladus: on the first run under the new name, move the old
+// data folder over so the person's chats, settings and invite code survive the rename.
+if (!process.env.ENCELIUM_PROFILE_DIR) {
+  const newData = app.getPath("userData");
+  const oldData = path.join(app.getPath("appData"), "Enceladus");
+  if (!existsSync(newData) && existsSync(oldData)) {
+    try { renameSync(oldData, newData); } catch { /* start clean rather than fail */ }
+  }
+}
 // Automated tests run in their own profile, so they never touch the person's chats or settings
 // (and can run while the person's copy is open: the single-instance lock is per profile).
-if (process.env.ENCELADUS_PROFILE_DIR) app.setPath("userData", process.env.ENCELADUS_PROFILE_DIR);
-const devUrl = process.env.ENCELADUS_DEV_URL;
+if (process.env.ENCELIUM_PROFILE_DIR) app.setPath("userData", process.env.ENCELIUM_PROFILE_DIR);
+const devUrl = process.env.ENCELIUM_DEV_URL;
 
 // Title bar colors must match --color-bg-sunken / --color-text-muted in tokens.css.
 const chrome = {
@@ -64,7 +74,7 @@ const effectiveTheme = () => (nativeTheme.shouldUseDarkColors ? "dark" : "light"
 // ── Window ──────────────────────────────────────────────────────────
 let win = null;
 /** The Windows app identity: the installed app's (matches appId in electron-builder.yml), or a separate one in development. */
-const APP_ID = app.isPackaged ? "app.enceladus.desktop" : "app.enceladus.desktop.dev";
+const APP_ID = app.isPackaged ? "app.encelium.desktop" : "app.encelium.desktop.dev";
 // Installed: the plain copy next to app.asar (Windows can't read icons from inside the archive).
 const ICON = app.isPackaged ? path.join(process.resourcesPath, "icon.ico") : path.join(here, "../build/icon.ico");
 const NORMAL_MIN = { width: 720, height: 520 };
@@ -88,7 +98,7 @@ function createWindow() {
     minWidth: NORMAL_MIN.width,
     minHeight: NORMAL_MIN.height,
     show: false,
-    title: "Enceladus",
+    title: "Encelium",
     icon: ICON,
     backgroundColor: c.bg,
     titleBarStyle: "hidden",

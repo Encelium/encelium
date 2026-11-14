@@ -1,0 +1,22 @@
+# systemd unit for running the gateway without Docker.
+# Put the gateway in /opt/encelium-gateway, the upstream key in /etc/encelium-gateway.env
+# (GATEWAY_UPSTREAM_KEY=...), then: sudo systemctl enable --now encelium-gateway
+[Unit]
+Description=Encelium gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/encelium-gateway
+EnvironmentFile=/etc/encelium-gateway.env
+ExecStart=/usr/bin/node src/main.ts
+Restart=on-failure
+User=encelium
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/encelium-gateway/data
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

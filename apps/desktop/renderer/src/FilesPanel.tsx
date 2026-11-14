@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Icon } from "@enceladus/ui";
+import { Button, Icon } from "@encelium/ui";
 import { bridge, type FileView, type TaskFile } from "./bridge";
 import type { Strings } from "./i18n";
 import s from "./FilesPanel.module.css";
@@ -56,7 +56,7 @@ export function FilesPanel({ t, taskId, version, onNotice, openRequest }: { t: S
         <div className={s.content}>
           {!view ? null
             : view.kind === "text" ? <pre className={s.code} dir="ltr">{view.text}</pre>
-            : view.kind === "image" ? <img className={s.image} src={`enceladus-preview://${taskId}/${open.split("/").map(encodeURIComponent).join("/")}`} alt={open} />
+            : view.kind === "image" ? <img className={s.image} src={`encelium-preview://${taskId}/${open.split("/").map(encodeURIComponent).join("/")}`} alt={open} />
             : <p className={s.message}>{view.kind === "missing" ? t.files.missing : view.kind === "large" ? t.files.tooLarge : t.files.binary}</p>}
         </div>
       </div>

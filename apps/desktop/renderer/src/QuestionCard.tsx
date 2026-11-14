@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Icon } from "@enceladus/ui";
+import { Icon } from "@encelium/ui";
 import type { Strings } from "./i18n";
 import s from "./QuestionCard.module.css";
 

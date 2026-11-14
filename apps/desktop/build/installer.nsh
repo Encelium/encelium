@@ -30,7 +30,7 @@
         StrCpy $INSTDIR "$PROGRAMFILES64\${PRODUCT_FILENAME}"
       ${EndIf}
 
-      # An older "just for me" copy would leave a second Enceladus behind: remove it quietly
+      # An older "just for me" copy would leave a second Encelium behind: remove it quietly
       # (its settings and chats are kept: they live in the user's AppData, not next to the app).
       ReadRegStr $0 HKCU "${UNINSTALL_REGISTRY_KEY}" QuietUninstallString
       ReadRegStr $1 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
@@ -43,7 +43,7 @@
         DeleteRegKey HKCU "${INSTALL_REGISTRY_KEY}"
       ${EndIf}
     ${Else}
-      # Just for this user: a folder named "Enceladus", not the package name "@enceladusdesktop"
+      # Just for this user: a folder named "Encelium", not the package name "@enceliumdesktop"
       # (an existing install keeps its folder).
       ReadRegStr $0 HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation
       ${If} $0 == ""

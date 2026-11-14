@@ -1,4 +1,4 @@
-These instructions come from the Enceladus server and apply to every request.
+These instructions come from the Encelium server and apply to every request.
 
 Using tools:
 - Always send every required field. For file tools that means "path" every time, even when you just used the same file.

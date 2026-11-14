@@ -13,7 +13,7 @@ export interface Settings {
 }
 
 export interface ProviderOption { id: string; name: string; needsKey: boolean; keyUrl: string | null; local: boolean }
-export type ModelState = { mode: "enceladus" } | { mode: "own"; presetId: string; baseUrl: string | null; model: string; hasKey: boolean };
+export type ModelState = { mode: "encelium" } | { mode: "own"; presetId: string; baseUrl: string | null; model: string; hasKey: boolean };
 export interface ModelInput { presetId: string; baseUrl?: string; apiKey?: string; model?: string }
 export type ModelFailure = "no-network" | "bad-key" | "not-found" | "rate-limited" | "server" | "bad-response" | "bad-address" | "no-key" | "no-model" | "no-encryption" | "not-saved" | "model-unavailable" | "no-tools" | "too-long" | "unknown-provider";
 export type TestResult = { ok: true; models: string[] } | { ok: false; reason: ModelFailure };
@@ -95,7 +95,7 @@ export interface Bridge {
     start(input: { taskId: string; message: string }): Promise<{ ok: true } | { ok: false; reason: "not-installed" | "failed"; detail?: string }>;
     save(input: { taskId: string; message: string }): Promise<{ ok: true } | { ok: false; reason: "not-installed" | "failed"; detail?: string }>;
   };
-  /** Access to the Enceladus model through the gateway (desktop app only). */
+  /** Access to the Encelium model through the gateway (desktop app only). */
   access?: {
     get(): Promise<{ connected: boolean; gatewayUrl: string; builtInAddress: boolean }>;
     connect(input: { gatewayUrl: string; code: string }): Promise<{ ok: true } | { ok: false; reason: ModelFailure }>;
@@ -121,7 +121,7 @@ export interface Bridge {
 }
 
 declare global {
-  interface Window { enceladus?: Bridge }
+  interface Window { encelium?: Bridge }
 }
 
 // Outside Electron (e.g. opening the renderer in a normal browser while designing),
@@ -131,7 +131,7 @@ function browserFallback(): Bridge {
   const effective = (t: ThemeSetting): EffectiveTheme => (t === "system" ? (media.matches ? "dark" : "light") : t);
   const read = (): Omit<Settings, "effectiveTheme"> => {
     try {
-      const s = JSON.parse(localStorage.getItem("enceladus.settings") ?? "{}");
+      const s = JSON.parse(localStorage.getItem("encelium.settings") ?? "{}");
       return { theme: s.theme ?? "light", language: s.language ?? (navigator.language.startsWith("ar") ? "ar" : "en"), welcomed: !!s.welcomed, detail: s.detail === "short" ? "short" : "full" };
     } catch {
       return { theme: "light", language: "en", welcomed: false, detail: "full" };
@@ -141,7 +141,7 @@ function browserFallback(): Bridge {
     async getSettings() { const s = read(); return { ...s, effectiveTheme: effective(s.theme) }; },
     async setSettings(patch) {
       const s = { ...read(), ...patch };
-      try { localStorage.setItem("enceladus.settings", JSON.stringify(s)); } catch { /* storage blocked: keep in memory only */ }
+      try { localStorage.setItem("encelium.settings", JSON.stringify(s)); } catch { /* storage blocked: keep in memory only */ }
       return { ...s, effectiveTheme: effective(s.theme) };
     },
     onEffectiveTheme(callback) {
@@ -151,7 +151,7 @@ function browserFallback(): Bridge {
     },
     // Design-time stand-in only: no network, keys are never stored. "bad" as a key simulates a wrong key.
     models: (() => {
-      let state: ModelState = { mode: "enceladus" };
+      let state: ModelState = { mode: "encelium" };
       const wait = () => new Promise((r) => setTimeout(r, 600));
       return {
         async presets() {
@@ -166,10 +166,10 @@ function browserFallback(): Bridge {
         async get() { return state; },
         async test(input) { await wait(); return input.apiKey === "bad" ? { ok: false, reason: "bad-key" } : { ok: true, models: ["model-large", "model-small"] }; },
         async save(input) { await wait(); state = { mode: "own", presetId: input.presetId, baseUrl: input.baseUrl ?? null, model: input.model ?? "", hasKey: !!input.apiKey }; return { ok: true }; },
-        async reset() { state = { mode: "enceladus" }; return { ok: true }; },
+        async reset() { state = { mode: "encelium" }; return { ok: true }; },
       };
     })(),
   };
 }
 
-export const bridge: Bridge = window.enceladus ?? browserFallback();
+export const bridge: Bridge = window.encelium ?? browserFallback();

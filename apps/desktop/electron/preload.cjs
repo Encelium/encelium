@@ -1,7 +1,7 @@
 // The only bridge between the window and the main process. Keep it small.
 const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
-contextBridge.exposeInMainWorld("enceladus", {
+contextBridge.exposeInMainWorld("encelium", {
   getSettings: () => ipcRenderer.invoke("settings:get"),
   setSettings: (patch) => ipcRenderer.invoke("settings:set", patch),
   models: {

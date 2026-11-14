@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Dialog, Icon, type IconName } from "@enceladus/ui";
+import { Button, Dialog, Icon, type IconName } from "@encelium/ui";
 import { bridge, type StatusInfo } from "./bridge";
 import type { Strings } from "./i18n";
 import s from "./StatusBar.module.css";

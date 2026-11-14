@@ -1,11 +1,11 @@
-// Enceladus scene — an icy moon cracked into plates like dried desert mud. Light from
+// Encelium scene — an icy moon cracked into plates like dried desert mud. Light from
 // the ocean beneath glows through the cracks in slow waves; while the agent is working,
 // thin curtains of vapor rise from vents on the cracks around the pole.
 //
 // Everything heavy (shading, crack network, glow) is rendered once at start; each
 // frame draws 2 glow images, ~30 beams and a few hundred particles.
 //
-// const s = new EnceladusScene(canvas, {
+// const s = new EnceliumScene(canvas, {
 //   w, h, theme: 'dark' | 'light',
 //   cx, cy, R,            // sphere center and radius in CSS px
 //   plates: 110,          // number of plates over the whole moon (more = smaller plates)
@@ -17,7 +17,7 @@
 //   transparent: false    // true: no sky, the page shows through (e.g. the app home screen)
 // });
 // s.setActive(true | false)
-class EnceladusScene {
+class EnceliumScene {
   constructor(cv, o) {
     this.cv = cv;
     this.o = o = Object.assign({ plates: 110, tilt: 40, jets: 11, speed: 95, rate: 3, active: true, seed: 7 }, o);
@@ -229,4 +229,4 @@ function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b
 function perp(A) { const a = Math.abs(A[1]) < .9 ? [0, 1, 0] : [1, 0, 0], u = norm(cross(a, A)); return [u, cross(A, u)]; }
 function smooth(a, b, v) { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); }
 function mulberry32(s) { return function () { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-if (typeof window !== 'undefined') window.EnceladusScene = EnceladusScene;
+if (typeof window !== 'undefined') window.EnceliumScene = EnceliumScene;

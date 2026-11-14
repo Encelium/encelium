@@ -1,8 +1,8 @@
 {
-  "name": "@enceladus/desktop",
+  "name": "@encelium/desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Enceladus desktop app (Windows first).",
+  "description": "Encelium desktop app (Windows first).",
   "license": "MIT",
   "type": "module",
   "main": "electron/main.js",
@@ -15,8 +15,8 @@
     "dist": "vite build && node scripts/bundle-main.mjs && electron-builder --win --x64"
   },
   "devDependencies": {
-    "@enceladus/agent-core": "0.1.0",
-    "@enceladus/ui": "0.1.0",
+    "@encelium/agent-core": "0.1.0",
+    "@encelium/ui": "0.1.0",
     "@types/node": "24.19.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
@@ -28,5 +28,5 @@
     "typescript": "5.9.3",
     "vite": "8.3.1"
   },
-  "author": "The Enceladus Authors"
+  "author": "The Encelium Authors"
 }

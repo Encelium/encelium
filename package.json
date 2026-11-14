@@ -1,7 +1,7 @@
 {
-  "name": "enceladus",
+  "name": "encelium",
   "private": true,
-  "description": "Enceladus — a free, no-jargon AI agent for chat and coding.",
+  "description": "Encelium — a free, no-jargon AI agent for chat and coding.",
   "license": "MIT",
   "workspaces": [
     "packages/*",
@@ -9,10 +9,10 @@
     "services/*"
   ],
   "scripts": {
-    "app": "npm run dev -w @enceladus/desktop",
-    "gallery": "npm run dev -w @enceladus/ui",
+    "app": "npm run dev -w @encelium/desktop",
+    "gallery": "npm run dev -w @encelium/ui",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "gateway": "npm start -w @enceladus/gateway"
+    "gateway": "npm start -w @encelium/gateway"
   },
   "engines": {
     "node": ">=22"
