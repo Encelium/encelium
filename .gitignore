@@ -15,3 +15,5 @@ Thumbs.db
 # Build output
 apps/desktop/out/
 apps/desktop/release/
+apps/web/dist/
+apps/web/public/download/*.exe

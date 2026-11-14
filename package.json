@@ -12,7 +12,9 @@
     "app": "npm run dev -w @encelium/desktop",
     "gallery": "npm run dev -w @encelium/ui",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "gateway": "npm start -w @encelium/gateway"
+    "gateway": "npm start -w @encelium/gateway",
+    "site": "npm run dev -w @encelium/web",
+    "site:build": "npm run build -w @encelium/web"
   },
   "engines": {
     "node": ">=22"
