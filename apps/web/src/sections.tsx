@@ -418,7 +418,9 @@ export function Ocean({ t }: { t: Copy }) {
     <section className="ocean" data-theme="dark">
       <div className="ocean-moon">
         <div ref={moon}>
-          <Moon theme="dark" w={1100} h={720} r={360} plates={120} jets={12} speed={90} rate={2.6} seed={11} />
+          {/* h > 2r + 16: the sphere's crown keeps headroom inside the canvas,
+              so nothing slices through the top of the moon. */}
+          <Moon theme="dark" w={1100} h={840} r={350} plates={120} jets={12} speed={90} rate={2.6} seed={11} />
         </div>
       </div>
       <div className="wrap ocean-in ocean-content">
