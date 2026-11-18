@@ -186,9 +186,22 @@ html[dir="rtl"] .kicker { letter-spacing: 0; }
 
 /* ── Ocean band (dark) ─────────────────────────────────────────── */
 
-/* The band fills most of the screen with its words centered, so there is no
-   scroll position where it reads as an empty black screen. */
-.ocean { background: #0F1317; min-height: 92vh; display: grid; place-items: center; padding-block: clamp(72px, 9vw, 120px); overflow: hidden; }
+/* The dark band is a rounded "pool" inset from the page edges — the light→dark
+   boundary is a designed shape, never a full-width straight slice. Its words
+   stay centered so no scroll position reads as an empty black screen. */
+.ocean {
+  background: #0F1317;
+  border-radius: clamp(20px, 4vw, 36px);
+  max-width: min(1200px, calc(100% - 24px));
+  margin-inline: auto;
+  margin-block: clamp(56px, 7vw, 96px);
+  min-height: 86vh;
+  display: grid;
+  place-items: center;
+  padding-block: clamp(72px, 9vw, 120px);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
 /* Re-apply the token color here: the dark tokens flip on this section, but plain
    inheritance still carries body's light-theme ink down to the headline. */
 .ocean { color: var(--color-text); }
