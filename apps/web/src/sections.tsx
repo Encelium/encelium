@@ -438,6 +438,24 @@ export function Ocean({ t }: { t: Copy }) {
 
 /* ── FAQ ────────────────────────────────────────────────────────── */
 
+/** One FAQ row: opens and closes with a height animation. */
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={["faq-item", open ? "open" : ""].join(" ")}>
+      <button className="faq-q" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <span>{q}</span>
+        <i className="faq-x" aria-hidden="true" />
+      </button>
+      <div className="faq-body">
+        <div className="faq-body-clip">
+          <p>{a}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Faq({ t }: { t: Copy }) {
   return (
     <section className="faq wrap" id="faq">
@@ -446,10 +464,7 @@ export function Faq({ t }: { t: Copy }) {
       <div className="faq-list">
         {t.faq.items.map((f, k) => (
           <Reveal as="div" delay={k * 60} key={f.q}>
-            <details>
-              <summary>{f.q}</summary>
-              <p>{f.a}</p>
-            </details>
+            <FaqItem q={f.q} a={f.a} />
           </Reveal>
         ))}
       </div>
