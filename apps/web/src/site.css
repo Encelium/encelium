@@ -197,6 +197,16 @@ html[dir="rtl"] .kicker { letter-spacing: 0; }
 .ocean .lead { max-width: 46ch; margin: var(--space-6) auto 0; }
 .ocean-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-8); }
 .ocean-moon { position: absolute; inset-inline: 0; bottom: -10%; display: flex; justify-content: center; opacity: 1; pointer-events: none; }
+/* The moon sinks into the deep: its clipped bottom and sides fade out instead of
+   ending in a hard cut against the band's edges. */
+.ocean-moon {
+  -webkit-mask-image: linear-gradient(to top, transparent 2%, rgba(0, 0, 0, .9) 30%, #000 60%),
+    linear-gradient(to right, transparent 0%, #000 20%, #000 80%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to top, transparent 2%, rgba(0, 0, 0, .9) 30%, #000 60%),
+    linear-gradient(to right, transparent 0%, #000 20%, #000 80%, transparent 100%);
+  mask-composite: intersect;
+}
 /* A soft dark halo keeps the words readable wherever the moon glows. */
 .ocean-content { background: radial-gradient(58% 46% at 50% 44%, rgba(15, 19, 23, .78), rgba(15, 19, 23, 0) 72%); }
 .ocean .kicker { justify-content: center; }
