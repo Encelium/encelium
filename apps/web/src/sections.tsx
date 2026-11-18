@@ -9,7 +9,18 @@ const INSTALLER = "./download/Encelium-Setup-0.1.0.exe";
 
 /* ── Nav ────────────────────────────────────────────────────────── */
 
-export function Nav({ t, onLang }: { t: Copy; onLang: () => void }) {
+const SunIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.4" /><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7" />
+  </svg>
+);
+const MoonIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" />
+  </svg>
+);
+
+export function Nav({ t, lang, onLang, theme, onTheme }: { t: Copy; lang: "en" | "ar"; onLang: (l: "en" | "ar") => void; theme: "light" | "dark"; onTheme: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const on = () => setScrolled(scrollY > 8);
@@ -26,8 +37,15 @@ export function Nav({ t, onLang }: { t: Copy; onLang: () => void }) {
           <a href="#how">{t.nav.how}</a>
           <a href="#makes">{t.nav.makes}</a>
           <a href="#faq">{t.nav.faq}</a>
+          <a href="./contact.html">{t.nav.contact}</a>
         </div>
-        <button className="lang" onClick={onLang} aria-label="Switch language">{t.nav.langName}</button>
+        <button className="theme-btn" onClick={onTheme} aria-label={theme === "dark" ? "Light mode" : "Dark mode"}>
+          {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+        </button>
+        <div className="seg" role="group" aria-label="Language">
+          <button className={["seg-btn", lang === "en" ? "on" : ""].join(" ")} aria-pressed={lang === "en"} onClick={() => onLang("en")}>EN</button>
+          <button className={["seg-btn", lang === "ar" ? "on" : ""].join(" ")} aria-pressed={lang === "ar"} onClick={() => onLang("ar")}>ع</button>
+        </div>
         <a className="btn btn-primary" href="#download">{t.nav.download}</a>
       </div>
     </nav>
@@ -59,9 +77,63 @@ export function Typewriter({ phrases }: { phrases: string[] }) {
   return <p className="hero-examples" aria-hidden="true"><span dir="auto">{text}</span><i className="caret" /></p>;
 }
 
+/* ── Try it: a scripted taste of the agent, right in the hero ──── */
+
+function TryBox({ t }: { t: Copy }) {
+  const u = t.hero.try;
+  const [text, setText] = useState("");
+  const [stage, setStage] = useState<"idle" | "q" | "work" | "done">("idle");
+  const [picked, setPicked] = useState<string | null>(null);
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const later = (fn: () => void, ms: number) => { timers.current.push(window.setTimeout(fn, ms)); };
+  const ask = () => { if (text.trim()) { setStage("q"); setPicked(null); } };
+  const pick = (o: string) => { setPicked(o); setStage("work"); later(() => setStage("done"), 2000); };
+  const reset = () => { setStage("idle"); setText(""); setPicked(null); };
+
+  return (
+    <div className="try">
+      <p className="try-label">{u.label}</p>
+      <div className="try-bar">
+        <input
+          value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && ask()}
+          placeholder={u.ph} dir="auto" disabled={stage !== "idle"} aria-label={u.ph}
+        />
+        {stage === "idle"
+          ? <button className="btn btn-primary try-send" onClick={ask}>{u.send}</button>
+          : <button className="btn btn-ghost try-send" onClick={reset}>{u.again}</button>}
+      </div>
+      {stage !== "idle" && (
+        <div className="try-card">
+          <div className="try-user">{text}</div>
+          {stage === "q" && (
+            <div className="q-card">
+              <p className="qt">{u.q}</p>
+              <div className="q-opts">{u.opts.map((o, k) => <button className={["q-opt", k === 0 ? "rec" : ""].join(" ")} key={o} onClick={() => pick(o)}>{o}</button>)}</div>
+            </div>
+          )}
+          {stage === "work" && <div className="work-line"><StatusIcon status="working" label={u.working} /> {u.working}</div>}
+          {stage === "done" && (
+            <>
+              {picked && <div className="try-answer">{picked}</div>}
+              <div className="work-line"><StatusIcon status="done" label={u.done} /> {u.done}</div>
+              <div className="try-preview" aria-hidden="true">
+                <div className="prev-bar"><i /><i /><i /></div>
+                <div className="prev-hero">{t.ui.previewTitle}</div>
+                <div className="prev-lines"><i /><i /><i /><i /></div>
+              </div>
+              <span className="chip try-demo"><Icon name="info" size={13} /> {u.demo}</span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Hero ───────────────────────────────────────────────────────── */
 
-export function Hero({ t }: { t: Copy }) {
+export function Hero({ t, theme }: { t: Copy; theme: "light" | "dark" }) {
   const moon = useParallax(0.1);
   return (
     <header className="hero" id="top">
@@ -81,12 +153,13 @@ export function Hero({ t }: { t: Copy }) {
           </Reveal>
           <Reveal delay={320}>
             <div className="hero-trust">{t.hero.trust.map((c) => <span className="chip" key={c}><Icon name="check" size={13} /> {c}</span>)}</div>
-            <Typewriter key={t.dir} phrases={[...t.hero.examples]} />
           </Reveal>
+          <Reveal delay={420}><TryBox t={t} /></Reveal>
+          <Typewriter key={t.dir} phrases={[...t.hero.examples]} />
         </div>
         <div className="hero-moon">
           <div className="moon-par" ref={moon}>
-            <Moon theme="light" w={420} h={380} r={148} plates={100} jets={9} speed={85} rate={2.4} seed={7} />
+            <Moon theme={theme} w={420} h={380} r={148} plates={100} jets={9} speed={85} rate={2.4} seed={7} />
           </div>
         </div>
       </div>
@@ -345,7 +418,7 @@ export function Ocean({ t }: { t: Copy }) {
     <section className="ocean" data-theme="dark">
       <div className="ocean-moon">
         <div ref={moon}>
-          <Moon theme="dark" w={980} h={640} r={320} plates={120} jets={12} speed={90} rate={2.6} seed={11} />
+          <Moon theme="dark" w={1100} h={720} r={360} plates={120} jets={12} speed={90} rate={2.6} seed={11} />
         </div>
       </div>
       <div className="wrap ocean-in ocean-content">
@@ -384,7 +457,7 @@ export function Faq({ t }: { t: Copy }) {
 
 /* ── Download ───────────────────────────────────────────────────── */
 
-export function Download({ t }: { t: Copy }) {
+export function Download({ t, theme }: { t: Copy; theme: "light" | "dark" }) {
   return (
     <section className="download wrap" id="download">
       <Reveal className="dl-card">
@@ -399,7 +472,7 @@ export function Download({ t }: { t: Copy }) {
             <Icon name="download" size={18} /> {t.download.cta}
           </a>
           <span className="dl-meta">{t.download.version}</span>
-          <Moon theme="light" w={220} h={190} r={64} plates={80} jets={6} speed={70} rate={1.8} seed={3} />
+          <Moon theme={theme} w={220} h={190} r={64} plates={80} jets={6} speed={70} rate={1.8} seed={3} />
         </div>
       </Reveal>
       <ol className="dl-steps">
@@ -428,6 +501,7 @@ export function Footer({ t }: { t: Copy }) {
         <span className="tag">{t.footer.tagline}</span>
         <nav className="footer-links">
           {t.footer.links.map((l, k) => <a key={l} href={hrefs[k] ?? "#top"}>{l}</a>)}
+          <a href="./contact.html">{t.nav.contact}</a>
         </nav>
         <span>{t.footer.opensource}</span>
         <span>{t.footer.rights}</span>

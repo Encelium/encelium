@@ -6,7 +6,7 @@ export type Lang = "en" | "ar";
 export const STRINGS = {
   en: {
     dir: "ltr",
-    nav: { features: "Features", how: "How it works", makes: "What it makes", faq: "FAQ", download: "Download", langName: "عربي" },
+    nav: { features: "Features", how: "How it works", makes: "What it makes", faq: "FAQ", contact: "Contact", download: "Download", langName: "عربي" },
     hero: {
       kicker: "Free beta · Windows 10 & 11",
       title: ["The agent that", "speaks human."],
@@ -21,6 +21,17 @@ export const STRINGS = {
         "A small tool to track my expenses…",
         "Tidy up my Downloads folder…",
       ],
+      try: {
+        label: "Or try the feeling right here — no download",
+        ph: "Type anything — e.g. “a site for my shop”",
+        send: "Ask",
+        q: "Nice. What's it for?",
+        opts: ["A shop", "Something else"],
+        working: "Planning 3 steps, then building…",
+        done: "Done — here's your page, live. This taste was scripted; the real agent does the rest.",
+        demo: "Scripted demo",
+        again: "Try again",
+      },
     },
     steps: {
       kicker: "How it works",
@@ -156,7 +167,7 @@ export const STRINGS = {
   },
   ar: {
     dir: "rtl",
-    nav: { features: "الميزات", how: "كيف يعمل", makes: "ما الذي يصنعه", faq: "أسئلة", download: "تحميل", langName: "English" },
+    nav: { features: "الميزات", how: "كيف يعمل", makes: "ما الذي يصنعه", faq: "أسئلة", contact: "تواصل", download: "تحميل", langName: "English" },
     hero: {
       kicker: "نسخة تجريبية مجانية · ويندوز 10 و11",
       title: ["مساعدٌ", "يتحدّث لغتك."],
@@ -171,6 +182,17 @@ export const STRINGS = {
         "أداة صغيرة لتتبّع مصاريفي…",
         "رتّب مجلد التنزيلات…",
       ],
+      try: {
+        label: "أو جرّب الإحساس هنا — بلا تحميل",
+        ph: "اكتب أي شيء — مثلًا «موقع لمتجري»",
+        send: "اسأل",
+        q: "جميل. ما الغرض منه؟",
+        opts: ["متجر", "شيء آخر"],
+        working: "أخطّط ٣ خطوات، ثم أبني…",
+        done: "تمّت — ها هي صفحتك مباشرة. هذه تجربة مُبرمجة؛ والمساعد الحقيقي يفعل الباقي.",
+        demo: "تجربة مُبرمجة",
+        again: "جرّب مرة أخرى",
+      },
     },
     steps: {
       kicker: "كيف يعمل",

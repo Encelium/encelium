@@ -186,15 +186,17 @@ html[dir="rtl"] .kicker { letter-spacing: 0; }
 
 /* ── Ocean band (dark) ─────────────────────────────────────────── */
 
-.ocean { background: #0F1317; padding-block: calc(var(--section-gap) + 40px); overflow: hidden; }
+/* The band fills most of the screen with its words centered, so there is no
+   scroll position where it reads as an empty black screen. */
+.ocean { background: #0F1317; min-height: 92vh; display: grid; place-items: center; padding-block: clamp(72px, 9vw, 120px); overflow: hidden; }
 /* Re-apply the token color here: the dark tokens flip on this section, but plain
    inheritance still carries body's light-theme ink down to the headline. */
 .ocean { color: var(--color-text); }
-.ocean-in { position: relative; text-align: center; }
+.ocean-in { position: relative; text-align: center; width: 100%; }
 .ocean .big { font-size: clamp(34px, 5.2vw, 64px); line-height: 1.12; max-width: 16ch; margin-inline: auto; text-wrap: balance; }
 .ocean .lead { max-width: 46ch; margin: var(--space-6) auto 0; }
 .ocean-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-8); }
-.ocean-moon { position: absolute; inset-inline: 0; bottom: -14%; display: flex; justify-content: center; opacity: .95; pointer-events: none; }
+.ocean-moon { position: absolute; inset-inline: 0; bottom: -10%; display: flex; justify-content: center; opacity: 1; pointer-events: none; }
 /* A soft dark halo keeps the words readable wherever the moon glows. */
 .ocean-content { background: radial-gradient(58% 46% at 50% 44%, rgba(15, 19, 23, .78), rgba(15, 19, 23, 0) 72%); }
 .ocean .kicker { justify-content: center; }
@@ -327,3 +329,60 @@ html[dir="rtl"] .jargon-head { letter-spacing: 0; }
 
 @media (max-width: 1000px) { .gallery-grid, .roadmap-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 860px) { .gallery-grid, .roadmap-grid, .dl-steps { grid-template-columns: 1fr; } }
+
+/* ── Nav: theme toggle + EN/AR segmented ────────────────────────── */
+
+.theme-btn { display: inline-flex; align-items: center; justify-content: center; width: var(--control-md); height: var(--control-md); border-radius: var(--radius-sm); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text-muted); cursor: pointer; transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out); }
+.theme-btn:hover { color: var(--color-accent); border-color: var(--color-accent); }
+.theme-btn:active { transform: scale(.94); }
+
+.seg { display: inline-flex; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); overflow: hidden; background: var(--color-surface); }
+.seg-btn { border: 0; background: transparent; color: var(--color-text-muted); font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium); height: calc(var(--control-md) - 2px); padding-inline: 12px; cursor: pointer; transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out); }
+.seg-btn + .seg-btn { border-inline-start: 1px solid var(--color-border); }
+.seg-btn:hover { color: var(--color-accent); }
+.seg-btn.on { background: var(--color-accent-soft); color: var(--color-accent); }
+
+/* ── Try-it box (scripted taste of the agent) ───────────────────── */
+
+.try { margin-top: var(--space-10); max-width: 560px; }
+.try-label { font-size: var(--text-sm); color: var(--color-text-subtle); margin-bottom: var(--space-3); }
+.try-bar { display: flex; gap: var(--space-3); }
+.try-bar input { flex: 1; height: var(--control-lg); padding-inline: var(--space-5); border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text); font: inherit; }
+.try-bar input:focus { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; border-color: var(--color-accent); }
+.try-bar input:disabled { opacity: .75; }
+.try-send { height: var(--control-lg); flex: none; }
+.try-card { margin-top: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); box-shadow: var(--shadow-md); animation: rise .5s var(--ease-out); }
+.try-user { align-self: flex-end; max-width: 85%; background: var(--color-surface-muted); border-radius: var(--radius-lg); border-end-end-radius: var(--radius-sm); padding: 10px 16px; font-size: var(--text-base); }
+html[dir="rtl"] .try-user { align-self: flex-start; border-radius: var(--radius-lg); border-end-start-radius: var(--radius-sm); border-end-end-radius: var(--radius-lg); }
+.try-answer { align-self: flex-start; padding: 6px 16px; border-radius: var(--radius-full); background: var(--color-accent-soft); color: var(--color-accent); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.try-preview { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: #fff; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+.try-demo { align-self: flex-start; }
+
+/* ── Primary button sheen ───────────────────────────────────────── */
+
+.btn-primary { position: relative; overflow: hidden; }
+.btn-primary::after { content: ""; position: absolute; inset: 0; transform: translateX(-130%); background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, .16) 50%, transparent 68%); animation: sheen 4.6s var(--ease-in-out) infinite; pointer-events: none; }
+@keyframes sheen { 0%, 55% { transform: translateX(-130%); } 88%, 100% { transform: translateX(130%); } }
+@media (prefers-reduced-motion: reduce) { .btn-primary::after { animation: none; display: none; } }
+
+/* ── Dark mode plumbing ─────────────────────────────────────────── */
+
+html[data-theme="dark"] { color-scheme: dark; }
+body { transition: background-color .3s var(--ease-out), color .3s var(--ease-out); }
+html[data-theme="dark"] .prev-hero { color: #7FD3A3; }
+
+/* ── Contact page ───────────────────────────────────────────────── */
+
+.contact-main { padding-top: 150px; padding-bottom: var(--section-gap); max-width: 640px; }
+.contact-main .h2 { margin-top: var(--space-4); }
+.contact-form { margin-top: var(--space-10); display: flex; flex-direction: column; gap: var(--space-5); }
+.contact-form label { display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--color-text-muted); }
+.contact-form input, .contact-form textarea { border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); font: inherit; padding: 12px var(--space-4); }
+.contact-form textarea { resize: vertical; min-height: 120px; }
+.contact-form input:focus, .contact-form textarea:focus { outline: 2px solid var(--color-focus-ring); outline-offset: 1px; border-color: var(--color-accent); }
+.contact-actions { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.contact-actions .btn .enc-directional { margin-inline-start: 4px; }
+.contact-note { font-size: var(--text-sm); color: var(--color-text-subtle); }
+.contact-alt { margin-top: var(--space-8); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; color: var(--color-text-subtle); font-size: var(--text-sm); }
+.contact-alt code { font-family: var(--font-mono); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 4px 10px; }
+.contact-alt .btn { height: var(--control-sm); font-size: var(--text-sm); }
