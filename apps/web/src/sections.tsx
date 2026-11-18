@@ -24,6 +24,7 @@ export function Nav({ t, onLang }: { t: Copy; onLang: () => void }) {
         <div className="nav-links">
           <a href="#features">{t.nav.features}</a>
           <a href="#how">{t.nav.how}</a>
+          <a href="#makes">{t.nav.makes}</a>
           <a href="#faq">{t.nav.faq}</a>
         </div>
         <button className="lang" onClick={onLang} aria-label="Switch language">{t.nav.langName}</button>
@@ -31,6 +32,31 @@ export function Nav({ t, onLang }: { t: Copy; onLang: () => void }) {
       </div>
     </nav>
   );
+}
+
+/* ── Typewriter: example requests cycling in the hero ──────────── */
+
+export function Typewriter({ phrases }: { phrases: string[] }) {
+  const [text, setText] = useState(phrases[0]);
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let i = 0;
+    let pos = phrases[0].length;
+    let dir: 1 | -1 = -1;
+    let timer = 0;
+    const tick = () => {
+      const p = phrases[i];
+      pos += dir;
+      setText(p.slice(0, Math.max(0, pos)));
+      if (dir < 0 && pos <= 0) { dir = 1; i = (i + 1) % phrases.length; timer = window.setTimeout(tick, 380); return; }
+      if (dir > 0 && pos >= phrases[i].length) { dir = -1; timer = window.setTimeout(tick, 2200); return; }
+      timer = window.setTimeout(tick, dir < 0 ? 24 : 44);
+    };
+    timer = window.setTimeout(tick, 1900);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return <p className="hero-examples" aria-hidden="true"><span dir="auto">{text}</span><i className="caret" /></p>;
 }
 
 /* ── Hero ───────────────────────────────────────────────────────── */
@@ -55,6 +81,7 @@ export function Hero({ t }: { t: Copy }) {
           </Reveal>
           <Reveal delay={320}>
             <div className="hero-trust">{t.hero.trust.map((c) => <span className="chip" key={c}><Icon name="check" size={13} /> {c}</span>)}</div>
+            <Typewriter key={t.dir} phrases={[...t.hero.examples]} />
           </Reveal>
         </div>
         <div className="hero-moon">
@@ -228,6 +255,88 @@ export function Features({ t }: { t: Copy }) {
   );
 }
 
+/* ── Gallery: what it makes, each with a small drawn vignette ───── */
+
+const GALLERY_MINIS: Record<string, string> = { page: "m-page", list: "m-list", grid: "m-grid-mini", files: "m-files", table: "m-table", cards: "m-cards" };
+
+export function Gallery({ t }: { t: Copy }) {
+  return (
+    <section className="gallery wrap" id="makes">
+      <Reveal><span className="kicker">{t.gallery.kicker}</span></Reveal>
+      <Reveal delay={80}>
+        <h2 className="h2" style={{ marginTop: "var(--space-4)" }}>{t.gallery.title}</h2>
+        <p className="lead" style={{ marginTop: "var(--space-4)", maxWidth: "56ch" }}>{t.gallery.lead}</p>
+      </Reveal>
+      <div className="gallery-grid">
+        {t.gallery.items.map((g, k) => (
+          <Reveal as="div" className="g-card" delay={(k % 3) * 110} key={g.t}>
+            <div className={["mini", GALLERY_MINIS[g.v]].join(" ")} aria-hidden="true">
+              {g.v === "page" && <><div className="m-bar"><i /><i /><i /></div><div className="m-title" /><div className="m-line" /><div className="m-line short" /><div className="m-line" /></>}
+              {g.v === "list" && <><div className="m-row" /><div className="m-row" /><div className="m-row" /><div className="m-row" /><div className="m-row" /></>}
+              {g.v === "grid" && <><div className="m-cell" /><div className="m-cell" /><div className="m-cell" /><div className="m-cell" /></>}
+              {g.v === "files" && <><div className="m-file"><Icon name="folder" size={12} /><i /><Icon name="arrowRight" size={11} /><Icon name="folder" size={12} /><b /></div><div className="m-file"><Icon name="folder" size={12} /><i /><Icon name="arrowRight" size={11} /><Icon name="folder" size={12} /><b /></div><div className="m-file"><Icon name="folder" size={12} /><i /><Icon name="arrowRight" size={11} /><Icon name="folder" size={12} /><b /></div></>}
+              {g.v === "table" && <><div className="m-line" /><div className="m-line short" /><div className="m-line" /><div className="m-line short" /><div className="m-sum" /></>}
+              {g.v === "cards" && <><div className="m-card" /><div className="m-card back" /><div className="m-card back2" /></>}
+            </div>
+            <h3>{g.t}</h3>
+            <p>{g.d}</p>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Jargon translator: other tools vs Encelium ─────────────────── */
+
+export function Jargon({ t }: { t: Copy }) {
+  return (
+    <section className="jargon wrap">
+      <Reveal><span className="kicker">{t.jargon.kicker}</span></Reveal>
+      <Reveal delay={80}>
+        <h2 className="h2" style={{ marginTop: "var(--space-4)", maxWidth: "22ch" }}>{t.jargon.title}</h2>
+        <p className="lead" style={{ marginTop: "var(--space-4)" }}>{t.jargon.lead}</p>
+      </Reveal>
+      <div className="jargon-table">
+        <Reveal className="jargon-head">
+          <span className="jh them">{t.jargon.them}</span>
+          <span className="jh-arrow" aria-hidden="true" />
+          <span className="jh us">{t.jargon.us}</span>
+        </Reveal>
+        {t.jargon.rows.map((r, k) => (
+          <Reveal className="jargon-row" delay={k * 80} key={r.us}>
+            <span className="jr them">{r.them}</span>
+            <span className="jr-arrow" aria-hidden="true"><Icon name="arrowRight" size={16} /></span>
+            <span className="jr us">{r.us}</span>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Roadmap ────────────────────────────────────────────────────── */
+
+const TAG_CLASS = ["tag-now", "tag-next", "tag-later"];
+
+export function Roadmap({ t }: { t: Copy }) {
+  return (
+    <section className="roadmap wrap">
+      <Reveal><span className="kicker">{t.roadmap.kicker}</span></Reveal>
+      <Reveal delay={80}><h2 className="h2" style={{ marginTop: "var(--space-4)" }}>{t.roadmap.title}</h2></Reveal>
+      <div className="roadmap-grid">
+        {t.roadmap.items.map((r, k) => (
+          <Reveal as="div" className="r-card" delay={k * 120} key={r.t}>
+            <span className={["r-tag", TAG_CLASS[k]].join(" ")}>{r.tag}</span>
+            <h3>{r.t}</h3>
+            <p>{r.d}</p>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ── Ocean band ─────────────────────────────────────────────────── */
 
 export function Ocean({ t }: { t: Copy }) {
@@ -243,7 +352,9 @@ export function Ocean({ t }: { t: Copy }) {
         <Reveal><h2 className="big">{t.ocean.big}</h2></Reveal>
         <Reveal delay={140}><p className="lead">{t.ocean.sub}</p></Reveal>
         <Reveal delay={260}>
-          <div className="ocean-chips">{t.ocean.chips.map((c) => <span className="chip" key={c}>{c}</span>)}</div>
+          <div className="ocean-chips">
+            {t.ocean.facts.map((f) => <span className="chip" key={f.t}><Icon name={f.icon as IconName} size={14} /> {f.t}</span>)}
+          </div>
         </Reveal>
       </div>
     </section>
@@ -287,9 +398,21 @@ export function Download({ t }: { t: Copy }) {
           <a className="btn btn-primary btn-lg" href={INSTALLER} download>
             <Icon name="download" size={18} /> {t.download.cta}
           </a>
+          <span className="dl-meta">{t.download.version}</span>
           <Moon theme="light" w={220} h={190} r={64} plates={80} jets={6} speed={70} rate={1.8} seed={3} />
         </div>
       </Reveal>
+      <ol className="dl-steps">
+        {t.download.steps.map((s, k) => (
+          <Reveal as="li" className="dl-step" delay={k * 110} key={s.t}>
+            <span className="n">{k + 1}</span>
+            <div>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </div>
+          </Reveal>
+        ))}
+      </ol>
     </section>
   );
 }
@@ -297,11 +420,15 @@ export function Download({ t }: { t: Copy }) {
 /* ── Footer ─────────────────────────────────────────────────────── */
 
 export function Footer({ t }: { t: Copy }) {
+  const hrefs = ["#features", "#how", "#makes", "#faq"];
   return (
     <footer className="footer">
       <div className="wrap footer-in">
         <a className="brand" href="#top"><Logo size={18} /> Encelium</a>
         <span className="tag">{t.footer.tagline}</span>
+        <nav className="footer-links">
+          {t.footer.links.map((l, k) => <a key={l} href={hrefs[k] ?? "#top"}>{l}</a>)}
+        </nav>
         <span>{t.footer.opensource}</span>
         <span>{t.footer.rights}</span>
       </div>

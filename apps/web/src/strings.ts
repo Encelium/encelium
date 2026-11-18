@@ -6,7 +6,7 @@ export type Lang = "en" | "ar";
 export const STRINGS = {
   en: {
     dir: "ltr",
-    nav: { features: "Features", how: "How it works", faq: "FAQ", download: "Download", langName: "عربي" },
+    nav: { features: "Features", how: "How it works", makes: "What it makes", faq: "FAQ", download: "Download", langName: "عربي" },
     hero: {
       kicker: "Free beta · Windows 10 & 11",
       title: ["The agent that", "speaks human."],
@@ -15,6 +15,12 @@ export const STRINGS = {
       ctaNote: "Windows 10 & 11 · about 108 MB",
       secondary: "See how it works",
       trust: ["Free during beta", "We never train on your data", "English & العربية"],
+      examples: [
+        "Make me a one-page site for my bakery…",
+        "Rename my photos by date…",
+        "A small tool to track my expenses…",
+        "Tidy up my Downloads folder…",
+      ],
     },
     steps: {
       kicker: "How it works",
@@ -49,7 +55,46 @@ export const STRINGS = {
     ocean: {
       big: "We never train on your data.",
       sub: "Your chats and files stay on your computer. The agent works for you — not for our dataset.",
-      chips: ["Runs on your PC", "Open source · MIT", "Rewind history stays local"],
+      facts: [
+        { icon: "lock", t: "Chats and files stay on your PC" },
+        { icon: "rewind", t: "Rewind history is stored locally" },
+        { icon: "check", t: "Open source · MIT — look inside" },
+      ],
+    },
+    gallery: {
+      kicker: "What it makes",
+      title: "Ask for any of these. Today.",
+      lead: "Real things the agent makes in minutes — not a promise list. Each one starts with one sentence.",
+      items: [
+        { t: "A page for your shop", d: "Your name, what you sell, how to reach you. Live, with a preview.", v: "page" },
+        { t: "A menu that looks good", d: "Dishes, prices, photos — Arabic or English, ready to share.", v: "list" },
+        { t: "A portfolio page", d: "Show your work in your own words, your own style.", v: "grid" },
+        { t: "Tidy folders", d: "Files renamed and sorted by date and kind. Rewindable.", v: "files" },
+        { t: "A small expense tool", d: "Type what you spend; it keeps the sheet and totals.", v: "table" },
+        { t: "Study cards", d: "Paste your lesson; it turns it into question-and-answer cards.", v: "cards" },
+      ],
+    },
+    jargon: {
+      kicker: "The translation layer",
+      title: "Other tools speak machine. Encelium speaks you.",
+      lead: "The same moments, side by side. Same power — without the dictionary.",
+      them: "Elsewhere",
+      us: "In Encelium",
+      rows: [
+        { them: "“Set reasoning effort to high and mind your context window.”", us: "Just ask. It thinks as long as the task needs." },
+        { them: "“Configure MCP server endpoints and transports.”", us: "Connect your apps — one click each." },
+        { them: "“Approve pending tool call?”", us: "May I install a small helper? It only previews what we build." },
+        { them: "“Revert working tree to HEAD.”", us: "Rewind. Everything goes back." },
+      ],
+    },
+    roadmap: {
+      kicker: "Roadmap",
+      title: "What's in, what's next.",
+      items: [
+        { tag: "Now", t: "Windows · English & العربية", d: "The agent, files, terminal, live preview, rewind, recipes — shipping today in the beta." },
+        { tag: "Next", t: "Mac · more languages · connections", d: "A Mac version after the beta, more languages, and one-click connections like Drive and GitHub." },
+        { tag: "Later", t: "Shaped by you", d: "The beta decides what gets built next. Tell us what you'd use most." },
+      ],
     },
     faq: {
       kicker: "FAQ",
@@ -60,6 +105,8 @@ export const STRINGS = {
         { q: "Which languages does it speak?", a: "English and Arabic today — fully, including right-to-left layout and Arabic answers. More languages are planned." },
         { q: "Windows only?", a: "Today Encelium runs on Windows 10 and 11. A Mac version is planned after the beta." },
         { q: "What can it actually do?", a: "One-page websites, menus and portfolios; organizing, renaming and cleaning up files; small scripts and tools. And it tests its own work before telling you it's done." },
+        { q: "Where are my files kept?", a: "In your own Documents folder. Each task gets its own folder you can open anytime — nothing is hidden away inside the app." },
+        { q: "Why is it free? What's the catch?", a: "The beta is free while we learn what people actually need, and invite codes keep it steady. Later there may be paid extras — the basics stay free." },
       ],
     },
     download: {
@@ -67,9 +114,20 @@ export const STRINGS = {
       title: "Get Encelium",
       sub: "Free during beta. No account needed to start — an invite code unlocks the included model.",
       cta: "Download for Windows",
+      version: "v0.1.0 · beta",
       note: "Windows 10 & 11 · about 108 MB · while we finish code signing, Windows may ask you to choose “More info → Run anyway”.",
+      steps: [
+        { t: "Download the installer", d: "One file, about 108 MB. No account, no forms." },
+        { t: "Run it", d: "Windows may ask once — choose “More info → Run anyway” while we finish code signing." },
+        { t: "Enter your invite code", d: "Settings → Encelium. That's the whole setup." },
+      ],
     },
-    footer: { tagline: "Say it. Watch it get built.", opensource: "Open source · MIT", rights: "© 2026 The Encelium Authors" },
+    footer: {
+      tagline: "Say it. Watch it get built.",
+      links: ["Features", "How it works", "What it makes", "FAQ"],
+      opensource: "Open source · MIT",
+      rights: "© 2026 The Encelium Authors",
+    },
     ui: {
       planTitle: "Plan",
       planSteps: ["Set up the page", "Write the sections", "Check the result"],
@@ -98,7 +156,7 @@ export const STRINGS = {
   },
   ar: {
     dir: "rtl",
-    nav: { features: "الميزات", how: "كيف يعمل", faq: "أسئلة", download: "تحميل", langName: "English" },
+    nav: { features: "الميزات", how: "كيف يعمل", makes: "ما الذي يصنعه", faq: "أسئلة", download: "تحميل", langName: "English" },
     hero: {
       kicker: "نسخة تجريبية مجانية · ويندوز 10 و11",
       title: ["مساعدٌ", "يتحدّث لغتك."],
@@ -107,6 +165,12 @@ export const STRINGS = {
       ctaNote: "ويندوز 10 و11 · نحو 108 ميغابايت",
       secondary: "شاهد كيف يعمل",
       trust: ["مجاني خلال التجربة", "لا نتدرّب على بياناتك", "عربي وإنجليزي"],
+      examples: [
+        "اصنع لي موقعًا من صفحة واحدة لمخبزي…",
+        "أعد تسمية صوري حسب التاريخ…",
+        "أداة صغيرة لتتبّع مصاريفي…",
+        "رتّب مجلد التنزيلات…",
+      ],
     },
     steps: {
       kicker: "كيف يعمل",
@@ -141,7 +205,46 @@ export const STRINGS = {
     ocean: {
       big: "لا نتدرّب على بياناتك أبدًا.",
       sub: "محادثاتك وملفاتك تبقى على جهازك. المساعد يعمل لك — لا لقاعدة بياناتنا.",
-      chips: ["يعمل على جهازك", "مفتوح المصدر · MIT", "سجلّ العودة يبقى محليًّا"],
+      facts: [
+        { icon: "lock", t: "المحادثات والملفات تبقى على جهازك" },
+        { icon: "rewind", t: "سجلّ العودة يُخزَّن محليًّا" },
+        { icon: "check", t: "مفتوح المصدر · MIT — انظر بنفسك" },
+      ],
+    },
+    gallery: {
+      kicker: "ما الذي يصنعه",
+      title: "اطلب أيًّا من هذه. اليوم.",
+      lead: "أشياء حقيقية يصنعها المساعد في دقائق — لا قائمة وعود. كل واحد يبدأ بجملة واحدة.",
+      items: [
+        { t: "صفحة لمتجرك", d: "اسمك، ما تبيعه، وكيف يصل إليك. مباشرة، مع معاينة.", v: "page" },
+        { t: "قائمة أنيقة", d: "الأطباق والأسعار والصور — بالعربية أو الإنجليزية، جاهزة للمشاركة.", v: "list" },
+        { t: "صفحة أعمالك", d: "اعرض عملك بكلماتك وبأسلوبك.", v: "grid" },
+        { t: "مجلدات مرتبة", d: "ملفات يعاد تسميتها وترتيبها حسب التاريخ والنوع. مع إمكانية العودة.", v: "files" },
+        { t: "أداة مصاريف صغيرة", d: "اكتب ما تنفقه؛ هو يحفظ الجدول ويجمع المجاميع.", v: "table" },
+        { t: "بطاقات مراجعة", d: "الصق درسك؛ يحوّله إلى بطاقات سؤال وجواب.", v: "cards" },
+      ],
+    },
+    jargon: {
+      kicker: "طبقة الترجمة",
+      title: "الأدوات الأخرى تتحدّث لغة الآلة. إنسيليوم يتحدّث لغتك.",
+      lead: "نفس اللحظات، جنبًا إلى جنب. القوة نفسها — بلا قاموس.",
+      them: "في أماكن أخرى",
+      us: "في إنسيليوم",
+      rows: [
+        { them: "«اضبط مستوى التفكير وانتبه لنافذة السياق.»", us: "اطلب فقط. يفكّر بقدر ما تحتاجه المهمة." },
+        { them: "«اضبط نقاط اتصال خوادم MCP.»", us: "اربط تطبيقاتك — نقرة لكل واحد." },
+        { them: "«هل توافق على استدعاء الأداة؟»", us: "هل أثبّت أداة صغيرة؟ للتعرّف على ما نبنيه فقط." },
+        { them: "«أرجِع شجرة العمل إلى HEAD.»", us: "ارجع للخلف. يعود كل شيء كما كان." },
+      ],
+    },
+    roadmap: {
+      kicker: "خارطة الطريق",
+      title: "ما هو موجود، وما هو قادم.",
+      items: [
+        { tag: "الآن", t: "ويندوز · عربي وإنجليزي", d: "المساعد، الملفات، الطرفية، المعاينة المباشرة، العودة، الوصفات — متوفرة اليوم في التجربة." },
+        { tag: "التالي", t: "ماك · لغات أكثر · اتصالات", d: "نسخة ماك بعد التجربة، لغات جديدة، واتصالات بنقرة مثل Drive وGitHub." },
+        { tag: "لاحقًا", t: "بقراركم", d: "التجربة هي من يقرر ما يُبنى تاليًا. أخبرنا بما ستستخدمه أكثر." },
+      ],
     },
     faq: {
       kicker: "أسئلة",
@@ -152,6 +255,8 @@ export const STRINGS = {
         { q: "ما اللغات المتاحة؟", a: "الإنجليزية والعربية اليوم — بشكل كامل، بما فيه الاتجاه من اليمين إلى اليسار والردود بالعربية. ولغات أخرى قادمة." },
         { q: "ويندوز فقط؟", a: "اليوم يعمل إنسيليوم على ويندوز 10 و11. نسخة ماك مخطط لها بعد التجربة." },
         { q: "ما الذي يستطيع فعله؟", a: "مواقع من صفحة واحدة، قوائم وأعمالًا شخصية؛ ترتيب الملفات وإعادة تسميتها وتنظيفها؛ سكربتات وأدوات صغيرة. ويختبر عمله بنفسه قبل أن يقول لك أنجزت." },
+        { q: "أين تُحفظ ملفاتي؟", a: "في مجلد «المستندات» الخاص بك. كل مهمة لها مجلدها الذي يمكنك فتحه في أي وقت — لا شيء مخفي داخل التطبيق." },
+        { q: "لماذا هو مجاني؟ ما الحيلة؟", a: "التجربة مجانية بينما نتعلّم ما يحتاجه الناس فعلًا، ورموز الدعوة تحفظ التوازن. لاحقًا قد تظهر إضافات مدفوعة — والأساسيات تبقى مجانية." },
       ],
     },
     download: {
@@ -159,9 +264,20 @@ export const STRINGS = {
       title: "احصل على إنسيليوم",
       sub: "مجاني خلال التجربة. لا تحتاج حسابًا للبدء — رمز الدعوة يفتح النموذج المدمج.",
       cta: "حمّله لويندوز",
+      version: "الإصدار 0.1.0 · تجريبي",
       note: "ويندوز 10 و11 · نحو 108 ميغابايت · إلى أن نُكمل توقيع البرنامج، قد يطلب ويندوز اختيار «معلومات إضافية → تشغيل على أي حال».",
+      steps: [
+        { t: "حمّل المثبّت", d: "ملف واحد، نحو 108 ميغابايت. بلا حساب ولا نماذج." },
+        { t: "شغّله", d: "قد يسأل ويندوز مرة — اختر «معلومات إضافية → تشغيل على أي حال» إلى أن نُكمل التوقيع." },
+        { t: "أدخل رمز الدعوة", d: "الإعدادات ← إنسيليوم. هذا كل شيء." },
+      ],
     },
-    footer: { tagline: "قلها. وشاهدها تُبنى.", opensource: "مفتوح المصدر · MIT", rights: "© 2026 مؤلفو إنسيليوم" },
+    footer: {
+      tagline: "قلها. وشاهدها تُبنى.",
+      links: ["الميزات", "كيف يعمل", "ما الذي يصنعه", "أسئلة"],
+      opensource: "مفتوح المصدر · MIT",
+      rights: "© 2026 مؤلفو إنسيليوم",
+    },
     ui: {
       planTitle: "الخطة",
       planSteps: ["تجهيز الصفحة", "كتابة الأقسام", "التحقق من النتيجة"],
