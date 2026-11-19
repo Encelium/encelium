@@ -62,7 +62,7 @@ html[dir="rtl"] .kicker { letter-spacing: 0; }
 
 /* ── Scroll reveal ─────────────────────────────────────────────── */
 
-.rv { opacity: 0; transform: translateY(22px); transition: opacity .65s var(--ease-out) var(--d, 0ms), transform .65s var(--ease-out) var(--d, 0ms); }
+.rv { opacity: 0; transform: translateY(15px); transition: opacity .42s var(--ease-out) var(--d, 0ms), transform .42s var(--ease-out) var(--d, 0ms); }
 .rv-in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .rv { opacity: 1; transform: none; transition: none; }
