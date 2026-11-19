@@ -450,3 +450,6 @@ html[data-theme="dark"] .prev-hero { color: #7FD3A3; }
 /* The linked platform chip (Windows download) */
 .chip-dl { color: var(--color-accent); border-color: var(--color-accent); text-decoration: none; font-weight: var(--weight-semibold); }
 .chip-dl:hover { background: var(--color-accent-soft); }
+
+/* Numbers in our column read as figures, not text */
+.cmp td.us .mk.txt { color: var(--color-accent); font-weight: var(--weight-semibold); font-size: var(--text-lg); }

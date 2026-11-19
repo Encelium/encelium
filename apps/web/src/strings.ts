@@ -116,7 +116,8 @@ export const STRINGS = {
       colB: "DeepSeek 4.1",
       colC: "GLM 5.3",
       rows: [
-        { label: "Price", us: "Free", a: "Paid plan", b: "Free tier", c: "Free tier" },
+        { label: "Cost to you", us: "$0", a: "$20+/mo", b: "$0", c: "$0" },
+        { label: "Free agent runs per day (beta)", us: "500", a: "Plan limits", b: "Free chat", c: "Free chat" },
         { label: "Made for beginners — no jargon, no setup", us: "yes", a: "no", b: "no", c: "no" },
         { label: "Fully in Arabic, right-to-left", us: "yes", a: "no", b: "no", c: "no" },
         { label: "Rewind any change, any time", us: "yes", a: "no", b: "no", c: "no" },
@@ -304,7 +305,8 @@ export const STRINGS = {
       colB: "DeepSeek 4.1",
       colC: "GLM 5.3",
       rows: [
-        { label: "السعر", us: "مجاني", a: "خطة مدفوعة", b: "طبقة مجانية", c: "طبقة مجانية" },
+        { label: "التكلفة عليك", us: "مجانًا", a: "20$+ شهريًّا", b: "مجانًا", c: "مجانًا" },
+        { label: "تشغيلات وكيل مجانية يوميًّا (تجريبي)", us: "٥٠٠", a: "حدود الخطة", b: "محادثة مجانية", c: "محادثة مجانية" },
         { label: "مصمّم للمبتدئين — بلا مصطلحات ولا إعداد", us: "yes", a: "no", b: "no", c: "no" },
         { label: "بالعربية بالكامل، من اليمين لليسار", us: "yes", a: "no", b: "no", c: "no" },
         { label: "العودة عن أي تغيير، في أي وقت", us: "yes", a: "no", b: "no", c: "no" },
