@@ -410,6 +410,65 @@ export function Roadmap({ t }: { t: Copy }) {
   );
 }
 
+/* ── Compare: honest axes + platforms ───────────────────────────── */
+
+function Mark({ v }: { v: string }) {
+  if (v === "yes") return <span className="mk yes" aria-label="✓"><Icon name="check" size={13} /></span>;
+  if (v === "no") return <span className="mk no" aria-label="—">–</span>;
+  return <span className="mk txt">{v}</span>;
+}
+
+export function Compare({ t }: { t: Copy }) {
+  const c = t.compare;
+  return (
+    <section className="compare wrap">
+      <Reveal><span className="kicker">{c.kicker}</span></Reveal>
+      <Reveal delay={80}>
+        <h2 className="h2" style={{ marginTop: "var(--space-4)" }}>{c.title}</h2>
+        <p className="lead" style={{ marginTop: "var(--space-4)", maxWidth: "62ch" }}>{c.lead}</p>
+      </Reveal>
+      <Reveal delay={160}>
+        <div className="cmp-scroll">
+          <table className="cmp">
+            <thead>
+              <tr>
+                <th scope="col"><span className="sr-only">{c.kicker}</span></th>
+                <th scope="col" className="us">{c.colUs}</th>
+                <th scope="col">{c.colA}</th>
+                <th scope="col">{c.colB}</th>
+                <th scope="col">{c.colC}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.rows.map((r) => (
+                <tr key={r.label}>
+                  <th scope="row">{r.label}</th>
+                  <td className="us"><Mark v={r.us} /></td>
+                  <td><Mark v={r.a} /></td>
+                  <td><Mark v={r.b} /></td>
+                  <td><Mark v={r.c} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Reveal>
+      <Reveal delay={240}>
+        <div className="cmp-platforms">
+          <span className="cmp-pt">{c.platformsTitle}</span>
+          {c.platforms.map((p) => (
+            <span className={["chip", p.state === "soon" ? "chip-soon" : ""].join(" ")} key={p.name}>
+              {p.state === "now"
+                ? <><Icon name="check" size={13} /> {p.name} · {c.now}</>
+                : <>{p.name} · {c.soon}</>}
+            </span>
+          ))}
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
 /* ── Ocean band ─────────────────────────────────────────────────── */
 
 export function Ocean({ t }: { t: Copy }) {

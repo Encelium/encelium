@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { STRINGS, type Lang } from "./strings.ts";
-import { Download, Faq, Features, Footer, Gallery, Hero, Jargon, Nav, Ocean, Roadmap, Showcase, Steps } from "./sections.tsx";
+import { Compare, Download, Faq, Features, Footer, Gallery, Hero, Jargon, Nav, Ocean, Roadmap, Showcase, Steps } from "./sections.tsx";
 
 type Phase = "idle" | "out" | "in";
 type Theme = "light" | "dark";
@@ -51,6 +51,7 @@ export function App() {
         <Showcase t={t} />
         <Gallery t={t} />
         <Features t={t} />
+        <Compare t={t} />
         <Jargon t={t} />
         <Ocean t={t} />
         <Roadmap t={t} />
