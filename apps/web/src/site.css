@@ -446,3 +446,7 @@ html[data-theme="dark"] .prev-hero { color: #7FD3A3; }
 
 /* Screen-reader-only label for the empty corner header */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* The linked platform chip (Windows download) */
+.chip-dl { color: var(--color-accent); border-color: var(--color-accent); text-decoration: none; font-weight: var(--weight-semibold); }
+.chip-dl:hover { background: var(--color-accent-soft); }

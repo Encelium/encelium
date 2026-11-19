@@ -453,18 +453,6 @@ export function Compare({ t }: { t: Copy }) {
           </table>
         </div>
       </Reveal>
-      <Reveal delay={240}>
-        <div className="cmp-platforms">
-          <span className="cmp-pt">{c.platformsTitle}</span>
-          {c.platforms.map((p) => (
-            <span className={["chip", p.state === "soon" ? "chip-soon" : ""].join(" ")} key={p.name}>
-              {p.state === "now"
-                ? <><Icon name="check" size={13} /> {p.name} · {c.now}</>
-                : <>{p.name} · {c.soon}</>}
-            </span>
-          ))}
-        </div>
-      </Reveal>
     </section>
   );
 }
@@ -562,6 +550,20 @@ export function Download({ t, theme }: { t: Copy; theme: "light" | "dark" }) {
           </Reveal>
         ))}
       </ol>
+      <Reveal delay={200}>
+        <div className="cmp-platforms">
+          <span className="cmp-pt">{t.download.platformsTitle}</span>
+          {t.download.platforms.map((p) =>
+            p.state === "now" ? (
+              <a className="chip chip-dl" href={INSTALLER} download key={p.name}>
+                <Icon name="download" size={13} /> {p.name} · {t.download.get}
+              </a>
+            ) : (
+              <span className="chip chip-soon" key={p.name}>{p.name} · {t.download.soon}</span>
+            ),
+          )}
+        </div>
+      </Reveal>
     </section>
   );
 }
