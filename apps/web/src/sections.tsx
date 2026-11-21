@@ -459,13 +459,98 @@ export function Compare({ t }: { t: Copy }) {
 
 /* ── Sign-in bonus band ────────────────────────────────────────────── */
 
+// Where sign-in requests go: the local simulator while developing, the real
+// gateway once it has a public domain. One constant to change at launch.
+const AUTH_URL = 'http://127.0.0.1:8790';
+
+/** The site's working sign-in card: Google, or an emailed code, against AUTH_URL. */
+function SigninCard({ t }: { t: Copy }) {
+  const s = t.bonus.signin;
+  const [step, setStep] = useState<'pick' | 'code' | 'done'>('pick');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const google = async () => {
+    setBusy(true); setFailed(false);
+    try {
+      const res = await fetch(AUTH_URL + '/auth/google');
+      const body = await res.json();
+      if (body.token) { setToken(body.token); setStep('done'); } else setFailed(true);
+    } catch { setFailed(true); }
+    setBusy(false);
+  };
+
+  const start = async () => {
+    setBusy(true); setFailed(false);
+    try {
+      const res = await fetch(AUTH_URL + '/auth/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email }) });
+      const body = await res.json();
+      if (body.ok) { if (body.devCode) setDevCode(body.devCode); setStep('code'); } else setFailed(true);
+    } catch { setFailed(true); }
+    setBusy(false);
+  };
+
+  const verify = async () => {
+    setBusy(true); setFailed(false);
+    try {
+      const res = await fetch(AUTH_URL + '/auth/verify?email=' + encodeURIComponent(email) + '&code=' + encodeURIComponent(code));
+      const body = await res.json();
+      if (body.token) { setToken(body.token); setStep('done'); } else setFailed(true);
+    } catch { setFailed(true); }
+    setBusy(false);
+  };
+
+  const copy = async () => { try { await navigator.clipboard.writeText(token); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* refused */ } };
+
+  return (
+    <div className='signin-card'>
+      {step === 'pick' && (
+        <>
+          <button className='btn btn-primary' onClick={google} disabled={busy}>{busy ? s.busy : s.google}</button>
+          <span className='signin-or'>{s.or}</span>
+          <div className='signin-row'>
+            <input type='email' dir='ltr' placeholder={s.email} value={email} onChange={(e) => setEmail(e.target.value.trim())} aria-label={s.email} />
+            <button className='btn btn-ghost' onClick={start} disabled={busy || !email.includes('@')}>{s.send}</button>
+          </div>
+        </>
+      )}
+      {step === 'code' && (
+        <>
+          <p className='signin-note'>{devCode ? s.codeDev.replace('{code}', devCode) : s.codeSent}</p>
+          <div className='signin-row'>
+            <input inputMode='numeric' dir='ltr' placeholder={s.code} value={code} onChange={(e) => setCode(e.target.value.trim())} aria-label={s.code} />
+            <button className='btn btn-ghost' onClick={verify} disabled={busy || code.length < 4}>{s.verify}</button>
+          </div>
+          <button className='signin-back' onClick={() => setStep('pick')}>{s.back}</button>
+        </>
+      )}
+      {step === 'done' && (
+        <div className='signin-done'>
+          <p dir='auto'>{s.gotKey}</p>
+          <div className='signin-key'>
+            <code dir='ltr'>{token}</code>
+            <button className='btn btn-ghost' onClick={copy}>{copied ? s.copied : s.copy}</button>
+          </div>
+        </div>
+      )}
+      {failed && <p className='signin-failed' role='alert'>{s.failed}</p>}
+    </div>
+  );
+}
+
 export function Bonus({ t }: { t: Copy }) {
   return (
-    <section className='bonus wrap'>
+    <section className='bonus wrap' id='account'>
       <Reveal className='bonus-card'>
         <span className='kicker'>{t.bonus.kicker}</span>
         <h2 className='h2'>{t.bonus.title}</h2>
         <p className='lead'>{t.bonus.body}</p>
+        <SigninCard t={t} />
         <div className='bonus-chips'>{t.bonus.chips.map((c) => <span className='chip' key={c}>{c}</span>)}</div>
       </Reveal>
     </section>

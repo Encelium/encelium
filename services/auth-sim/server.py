@@ -86,10 +86,20 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("content-type", "application/json")
         self.send_header("content-length", str(len(data)))
+        # The website (another origin during development) calls these endpoints too.
+        self.send_header("access-control-allow-origin", "*")
         for k, v in (headers or {}).items():
             self.send_header(k, v)
         self.end_headers()
         self.wfile.write(data)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("access-control-allow-origin", "*")
+        self.send_header("access-control-allow-methods", "GET, POST, OPTIONS")
+        self.send_header("access-control-allow-headers", "authorization, content-type")
+        self.send_header("access-control-max-age", "600")
+        self.end_headers()
 
     def read_body(self) -> dict:
         try:
