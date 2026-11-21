@@ -37,6 +37,8 @@ async function setup(upstreamStatus = 200, limits: Partial<GatewayConfig["limits
     upstream: { baseUrl: `${upUrl}/v1`, apiKey: "server-secret", timeoutMs: 10_000 },
     models: [{ id: "encelium", upstreamModel: "secret-upstream-model" }],
     limits: { perMinute: 30, perDay: 500, maxTokens: 1000, maxBodyBytes: 1_000_000, ...limits },
+    tiers: { anonymous: { perMinute: limits.perMinute ?? 30, perDay: limits.perDay ?? 500 }, signedIn: { perMinute: 30, perDay: 500 } },
+    requireLogin: false,
     promptsDir: path.join(dir, "prompts"), keysFile: path.join(dir, "keys.json"), usageFile: path.join(dir, "usage.json"),
   };
   const gw = createGateway(config);
@@ -126,5 +128,49 @@ test("a key added by the admin command while the gateway runs works right away",
     await new Promise((r) => setTimeout(r, 20)); // a different file time than the first write
     const late = other.add("Late tester");
     assert.equal((await fetch(`${t.url}/v1/models`, { headers: { authorization: `Bearer ${late}` } })).status, 200);
+  } finally { t.close(); }
+});
+
+test("usage reports the tier and the sign-in offer; signed-in keys get none", async () => {
+  const t = await setup();
+  try {
+    const anon = await (await fetch(`${t.url}/v1/usage`, { headers: { authorization: `Bearer ${t.key}` } })).json() as any;
+    assert.equal(anon.tier, "anonymous");
+    assert.equal(anon.offer.perDay, 500); // the signed-in tier's per-day
+    t.gw.keys.set("Tester", { tier: "signedIn", email: "t@example.com" });
+    const signed = await (await fetch(`${t.url}/v1/usage`, { headers: { authorization: `Bearer ${t.key}` } })).json() as any;
+    assert.equal(signed.tier, "signedIn");
+    assert.equal(signed.offer, null);
+  } finally { t.close(); }
+});
+
+test("require-login (per key or global) blocks chat until the key is signed in", async () => {
+  const t = await setup();
+  try {
+    t.gw.keys.set("Tester", { requireLogin: true });
+    const blocked = await chat(t.url, t.key, {});
+    assert.equal(blocked.status, 401);
+    const body = await blocked.json() as any;
+    assert.equal(body.error.code, "login_required");
+    assert.equal(body.error.offer.signIn, true);
+    t.gw.keys.set("Tester", { tier: "signedIn" });
+    assert.equal((await chat(t.url, t.key, {})).status, 200);
+  } finally { t.close(); }
+});
+
+test("hitting the daily limit returns the sign-in offer in the 429", async () => {
+  const t = await setup(200, { perDay: 1 });
+  try {
+    assert.equal((await chat(t.url, t.key, {})).status, 200);
+    const hit = await chat(t.url, t.key, {});
+    assert.equal(hit.status, 429);
+    const body = await hit.json() as any;
+    assert.equal(body.error.code, "rate_limit_exceeded");
+    assert.equal(body.error.offer.perDay, 500);
+    // A signed-in key hitting the wall gets no offer.
+    t.gw.keys.set("Tester", { tier: "signedIn", perDay: 1 });
+    const signedHit = await chat(t.url, t.key, {});
+    const signedBody = await signedHit.json() as any;
+    assert.equal(signedBody.error.offer, null);
   } finally { t.close(); }
 });

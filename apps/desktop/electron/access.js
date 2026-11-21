@@ -66,7 +66,55 @@ export async function initAccess() {
 
   ipcMain.handle("access:disconnect", async () => ((await save({ gatewayUrl: state.gatewayUrl })) ? { ok: true } : { ok: false, reason: "not-saved" }));
 
-  // Today's use, for the "energy" bar: { requestsToday, requestLimit, resetsAt } or null.
+  // Sign in for the higher quota tier (Google, or an emailed code). The token that
+  // comes back replaces the invite key; against the local simulator this works
+  // without a domain, against the real gateway once it has HTTPS.
+  //   { method: "google" } | { method: "email-start", email } | { method: "email-verify", email, code }
+  const authRoot = () => (state.gatewayUrl || DEFAULT_GATEWAY_URL).replace(/\/v1\/?$/, "");
+  const keepToken = async (token) => {
+    const test = await testConnection({ protocol: "openai", baseUrl: state.gatewayUrl || DEFAULT_GATEWAY_URL, apiKey: token });
+    if (!test.ok) return { ok: false, reason: test.reason };
+    const enc = encrypt(token);
+    if (!enc) return { ok: false, reason: "no-encryption" };
+    return (await save({ gatewayUrl: state.gatewayUrl || DEFAULT_GATEWAY_URL, code: enc, model: pickModel(test.models) })) ? { ok: true } : { ok: false, reason: "not-saved" };
+  };
+
+  ipcMain.handle("access:signin", async (_e, input) => {
+    const root = authRoot();
+    if (!root) return { ok: false, reason: "bad-address" };
+    try {
+      if (input?.method === "google") {
+        const res = await fetch(`${root}/auth/google`, { signal: AbortSignal.timeout(15000) });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || !body.token) return { ok: false, reason: "bad-response", detail: body?.error?.message ?? "" };
+        return keepToken(body.token);
+      }
+      if (input?.method === "email-start") {
+        const res = await fetch(`${root}/auth/start`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: String(input.email ?? "").trim() }),
+          signal: AbortSignal.timeout(15000),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) return { ok: false, reason: "bad-email", detail: body?.error?.message ?? "" };
+        // devCode only exists on the local simulator, so testing needs no mailbox.
+        return { ok: true, devCode: body.devCode };
+      }
+      if (input?.method === "email-verify") {
+        const q = new URLSearchParams({ email: String(input.email ?? "").trim(), code: String(input.code ?? "").trim() });
+        const res = await fetch(`${root}/auth/verify?${q}`, { signal: AbortSignal.timeout(15000) });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || !body.token) return { ok: false, reason: "bad-code", detail: body?.error?.message ?? "" };
+        return keepToken(body.token);
+      }
+      return { ok: false, reason: "bad-method" };
+    } catch {
+      return { ok: false, reason: "no-network" };
+    }
+  });
+
+  // Today's use, for the "energy" bar: { requestsToday, requestLimit, resetsAt, tier?, offer? } or null.
   ipcMain.handle("access:usage", async () => {
     const conn = enceliumConnection();
     if (!conn) return null;

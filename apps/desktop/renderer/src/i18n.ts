@@ -51,7 +51,32 @@ const en = {
     code: "Invite code", address: "Server address", addressHint: "Included with your invite code.",
     connect: "Connect", checking: "Checking…", connected: "Connected. Encelium is ready.",
     errors: { "bad-key": "That invite code didn’t work. Check it and try again.", "no-network": "The server didn’t answer. Check the address and your internet.", "not-found": "Nothing answered at that address. Check it.", "bad-address": "The address should start with https://", other: "That didn’t work. Try again." },
+
+
   },
+  offer: {
+    title: 'Out of today’s free runs',
+    body: 'Sign in — free — and get {n} runs a day instead.',
+    button: 'Sign in for more',
+    after: 'Signed in. Your new limit is active — try again.',
+  },
+  signin: {
+    title: 'Sign in for more free runs',
+    intro: 'Google or email — no password. We store your email and nothing else.',
+    google: 'Continue with Google',
+    or: 'or with email',
+    email: 'Your email',
+    send: 'Email me a code',
+    codeSent: 'We sent a 6-digit code to your inbox. Enter it below.',
+    codeDev: 'Local test mode — your code is {code}.',
+    code: 'The 6-digit code',
+    verify: 'Verify',
+    back: 'Use a different email',
+    busy: 'Working…',
+    connected: 'Signed in. Your free limit just went up.',
+    errors: { 'no-network': 'The server didn’t answer. Try again.', 'bad-email': 'That email doesn’t look right.', 'bad-code': 'That code didn’t match. Try again.', 'bad-response': 'The server answered oddly. Try again.', other: 'That didn’t work. Try again.' },
+  },
+
   today: { title: "Today", sum: "Chats: {chats} · Requests: {requests} · Files changed: {files}" },
   status: {
     label: "Status", working: "Working",
@@ -262,6 +287,29 @@ const ar: Strings = {
     connect: "اتصل", checking: "جارٍ التحقق…", connected: "تم الاتصال. إنسيليوم جاهز.",
     errors: { "bad-key": "رمز الدعوة هذا لم يعمل. تحقّق منه وحاول مرة أخرى.", "no-network": "لم يستجب الخادم. تحقّق من العنوان ومن اتصالك بالإنترنت.", "not-found": "لا شيء يستجيب على هذا العنوان. تحقّق منه.", "bad-address": "يجب أن يبدأ العنوان بـ https://", other: "لم ينجح ذلك. حاول مرة أخرى." },
   },
+  offer: {
+    title: "انتهت تشغيلات اليوم المجانية",
+    body: "سجّل الدخول — مجانًا — واحصل على {n} تشغيلًا يوميًّا بدلًا من ذلك.",
+    button: "سجّل الدخول للمزيد",
+    after: "تمّ تسجيل الدخول. حدّك الجديد مفعّل — أعد المحاولة.",
+  },
+  signin: {
+    title: "سجّل الدخول لمزيد من التشغيلات المجانية",
+    intro: "Google أو البريد — بلا كلمة مرور. نحفظ بريدك ولا شيء غيره.",
+    google: "المتابعة عبر Google",
+    or: "أو عبر البريد الإلكتروني",
+    email: "بريدك الإلكتروني",
+    send: "أرسل لي رمزًا",
+    codeSent: "أرسلنا رمزًا من ستة أرقام إلى بريدك. أدخله أدناه.",
+    codeDev: "وضع الاختبار المحلي — رمزك هو {code}.",
+    code: "الرمز المكوّن من ستة أرقام",
+    verify: "تحقّق",
+    back: "استخدم بريدًا آخر",
+    busy: "جارٍ العمل…",
+    connected: "تمّ تسجيل الدخول. ارتفع حدّك المجاني.",
+    errors: { "no-network": "لم يجب الخادم. حاول مجددًا.", "bad-email": "هذا البريد لا يبدو صحيحًا.", "bad-code": "الرمز غير مطابق. حاول مجددًا.", "bad-response": "أجاب الخادم بشكل غريب. حاول مجددًا.", other: "لم ينجح ذلك. حاول مجددًا." },
+  },
+
   today: { title: "اليوم", sum: "المحادثات: {chats} · الطلبات: {requests} · الملفات المتغيّرة: {files}" },
   status: {
     label: "الحالة", working: "يعمل",

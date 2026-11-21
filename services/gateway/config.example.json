@@ -6,7 +6,10 @@
     "timeoutMs": 600000
   },
   "models": [
-    { "id": "encelium", "upstreamModel": "z-ai/glm-5.3-flash" }
+    {
+      "id": "encelium",
+      "upstreamModel": "z-ai/glm-5.3-flash"
+    }
   ],
   "limits": {
     "perMinute": 30,
@@ -14,6 +17,17 @@
     "maxTokens": 8192,
     "maxBodyBytes": 12582912
   },
+  "tiers": {
+    "anonymous": {
+      "perMinute": 30,
+      "perDay": 500
+    },
+    "signedIn": {
+      "perMinute": 30,
+      "perDay": 1000
+    }
+  },
+  "requireLogin": false,
   "promptsDir": "prompts",
   "keysFile": "data/keys.json",
   "usageFile": "data/usage.json"

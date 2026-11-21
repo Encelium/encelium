@@ -11,9 +11,15 @@ export interface InviteKey {
   name: string;
   createdAt: string;
   disabled?: boolean;
-  /** Per-key limits, if different from the defaults. */
+  /** Per-key limits, if different from the tier's. */
   perMinute?: number;
   perDay?: number;
+  /** The account this key is bound to, once the person has signed in. */
+  email?: string;
+  /** "signedIn" keys get the signed-in tier quota. */
+  tier?: "anonymous" | "signedIn";
+  /** Force this key to sign in before it can chat, even before any limit. */
+  requireLogin?: boolean;
 }
 
 export const hashKey = (key: string) => createHash("sha256").update(key).digest("hex");
@@ -59,21 +65,26 @@ export class KeyStore {
     return null;
   }
 
-  add(name: string, limits: { perMinute?: number; perDay?: number } = {}): string {
+  add(name: string, fields: { perMinute?: number; perDay?: number; email?: string; tier?: "anonymous" | "signedIn"; requireLogin?: boolean } = {}): string {
     this.refresh();
     const key = newKey();
-    this.keys.push({ hash: hashKey(key), name, createdAt: new Date().toISOString(), ...limits });
+    this.keys.push({ hash: hashKey(key), name, createdAt: new Date().toISOString(), ...fields });
     this.save();
     return key;
   }
 
-  setDisabled(name: string, disabled: boolean): boolean {
+  /** Admin handle: change tier, email, forced login or limits of a named key. */
+  set(name: string, patch: Partial<Omit<InviteKey, "hash" | "name" | "createdAt">>): boolean {
     this.refresh();
     const k = this.keys.find((x) => x.name === name);
     if (!k) return false;
-    k.disabled = disabled;
+    Object.assign(k, patch);
     this.save();
     return true;
+  }
+
+  setDisabled(name: string, disabled: boolean): boolean {
+    return this.set(name, { disabled });
   }
 
   list(): Omit<InviteKey, "hash">[] {

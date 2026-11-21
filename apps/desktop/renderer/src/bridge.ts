@@ -81,6 +81,10 @@ export interface TasksBridge {
   onFilesChanged(callback: (taskId: string) => void): () => void;
 }
 
+export type UsageInfo = { requestsToday: number; requestLimit: number; tokensToday?: number; resetsAt: string; tier?: "anonymous" | "signedIn"; offer?: { signIn: true; perDay: number; via: string[] } | null };
+export type SigninInput = { method: "google" } | { method: "email-start"; email: string } | { method: "email-verify"; email: string; code: string };
+export type SigninResult = { ok: true; devCode?: string } | { ok: false; reason: string; detail?: string };
+
 export interface Bridge {
   /** Only inside the desktop app; in a plain browser the demo agent is used instead. */
   agent?: AgentBridge;
@@ -100,7 +104,8 @@ export interface Bridge {
     get(): Promise<{ connected: boolean; gatewayUrl: string; builtInAddress: boolean }>;
     connect(input: { gatewayUrl: string; code: string }): Promise<{ ok: true } | { ok: false; reason: ModelFailure }>;
     disconnect(): Promise<{ ok: boolean }>;
-    usage(): Promise<{ requestsToday: number; requestLimit: number; tokensToday: number; resetsAt: string } | null>;
+    usage(): Promise<UsageInfo | null>;
+    signin(input: SigninInput): Promise<SigninResult>;
   };
   /** The person's own recipes (desktop app only). */
   recipes?: {

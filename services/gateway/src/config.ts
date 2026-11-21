@@ -18,6 +18,10 @@ export interface GatewayConfig {
   models: ModelRoute[];
   /** Per invite key, unless the key has its own. */
   limits: { perMinute: number; perDay: number; maxTokens: number; maxBodyBytes: number };
+  /** Quotas per tier: anonymous invite keys, and keys bound to a signed-in account. */
+  tiers: { anonymous: { perMinute: number; perDay: number }; signedIn: { perMinute: number; perDay: number } };
+  /** When true, every key must be signed-in (tier "signedIn") before it can chat. */
+  requireLogin: boolean;
   /** Folder with the prompt files (system-prefix.md, system-suffix.md). */
   promptsDir: string;
   /** Hashed invite keys. */
@@ -32,6 +36,8 @@ const DEFAULTS: GatewayConfig = {
   upstream: { baseUrl: "", apiKey: "", timeoutMs: 600_000 },
   models: [{ id: "encelium", upstreamModel: "" }],
   limits: { perMinute: 30, perDay: 500, maxTokens: 8192, maxBodyBytes: 12 * 1024 * 1024 },
+  tiers: { anonymous: { perMinute: 30, perDay: 500 }, signedIn: { perMinute: 30, perDay: 1000 } },
+  requireLogin: false,
   promptsDir: "prompts",
   keysFile: "data/keys.json",
   usageFile: "data/usage.json",
@@ -49,6 +55,11 @@ export function loadConfig(file = process.env.GATEWAY_CONFIG ?? "config.json"): 
     ...fromFile,
     upstream: { ...DEFAULTS.upstream, ...fromFile.upstream },
     limits: { ...DEFAULTS.limits, ...fromFile.limits },
+    tiers: {
+      anonymous: { ...DEFAULTS.tiers.anonymous, ...fromFile.tiers?.anonymous },
+      signedIn: { ...DEFAULTS.tiers.signedIn, ...fromFile.tiers?.signedIn },
+    },
+    requireLogin: fromFile.requireLogin ?? DEFAULTS.requireLogin,
     models: fromFile.models?.length ? fromFile.models : DEFAULTS.models,
   };
   // Secrets and per-machine values from the environment win.

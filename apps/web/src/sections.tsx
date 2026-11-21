@@ -457,7 +457,22 @@ export function Compare({ t }: { t: Copy }) {
   );
 }
 
-/* ── Ocean band ─────────────────────────────────────────────────── */
+/* ── Sign-in bonus band ────────────────────────────────────────────── */
+
+export function Bonus({ t }: { t: Copy }) {
+  return (
+    <section className='bonus wrap'>
+      <Reveal className='bonus-card'>
+        <span className='kicker'>{t.bonus.kicker}</span>
+        <h2 className='h2'>{t.bonus.title}</h2>
+        <p className='lead'>{t.bonus.body}</p>
+        <div className='bonus-chips'>{t.bonus.chips.map((c) => <span className='chip' key={c}>{c}</span>)}</div>
+      </Reveal>
+    </section>
+  );
+}
+
+/* ── Ocean band ────────────────────────────────────────────────────────────────── */
 
 export function Ocean({ t }: { t: Copy }) {
   const moon = useParallax(0.06);

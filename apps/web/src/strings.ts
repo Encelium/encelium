@@ -125,6 +125,12 @@ export const STRINGS = {
         { label: "Bring your own model key", us: "yes", a: "no", b: "no", c: "no" },
       ],
     },
+    bonus: {
+      kicker: 'The sign-in bonus',
+      title: 'Run out of free runs? Sign in. Get double.',
+      body: 'Everyone starts with 500 free runs a day. When they run out, sign in with Google or email — no password — and the day’s limit doubles. We store your email and nothing else.',
+      chips: ['500/day free', 'Sign in → 1,000/day', 'Google or email', 'No password'],
+    },
     faq: {
       kicker: "FAQ",
       title: "Fair questions.",
@@ -313,6 +319,12 @@ export const STRINGS = {
         { label: "يتحقق من عمله قبل أن يعرضه عليك", us: "yes", a: "no", b: "no", c: "no" },
         { label: "أدخل مفتاح نموذجك الخاص", us: "yes", a: "no", b: "no", c: "no" },
       ],
+    },
+    bonus: {
+      kicker: 'مكافأة تسجيل الدخول',
+      title: 'انتهت تشغيلاتك المجانية؟ سجّل الدخول واحصل على الضعف.',
+      body: 'يبدأ الجميع بـ 500 تشغيل مجاني يوميًّا. وعندما تنفد، سجّل الدخول عبر Google أو البريد — بلا كلمة مرور — فيتضاعف حدّ اليوم. نحفظ بريدك ولا شيء غيره.',
+      chips: ['500/يوم مجانًا', 'سجّل الدخول → 1000/يوم', 'Google أو البريد', 'بلا كلمة مرور'],
     },
     faq: {
       kicker: "أسئلة",

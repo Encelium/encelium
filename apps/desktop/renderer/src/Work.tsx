@@ -12,6 +12,7 @@ import { Compare } from "./Compare";
 import { CheckToggle, useCheckResult } from "./CheckToggle";
 import { QuestionCard } from "./QuestionCard";
 import { SmartActions } from "./SmartActions";
+import { SignInDialog } from "./SignInDialog";
 import type { Strings } from "./i18n";
 import type { AgentEngine, AgentEvent, AgentRun } from "./agent/types";
 import type { FileChange } from "@encelium/agent-core/events";
@@ -128,6 +129,13 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
   const [tab, setTab] = useState<"preview" | "files" | "rewind">("files");
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => { if (!notice) return; const timer = setTimeout(() => setNotice(null), 6000); return () => clearTimeout(timer); }, [notice]); // notices fade on their own
+  // The quota wall: when a run fails, ask the gateway if a sign-in bonus is on offer.
+  const [offerPerDay, setOfferPerDay] = useState<number | null>(null);
+  const [signinOpen, setSigninOpen] = useState(false);
+  const checkOffer = useCallback(async () => {
+    const usage = await bridge.access?.usage();
+    setOfferPerDay(usage?.offer?.signIn ? usage.offer.perDay : null);
+  }, []);
   const [page, setPage] = useState<string | null>(null);
   const [pageVersion, setPageVersion] = useState(0);
   const [comparing, setComparing] = useState(false);
@@ -253,6 +261,7 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
         setStatus(null);
         setRunning(false);
         setItems((prev) => [...prev, { kind: "error", id: `err-${n}`, message: e.message, suggestion: e.suggestion, details: "details" in e ? e.details : undefined }]);
+        void checkOffer(); // maybe the day's free runs ran out and a sign-in bonus applies
         break;
     }
   }, []);
@@ -560,6 +569,17 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
                     <Message role="assistant">{item.message}</Message>
                     {item.suggestion && <p className={s.suggestion} dir="auto">{item.suggestion}</p>}
                     {item.details && <ErrorDetails t={t} details={item.details} />}
+                    {/* The quota wall: the gateway offers more free runs for signing in. */}
+                    {offerPerDay !== null && index === items.length - 1 && !running && (
+                      <div className={s.offerCard}>
+                        <Icon name="lock" size={16} />
+                        <div>
+                          <strong>{t.offer.title}</strong>
+                          <p dir="auto">{t.offer.body.replace("{n}", String(offerPerDay))}</p>
+                        </div>
+                        <Button variant="primary" size="sm" onClick={() => setSigninOpen(true)}>{t.offer.button}</Button>
+                      </div>
+                    )}
                     {/* The last request failed (no connection, a limit…): one click sends it again. */}
                     {index === items.length - 1 && !running && lastRequest && (
                       <div className={s.answerActions}>
@@ -722,6 +742,13 @@ export function Work({ t, taskId, prompt, folder, attachments, folderName, langu
           <Toast tone="neutral" message={notice} onDismiss={() => setNotice(null)} dismissLabel={t.dismiss} />
         </div>
       )}
+
+      <SignInDialog
+        t={t}
+        open={signinOpen}
+        onClose={() => setSigninOpen(false)}
+        onDone={(message) => { setNotice(message); setOfferPerDay(null); void checkOffer(); }}
+      />
     </main>
   );
 }

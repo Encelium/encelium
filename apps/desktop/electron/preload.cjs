@@ -74,6 +74,7 @@ contextBridge.exposeInMainWorld("encelium", {
     connect: (input) => ipcRenderer.invoke("access:connect", input),
     disconnect: () => ipcRenderer.invoke("access:disconnect"),
     usage: () => ipcRenderer.invoke("access:usage"),
+    signin: (input) => ipcRenderer.invoke("access:signin", input),
   },
   recipes: {
     list: () => ipcRenderer.invoke("recipes:list"),

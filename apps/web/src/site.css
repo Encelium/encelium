@@ -453,3 +453,12 @@ html[data-theme="dark"] .prev-hero { color: #7FD3A3; }
 
 /* Numbers in our column read as figures, not text */
 .cmp td.us .mk.txt { color: var(--color-accent); font-weight: var(--weight-semibold); font-size: var(--text-lg); }
+
+/* ── Sign-in bonus band ─────────────────────────────────────────── */
+
+.bonus { padding-block: 0 var(--section-gap); }
+.bonus-card { background: var(--color-surface); border: 1px solid var(--color-accent); border-radius: var(--radius-xl); padding: clamp(28px, 4vw, 52px); box-shadow: var(--shadow-md); }
+.bonus-card .h2 { margin-top: var(--space-4); max-width: 24ch; }
+.bonus-card .lead { margin-top: var(--space-4); max-width: 58ch; }
+.bonus-chips { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-7); }
+.bonus-chips .chip { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-soft); }

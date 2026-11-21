@@ -42,8 +42,12 @@ export function createGateway(config: GatewayConfig) {
   const keys = new KeyStore(config.keysFile);
   const limiter = new Limiter(config.usageFile);
   const prompts = new Prompts(config.promptsDir);
-  const perMinute = (k: InviteKey) => k.perMinute ?? config.limits.perMinute;
-  const perDay = (k: InviteKey) => k.perDay ?? config.limits.perDay;
+  const signedIn = (k: InviteKey) => k.tier === "signedIn";
+  const tierOf = (k: InviteKey) => (signedIn(k) ? config.tiers.signedIn : config.tiers.anonymous);
+  const perMinute = (k: InviteKey) => k.perMinute ?? tierOf(k).perMinute;
+  const perDay = (k: InviteKey) => k.perDay ?? tierOf(k).perDay;
+  /** The sign-in bonus the app shows at the quota wall (null when already signed in). */
+  const offer = (k: InviteKey) => (signedIn(k) ? null : { signIn: true, perDay: config.tiers.signedIn.perDay, via: ["google", "email"] });
 
   async function chat(req: IncomingMessage, res: ServerResponse, key: InviteKey) {
     const started = Date.now();
@@ -57,11 +61,21 @@ export function createGateway(config: GatewayConfig) {
     const route = config.models.find((m) => m.id === body.model) ?? config.models.find((m) => alias(body.model, m.id));
     if (!route) return sendError(res, 404, "model_not_found", `There's no model called "${String(body.model)}" here.`);
 
+    // The admin can require sign-in for everyone, or for one key, before any limit is hit.
+    if ((config.requireLogin || key.requireLogin) && !signedIn(key)) {
+      log({ key: key.name, model: route.id, status: 401, reason: "login_required" });
+      return sendJson(res, 401, {
+        error: { code: "login_required", message: "Sign in to keep using Encelus.", offer: offer(key) },
+      });
+    }
+
     const limit = limiter.take(key.name, perMinute(key), perDay(key));
     if (!limit.ok) {
       const message = limit.reason === "per-day" ? "Today's limit is used up. It refills at midnight (UTC)." : "Too many requests in a minute. Wait a moment.";
       log({ key: key.name, model: route.id, status: 429, reason: limit.reason });
-      return sendError(res, 429, "rate_limit_exceeded", message, { "retry-after": String(limit.retryAfterSec) });
+      return sendJson(res, 429, {
+        error: { code: "rate_limit_exceeded", message, ...(limit.reason === "per-day" ? { offer: offer(key) } : {}) },
+      }, { "retry-after": String(limit.retryAfterSec) });
     }
 
     const stream = body.stream === true;
@@ -146,7 +160,8 @@ export function createGateway(config: GatewayConfig) {
       if (!key) return sendError(res, 401, "invalid_api_key", "This invite key isn't valid.");
 
       if (req.method === "GET" && url.pathname === "/v1/models") return sendJson(res, 200, { object: "list", data: config.models.map((m) => ({ id: m.id, object: "model", owned_by: "encelium" })) });
-      if (req.method === "GET" && url.pathname === "/v1/usage") return sendJson(res, 200, limiter.usage(key.name, perDay(key)));
+      if (req.method === "GET" && url.pathname === "/v1/usage")
+        return sendJson(res, 200, { ...limiter.usage(key.name, perDay(key)), tier: signedIn(key) ? "signedIn" : "anonymous", offer: offer(key) });
       if (req.method === "POST" && url.pathname === "/v1/chat/completions") return await chat(req, res, key);
       return sendError(res, 404, "not_found", "There's nothing here.");
     } catch (e) {
