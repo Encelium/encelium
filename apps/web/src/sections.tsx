@@ -452,6 +452,7 @@ export function Compare({ t }: { t: Copy }) {
             </tbody>
           </table>
         </div>
+        <p className='cmp-note' dir='auto'>{c.note}</p>
       </Reveal>
     </section>
   );

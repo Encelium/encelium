@@ -124,6 +124,7 @@ export const STRINGS = {
         { label: "Checks its own work before showing you", us: "yes", a: "no", b: "no", c: "no" },
         { label: "Bring your own model key", us: "yes", a: "no", b: "no", c: "no" },
       ],
+      note: "Scores as published by each maker and the Artificial Analysis index — harness versions differ between makers. Encelus’s cells fill in with our own measured numbers at the public beta; nothing invented.",
     },
     bonus: {
       kicker: 'Account',
@@ -335,6 +336,7 @@ export const STRINGS = {
         { label: "يتحقق من عمله قبل أن يعرضه عليك", us: "yes", a: "no", b: "no", c: "no" },
         { label: "أدخل مفتاح نموذجك الخاص", us: "yes", a: "no", b: "no", c: "no" },
       ],
+      note: "الدرجات من نشرات كل شركة ومن مؤشر Artificial Analysis — إصدارات أدوات القياس تختلف بين الشركات. خلايا إنسيلوس تُملأ بأرقامنا المقيسة مع الإصدار العام، ولا شيء مختلق.",
     },
     bonus: {
       kicker: 'الحساب',

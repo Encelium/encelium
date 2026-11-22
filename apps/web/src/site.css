@@ -480,3 +480,5 @@ html[data-theme="dark"] .prev-hero { color: #7FD3A3; }
 .signin-key { display: flex; gap: var(--space-3); align-items: center; }
 .signin-key code { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: var(--text-sm); background: var(--color-surface); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); padding: 10px 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .signin-key .btn { width: auto; }
+
+.cmp-note { margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--color-text-subtle); max-width: 72ch; }
