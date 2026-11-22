@@ -124,7 +124,7 @@ export const STRINGS = {
         { label: "Checks its own work before showing you", us: "yes", a: "no", b: "no", c: "no" },
         { label: "Bring your own model key", us: "yes", a: "no", b: "no", c: "no" },
       ],
-      note: "Scores as published by each maker and the Artificial Analysis index — harness versions differ between makers. Encelus’s cells fill in with our own measured numbers at the public beta; nothing invented.",
+      note: "Every column shows its maker’s own published numbers — Encelus included — and harness versions differ between makers. Run the free beta and judge on your own tasks; that’s the test we care about.",
     },
     bonus: {
       kicker: 'Account',
