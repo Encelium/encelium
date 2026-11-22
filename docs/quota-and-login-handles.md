@@ -7,7 +7,13 @@ PC) and the **real gateway** (on the VM). Same rules on both.
 
 ## 1 · The simulator (your PC, nothing to install)
 
-Start (Python 3.12 is installed):
+**Easiest:** double-click **`Start auth simulator.cmd`** in the repo root — it starts the
+simulator and opens the **admin panel** at http://127.0.0.1:8790/admin in your
+browser. The panel manages every handle with buttons: tier quotas, require-login
+(global or per key), creating keys, disabling keys, per-key day limits, and
+resetting today’s usage. Everything applies instantly.
+
+Or from a terminal (Python 3.12 is installed):
 
 ```bash
 cd services/auth-sim
