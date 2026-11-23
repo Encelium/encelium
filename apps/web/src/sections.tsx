@@ -5,7 +5,8 @@ import type { Copy } from "./strings.ts";
 import { Moon } from "./Moon.tsx";
 import { Reveal, useParallax } from "./Reveal.tsx";
 
-const INSTALLER = "./download/Encelium-Setup-0.1.0.exe";
+// Served from the GitHub release, so the site never ships a 100 MB file itself.
+const INSTALLER = "https://github.com/Encelium/encelium/releases/download/v0.1.0/Encelium-Setup-0.1.0.exe";
 
 /* ── Nav ────────────────────────────────────────────────────────── */
 
