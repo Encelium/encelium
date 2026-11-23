@@ -17,3 +17,6 @@ apps/desktop/out/
 apps/desktop/release/
 apps/web/dist/
 apps/web/public/download/*.exe
+PLAN.md
+Start Encelium (test mode).cmd
+design/
