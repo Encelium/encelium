@@ -141,7 +141,7 @@ export function Hero({ t, theme }: { t: Copy; theme: "light" | "dark" }) {
       <div className="wrap hero-in">
         <div>
           <Reveal><span className="kicker">{t.hero.kicker}</span></Reveal>
-          <h1>{t.hero.title.map((line) => <span key={line}>{line.split(" ").map((w, i) => <span className="word" key={i}>{w}</span>)}</span>)}</h1>
+          <h1>{t.hero.title.map((line) => <span key={line}>{line.split(" ").map((w, i) => <span className="word" key={i}>{w + " "}</span>)}</span>)}</h1>
           <Reveal delay={120}><p className="lead">{t.hero.sub}</p></Reveal>
           <Reveal delay={220}>
             <div className="hero-cta">
