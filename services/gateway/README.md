@@ -78,3 +78,27 @@ Until the app ships with the gateway's address built in: **Settings → Advanced
 npm test -w @encelium/gateway   # starts a fake model server; nothing real is called
 npm start -w @encelium/gateway
 ```
+
+## Native deploy (Ubuntu + systemd, no Docker)
+
+For a small server this is lighter than Docker. Node 24 runs the TypeScript directly,
+so there is nothing to build.
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash - && sudo apt install -y nodejs git
+sudo git clone https://github.com/Encelium/encelium.git /opt/encelium
+cd /opt/encelium/services/gateway
+sudo cp config.example.json config.json   # then edit: upstreamModel = the real model id
+sudo useradd -r -s /usr/sbin/nologin encelium || true
+sudo mkdir -p data && sudo chown encelium:encelium data
+sudo sh -c "umask 077 && cat > /etc/encelium-gateway.env"   # two lines:
+#   GATEWAY_UPSTREAM_URL=https://your-model-api/v1
+#   GATEWAY_UPSTREAM_KEY=the-key
+sudo cp encelium-gateway.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now encelium-gateway
+```
+
+Put Caddy in front for HTTPS (`reverse_proxy 127.0.0.1:8787`) and keep `host` at
+`127.0.0.1` in config.json so the gateway is never exposed directly. Keys and quotas
+are managed with `node src/admin.ts …` from the gateway folder; the system prompt
+lives in `prompts/system-prefix.md` and hot-reloads on the next request.

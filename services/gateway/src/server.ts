@@ -56,8 +56,10 @@ export function createGateway(config: GatewayConfig) {
     let body: Json;
     try { body = JSON.parse(raw); } catch { return sendError(res, 400, "invalid_request", "The request isn't valid JSON."); }
 
-    // "enceladus" is the pre-rename name: older apps still ask for it, older configs still list it.
-    const alias = (asked: unknown, id: string) => (asked === "encelium" && id === "enceladus") || (asked === "enceladus" && id === "encelium");
+    // The model's name has a small family history: "encelus" is its real name, but older
+    // apps ask for "encelium" and the very oldest for "enceladus". All one model.
+    const FAMILY = ["encelus", "encelium", "enceladus"];
+    const alias = (asked: unknown, id: string) => FAMILY.includes(String(asked)) && FAMILY.includes(id);
     const route = config.models.find((m) => m.id === body.model) ?? config.models.find((m) => alias(body.model, m.id));
     if (!route) return sendError(res, 404, "model_not_found", `There's no model called "${String(body.model)}" here.`);
 
@@ -159,7 +161,7 @@ export function createGateway(config: GatewayConfig) {
       const key = keys.find(bearer(req));
       if (!key) return sendError(res, 401, "invalid_api_key", "This invite key isn't valid.");
 
-      if (req.method === "GET" && url.pathname === "/v1/models") return sendJson(res, 200, { object: "list", data: config.models.map((m) => ({ id: m.id, object: "model", owned_by: "encelium" })) });
+      if (req.method === "GET" && url.pathname === "/v1/models") return sendJson(res, 200, { object: "list", data: config.models.map((m) => ({ id: m.id, object: "model", owned_by: "encelus" })) });
       if (req.method === "GET" && url.pathname === "/v1/usage")
         return sendJson(res, 200, { ...limiter.usage(key.name, perDay(key)), tier: signedIn(key) ? "signedIn" : "anonymous", offer: offer(key) });
       if (req.method === "POST" && url.pathname === "/v1/chat/completions") return await chat(req, res, key);

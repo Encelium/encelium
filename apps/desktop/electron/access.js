@@ -5,8 +5,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { testConnection } from "@encelium/agent-core";
 
-/** The gateway address the app ships with, once there is one (until then the person enters it). */
-export const DEFAULT_GATEWAY_URL = "";
+/** The gateway address the app ships with, so people only need their invite code. */
+export const DEFAULT_GATEWAY_URL = "https://model.encelium.space/v1";
 
 const file = () => path.join(app.getPath("userData"), "access.json");
 let state = {}; // { gatewayUrl, code: base64 (encrypted), model? }
