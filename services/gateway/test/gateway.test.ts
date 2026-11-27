@@ -101,6 +101,20 @@ test("an unknown model is 404; a bad upstream key is the server's problem (502),
   try { assert.equal((await chat(b.url, b.key, {})).status, 502); } finally { b.close(); }
 });
 
+test("the /v1/gate alias serves the same chat route (for networks that block the well-known path)", async () => {
+  const t = await setup();
+  try {
+    const res = await fetch(`${t.url}/v1/gate`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${t.key}` },
+      body: JSON.stringify({ model: "encelium", stream: true, messages: [] }),
+    });
+    assert.equal(res.status, 200);
+    const sent = t.up.seen.at(-1);
+    assert.ok(sent && sent.body.model === "secret-upstream-model");
+  } finally { t.close(); }
+});
+
 test("the pre-rename model name still routes to the same upstream", async () => {
   const t = await setup();
   try {

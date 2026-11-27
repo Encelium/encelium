@@ -164,7 +164,10 @@ export function createGateway(config: GatewayConfig) {
       if (req.method === "GET" && url.pathname === "/v1/models") return sendJson(res, 200, { object: "list", data: config.models.map((m) => ({ id: m.id, object: "model", owned_by: "encelus" })) });
       if (req.method === "GET" && url.pathname === "/v1/usage")
         return sendJson(res, 200, { ...limiter.usage(key.name, perDay(key)), tier: signedIn(key) ? "signedIn" : "anonymous", offer: offer(key) });
-      if (req.method === "POST" && url.pathname === "/v1/chat/completions") return await chat(req, res, key);
+      // Some networks block the well-known "/v1/chat/completions" path (the most-abused
+      // API route on the internet). "gate" is the same route under our own name.
+      if (req.method === "POST" && (url.pathname === "/v1/chat/completions" || url.pathname === "/v1/gate"))
+        return await chat(req, res, key);
       return sendError(res, 404, "not_found", "There's nothing here.");
     } catch (e) {
       log({ status: 500, error: (e as Error).message });
