@@ -1,4 +1,8 @@
 // The task's folder. Every file the agent touches must be inside it.
+//
+// One escape hatch, for our own testing only: ENCELIUM_ALLOW_ANYWHERE=1 turns the
+// confinement off (prompt tests, model evaluation). Never set for released builds —
+// Rewind only watches the task folder, so outside writes are not protected.
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 
@@ -9,6 +13,8 @@ export class OutsideWorkspaceError extends Error {
   }
 }
 
+const unrestricted = () => process.env.ENCELIUM_ALLOW_ANYWHERE === "1";
+
 export class Workspace {
   readonly root: string;
   constructor(root: string) {
@@ -18,6 +24,7 @@ export class Workspace {
   /** Resolve a path the model gave us (relative or absolute) and refuse anything outside the folder. */
   async resolve(p: string): Promise<string> {
     const full = path.resolve(this.root, p || ".");
+    if (unrestricted()) return full; // test mode: paths go where the model says
     if (!inside(this.root, full)) throw new OutsideWorkspaceError(p);
     // Follow links for the part of the path that exists, so a link can't point outside.
     let existing = full;
