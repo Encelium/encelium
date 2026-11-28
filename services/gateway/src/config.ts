@@ -24,6 +24,8 @@ export interface GatewayConfig {
   requireLogin: boolean;
   /** Folder with the prompt files (system-prefix.md, system-suffix.md). */
   promptsDir: string;
+  /** Public files the system prompt tells the model to fetch (/library/…, no invite key). */
+  libraryDir: string;
   /** Hashed invite keys. */
   keysFile: string;
   /** Where daily usage counts are kept (so a restart doesn't reset them). */
@@ -39,6 +41,7 @@ const DEFAULTS: GatewayConfig = {
   tiers: { anonymous: { perMinute: 30, perDay: 500 }, signedIn: { perMinute: 30, perDay: 1000 } },
   requireLogin: false,
   promptsDir: "prompts",
+  libraryDir: "library",
   keysFile: "data/keys.json",
   usageFile: "data/usage.json",
 };
@@ -68,6 +71,7 @@ export function loadConfig(file = process.env.GATEWAY_CONFIG ?? "config.json"): 
   if (process.env.GATEWAY_UPSTREAM_MODEL) c.models = c.models.map((m, i) => (i === 0 ? { ...m, upstreamModel: process.env.GATEWAY_UPSTREAM_MODEL! } : m));
   if (process.env.PORT) c.port = Number(process.env.PORT);
   c.promptsDir = path.resolve(base, c.promptsDir);
+  c.libraryDir = path.resolve(base, c.libraryDir);
   c.keysFile = path.resolve(base, c.keysFile);
   c.usageFile = path.resolve(base, c.usageFile);
   return c;

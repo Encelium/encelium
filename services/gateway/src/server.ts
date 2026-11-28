@@ -5,6 +5,8 @@
 // It checks invite keys, applies fair-use limits, adds the server's prompt instructions, streams
 // the answer back, and logs one line per request (who, model, status, time, tokens; never content).
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import type { GatewayConfig } from "./config.ts";
 import { KeyStore, type InviteKey } from "./keys.ts";
 import { Limiter } from "./limits.ts";
@@ -156,6 +158,19 @@ export function createGateway(config: GatewayConfig) {
     const url = new URL(req.url ?? "/", "http://gateway");
     try {
       if (req.method === "GET" && url.pathname === "/health") return sendJson(res, 200, { ok: true, models: config.models.map((m) => m.id) });
+
+      // The library: files the (vetted) system prompt tells the model to fetch — no invite
+      // key, because the model runs plain download commands on the person's PC. Public by
+      // design: only put files here that every beta user may read.
+      if (req.method === "GET" && url.pathname.startsWith("/library/")) {
+        const safe = path.posix.normalize(url.pathname.slice("/library/".length)).replace(/^(\.\.(\/|$))+/, "");
+        const file = path.join(config.libraryDir, safe);
+        if (!path.resolve(file).startsWith(path.resolve(config.libraryDir))) return sendError(res, 404, "not_found", "There's nothing here.");
+        const data = await readFile(file).catch(() => null);
+        if (data === null) return sendError(res, 404, "not_found", "There's nothing here.");
+        res.writeHead(200, { "content-type": safe.endsWith(".html") ? "text/html; charset=utf-8" : safe.endsWith(".json") ? "application/json" : "text/plain; charset=utf-8", "content-length": String(data.length), "access-control-allow-origin": "*" });
+        return res.end(data);
+      }
 
       // Everything else needs an invite key.
       const key = keys.find(bearer(req));

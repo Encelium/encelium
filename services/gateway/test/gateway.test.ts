@@ -29,6 +29,8 @@ function fakeUpstream(status = 200) {
 async function setup(upstreamStatus = 200, limits: Partial<GatewayConfig["limits"]> = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "gw-"));
   mkdirSync(path.join(dir, "prompts"));
+  mkdirSync(path.join(dir, "library"));
+  writeFileSync(path.join(dir, "library", "briefing.md"), "# Briefing\nEncelus test content.");
   writeFileSync(path.join(dir, "prompts", "system-prefix.md"), "You are Encelium. Keep words simple.");
   const up = fakeUpstream(upstreamStatus);
   const upUrl = await listen(up.server);
@@ -39,6 +41,7 @@ async function setup(upstreamStatus = 200, limits: Partial<GatewayConfig["limits
     limits: { perMinute: 30, perDay: 500, maxTokens: 1000, maxBodyBytes: 1_000_000, ...limits },
     tiers: { anonymous: { perMinute: limits.perMinute ?? 30, perDay: limits.perDay ?? 500 }, signedIn: { perMinute: 30, perDay: 500 } },
     requireLogin: false,
+    libraryDir: path.join(dir, "library"),
     promptsDir: path.join(dir, "prompts"), keysFile: path.join(dir, "keys.json"), usageFile: path.join(dir, "usage.json"),
   };
   const gw = createGateway(config);
@@ -112,6 +115,21 @@ test("the /v1/gate alias serves the same chat route (for networks that block the
     assert.equal(res.status, 200);
     const sent = t.up.seen.at(-1);
     assert.ok(sent && sent.body.model === "secret-upstream-model");
+  } finally { t.close(); }
+});
+
+test("the library serves public files without an invite key", async () => {
+  const t = await setup();
+  try {
+    const res = await fetch(`${t.url}/library/briefing.md`);
+    assert.equal(res.status, 200);
+    assert.equal(await res.text(), "# Briefing\nEncelus test content.");
+    // No key needed; and the chat-adjacent route still requires one.
+    assert.equal((await fetch(`${t.url}/v1/models`)).status, 401);
+    // ../ never reaches the server (fetch normalizes it away), but an encoded
+    // traversal must still land inside the library and find nothing.
+    const sneaky = await fetch(`${t.url}/library/%2e%2e%2fconfig.json`);
+    assert.ok(sneaky.status === 404 || sneaky.status === 401, `got ${sneaky.status}`);
   } finally { t.close(); }
 });
 
