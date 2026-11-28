@@ -45,7 +45,9 @@ test("engine: plans, writes a file (with a Rewind point), asks before a command,
   ]);
   const { dir, root, workspace, checkpoints } = await setup();
   try {
-    const run = new AgentSession("make a greeting", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "en" });
+    // A follow-up turn: the person asked for this, so actions and activity lines show.
+    const history = [{ role: "user" as const, content: "hi" }, { role: "assistant" as const, content: "hello" }];
+    const run = new AgentSession("make a greeting", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "en", history });
     const events: AgentEvent[] = [];
     run.onEvent((e) => { events.push(e); if (e.type === "permission") run.respond(e.requestId, true); });
     await run.finished;

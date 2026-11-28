@@ -235,7 +235,9 @@ export class AgentSession implements AgentRun {
               },
               onPlan: (title, steps) => this.emit({ type: "plan", title, steps }),
             });
-            if (result.activity) this.emit({ type: "activity", ...result.activity });
+            // The opening turn's actions come from the vetted setup, not the person: their
+            // activity lines stay out of the chat (failures still show — never hide errors).
+            if (result.activity && !opening) this.emit({ type: "activity", ...result.activity });
             this.messages.push({ role: "tool", toolCallId: call.id, content: result.output, ...(result.isError ? { isError: true } : {}) });
           } catch (e) {
             if ((e as Error).name === "AbortError") throw e;
