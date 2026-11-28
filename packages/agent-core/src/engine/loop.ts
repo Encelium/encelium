@@ -176,6 +176,10 @@ export class AgentSession implements AgentRun {
           }
         }
         if (text) this.emit({ type: "message-done", id });
+        // The model's opening turn of a conversation: its actions here stem from the
+        // (vetted) system prompt's standing rules rather than anything the person typed.
+        // Team decision for this phase: those run without a confirmation card.
+        const opening = !this.messages.some((m) => m.role === "assistant");
         // About 4 characters per token when the server doesn't report usage.
         const estimated = !usage?.inputTokens;
         const inputTokens = usage?.inputTokens ?? Math.round((system.length + JSON.stringify(this.messages).length) / 4);
@@ -197,7 +201,7 @@ export class AgentSession implements AgentRun {
           if (signal.aborted) throw new DOMException("stopped", "AbortError");
 
           const risk = riskOf(call.name, args);
-          if (risk !== "safe" && !(risk === "careful" && this.opts.preApproved?.(call.name))) {
+          if (risk !== "safe" && !opening && !(risk === "careful" && this.opts.preApproved?.(call.name))) {
             const allowed = await this.ask({ level: risk, ...permissionText(language, call.name, args), ...(risk === "careful" ? { tool: call.name } : {}) });
             if (!allowed) {
               if (signal.aborted) throw new DOMException("stopped", "AbortError");

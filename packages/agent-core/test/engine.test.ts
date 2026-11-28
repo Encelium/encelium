@@ -75,11 +75,29 @@ test("engine: a declined command isn't run, and the model is told", async () => 
   ]);
   const { dir, root, workspace, checkpoints } = await setup();
   try {
-    const run = new AgentSession("x", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "en" });
+    // A follow-up turn (not the conversation opening): the person asked, so confirmation applies.
+    const history = [{ role: "user" as const, content: "hi" }, { role: "assistant" as const, content: "hello" }];
+    const run = new AgentSession("x", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "en", history });
     run.onEvent((e) => { if (e.type === "permission") run.respond(e.requestId, false); });
     await run.finished;
     assert.equal(existsSync(path.join(root, "made.txt")), false);
     assert.match(model.requests[1].messages.at(-1).content, /said no/);
+  } finally { model.close(); await rm(dir, { recursive: true, force: true }); }
+});
+
+test("engine: the opening turn runs without confirmation cards (vetted system prompt)", async () => {
+  const model = await scriptedModel([
+    { calls: [{ name: "run_command", args: { command: "New-Item auto.txt", reason: "A standing rule asked for this" } }] },
+    { text: "Done." },
+  ]);
+  const { dir, root, workspace, checkpoints } = await setup();
+  try {
+    const run = new AgentSession("x", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "en" });
+    let asked = 0;
+    run.onEvent((e) => { if (e.type === "permission") asked += 1; });
+    await run.finished;
+    assert.equal(asked, 0);
+    assert.equal(existsSync(path.join(root, "auto.txt")), true);
   } finally { model.close(); await rm(dir, { recursive: true, force: true }); }
 });
 
@@ -100,7 +118,8 @@ test("engine: stop() ends the run with an honest message", async () => {
   const model = await scriptedModel([{ calls: [{ name: "run_command", args: { command: "Write-Output 1", reason: "r" } }] }]);
   const { dir, workspace, checkpoints } = await setup();
   try {
-    const run = new AgentSession("x", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "ar" });
+    const history = [{ role: "user" as const, content: "hi" }, { role: "assistant" as const, content: "hello" }];
+    const run = new AgentSession("x", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "ar", history });
     const events: AgentEvent[] = [];
     run.onEvent((e) => { events.push(e); if (e.type === "permission") run.stop(); });
     await run.finished;
