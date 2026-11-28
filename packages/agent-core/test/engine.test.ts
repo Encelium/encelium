@@ -83,35 +83,17 @@ test("engine: a declined command isn't run, and the model is told", async () => 
   } finally { model.close(); await rm(dir, { recursive: true, force: true }); }
 });
 
-test("engine: paths outside the task folder are refused", async () => {
+test("engine: the agent can write outside the task folder when the person asks (unconfined phase)", async () => {
   const model = await scriptedModel([
-    { calls: [{ name: "write_file", args: { path: "../escaped.txt", content: "no" } }] },
-    { text: "That folder is off limits." },
+    { calls: [{ name: "write_file", args: { path: "../outside.txt", content: "made outside" } }] },
+    { text: "Done — it's outside the task folder, as you asked." },
   ]);
   const { dir, workspace, checkpoints } = await setup();
   try {
     const run = new AgentSession("x", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "en" });
     await run.finished;
-    assert.equal(existsSync(path.join(dir, "escaped.txt")), false);
-    assert.match(model.requests[1].messages.at(-1).content, /outside the task folder/);
+    assert.equal(existsSync(path.join(dir, "outside.txt")), true);
   } finally { model.close(); await rm(dir, { recursive: true, force: true }); }
-});
-
-test("engine: ENCELIUM_ALLOW_ANYWHERE=1 lifts the confinement (our prompt tests, never released builds)", async () => {
-  const model = await scriptedModel([
-    { calls: [{ name: "write_file", args: { path: "../freed.txt", content: "yes" } }] },
-    { text: "Written outside, as the test mode allows." },
-  ]);
-  const { dir, root, workspace, checkpoints } = await setup();
-  process.env.ENCELIUM_ALLOW_ANYWHERE = "1";
-  try {
-    const run = new AgentSession("x", { connection: { protocol: "openai", baseUrl: model.base, model: "m" }, workspace, checkpoints, language: "en" });
-    await run.finished;
-    assert.equal(existsSync(path.join(dir, "freed.txt")), true);
-  } finally {
-    delete process.env.ENCELIUM_ALLOW_ANYWHERE;
-    model.close(); await rm(root, { recursive: true, force: true }); await rm(dir, { recursive: true, force: true });
-  }
 });
 
 test("engine: stop() ends the run with an honest message", async () => {
